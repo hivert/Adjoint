@@ -28,6 +28,13 @@ HB.instance Definition _ :=
   isCategory.Build nmodType (fun T : nmodType => T)
     GRing.semi_additive GRing.idfun_is_semi_additive comp_is_semi_additive.
 Notation Nmodules := [the category of nmodType].
+Fact Nmod_hom_additive a b (f : {hom Nmodules; a, b}) : GRing.semi_additive f.
+Proof. by case: f => [/= f [[]]]. Qed.
+Definition add_of_Nmod a b (f : {hom Nmodules; a, b}) :=
+  GRing.isSemiAdditive.Build _ _ _ (Nmod_hom_additive f).
+(* TODO : additive_of_Nmod should be a coercion *)
+Coercion additive_of_Nmod a b (f : {hom Nmodules; a, b}) : {additive a -> b} :=
+  HB.pack (Hom.sort f) (add_of_Nmod f).
 
 
 Fact idfun_is_additive (a : zmodType) : GRing.additive (idfun : a -> a).
@@ -240,7 +247,11 @@ Section Set_to_FreeNmodule.
 Variable (a b : choiceType) (f : {hom Sets ; a, b}).
 
 Definition hom_mset (m : {mset a}) : [the nmodType of {mset b}] :=
-                       (\sum_(i <- m | true) [mset f i]).
+  \sum_(i <- m) [mset f i].
+
+Lemma hom_mset1 x : hom_mset [mset x] = [mset f x].
+Proof. by rewrite /hom_mset big_msetn /=. Qed.
+
 Lemma hom_mset_additive : semi_additive hom_mset.
 Proof.
 rewrite /hom_mset; split => [| /= x y]; first by rewrite big_mset0.
@@ -275,14 +286,60 @@ Proof.
 move=> /= a b c f g x; rewrite !/hom_mset /= -{1}(msetE x).
 elim: (enum_mset x) => [|y s IHs] /=.
   by rewrite !big_nil !big_mset0.
-rewrite !big_cons.
-by rewrite !big_msetD /= {}IHs !big_msetn.
+by rewrite !big_cons !big_msetD /= {}IHs !big_msetn.
 Qed.
 HB.instance Definition _ :=
   @isFunctor.Build Sets Nmodules
     FreeNmod FreeNmod_mor FreeNmod_ext FreeNmod_id FreeNmod_comp.
 
+Section Adjoint.
 
+Implicit Types (a : choiceType) (T : nmodType).
 
+Let eta_fun a (x : a) := [mset x].
+Definition eta : FId ~~> forget_to_Sets \o FreeNmod := eta_fun.
+Fact eta_natural : naturality FId (forget_to_Sets \o FreeNmod) eta.
+Proof. by move=> /= a b h x /=; rewrite /eta_fun FIdf hom_mset1. Qed.
+HB.instance Definition _ :=
+  @isNatural.Build Sets Sets FId (forget_to_Sets \o FreeNmod) eta eta_natural.
 
+Let eps_fun T (m : (FreeNmod \o forget_to_Sets) T) : T :=
+      \sum_(i <- m : {mset _}) i.
+Fact eps_fun_additive T : semi_additive (@eps_fun T).
+Proof.
+rewrite /eps_fun; split => [|/= s t]; first by rewrite big_mset0.
+by rewrite big_msetD.
+Qed.
+HB.instance Definition _ T :=
+  isHom.Build Nmodules ((FreeNmod \o forget_to_Sets) T) (FId T)
+    (@eps_fun T) (@eps_fun_additive T).
+Definition eps : FreeNmod \o forget_to_Sets ~~> FId := eps_fun.
+Fact eps_natural : naturality (FreeNmod \o forget_to_Sets) FId eps.
+Proof.
+move=> /= a b h x /=; rewrite /eps_fun FIdf /hom_mset.
+rewrite [LHS](raddf_sum h) -{1}(msetE x).
+elim: (enum_mset x) => [|y s IHs] /=.
+  by rewrite !big_nil !big_mset0.
+by rewrite !big_cons !big_msetD /= {}IHs !big_msetn.
+Qed.
+HB.instance Definition _ :=
+  @isNatural.Build Nmodules Nmodules (FreeNmod \o forget_to_Sets) FId
+    eps eps_natural.
 
+Lemma triL : TriangularLaws.left eta eps.
+Proof.
+move=> /= a m /=.
+rewrite /eta_fun /= /eps_fun /hom_mset -[RHS](msetE m).
+elim: (enum_mset m) => [|y s IHs] /=.
+  by rewrite !big_nil !big_mset0.
+by rewrite !big_cons !big_msetD /= {}IHs !big_msetn.
+Qed.
+Lemma triR : TriangularLaws.right eta eps.
+Proof. by move=> /= M m; rewrite /eta_fun /= /eps_fun !big_msetn /=. Qed.
+
+Check FreeNmod : {functor Sets -> Nmodules}.
+Check forget_to_Sets : {functor Nmodules -> Sets}.
+Definition adj_FreeNmod_forget : FreeNmod -| forget_to_Sets :=
+  AdjointFunctors.mk triL triR.
+
+End Adjoint.
