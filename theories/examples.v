@@ -32,7 +32,7 @@ Fact Nmod_hom_additive a b (f : {hom Nmodules; a, b}) : GRing.semi_additive f.
 Proof. by case: f => [/= f [[]]]. Qed.
 Definition add_of_Nmod a b (f : {hom Nmodules; a, b}) :=
   GRing.isSemiAdditive.Build _ _ _ (Nmod_hom_additive f).
-(* TODO : additive_of_Nmod should be a coercion *)
+(* TODO : warning uniform inheritance *)
 Coercion additive_of_Nmod a b (f : {hom Nmodules; a, b}) : {additive a -> b} :=
   HB.pack (Hom.sort f) (add_of_Nmod f).
 
@@ -46,6 +46,13 @@ HB.instance Definition _ :=
   isCategory.Build zmodType (fun T : zmodType => T)
     GRing.additive idfun_is_additive comp_is_additive.
 Notation Zmodules := [the category of zmodType].
+Fact Zmod_hom_additive a b (f : {hom Zmodules; a, b}) : GRing.additive f.
+Proof. by case: f => [/= f [[]]]. Qed.
+Definition add_of_Zmod a b (f : {hom Zmodules; a, b}) :=
+  GRing.isAdditive.Build _ _ _ (Zmod_hom_additive f).
+(* TODO : warning uniform inheritance *)
+Coercion additive_of_Zmod a b (f : {hom Zmodules; a, b}) :
+  {additive a -> b} := HB.pack (Hom.sort f) (add_of_Zmod f).
 
 
 Fact idfun_is_multiplicative (a : semiRingType) :
@@ -57,6 +64,18 @@ Proof. by move=> fM gM; split => [x y|] /=; rewrite fM gM. Qed.
 HB.instance Definition _ :=
   isCategory.Build semiRingType (fun T : semiRingType => T)
     GRing.multiplicative idfun_is_multiplicative comp_is_multiplicative.
+Definition SemiRings := [the category of semiRingType].
+Fact SRing_hom_multiplicative a b (f : {hom SemiRings; a, b}) :
+  GRing.multiplicative f.
+Proof. by case: f => [/= f [[]]]. Qed.
+Definition mult_of_SRing a b (f : {hom SemiRings; a, b}) :=
+  GRing.isMultiplicative.Build _ _ _ (SRing_hom_multiplicative f).
+(* TODO : synthetize the semi-additive structure.
+   Seems to need forgetful SRings -> Zmodules
+Coercion multiplicative_of_SRing a b (f : {hom SemiRings; a, b}) :
+  {rmorphism a -> b} := HB.pack (Hom.sort f) (mult_of_SRing f).
+*)
+
 HB.instance Definition _ :=
   isCategory.Build comSemiRingType (fun T : comSemiRingType => T)
     GRing.multiplicative idfun_is_multiplicative comp_is_multiplicative.
@@ -72,7 +91,6 @@ HB.instance Definition _ :=
 HB.instance Definition _ :=
   isCategory.Build comUnitRingType (fun T : comUnitRingType => T)
     GRing.multiplicative idfun_is_multiplicative comp_is_multiplicative.
-Definition SemiRings := [the category of semiRingType].
 Definition ComSemiRings := [the category of comSemiRingType].
 Definition Rings := [the category of ringType].
 Definition ComRings := [the category of comRingType].
@@ -128,23 +146,23 @@ Section ForgetNmodule_to_Set.
 
 Variable (a b : nmodType) (f : {hom Nmodules ; a, b}).
 
-Definition forget_to_Sets (T : nmodType) : choiceType := T.
+Definition forget_Nmodules_to_Sets (T : nmodType) : choiceType := T.
 HB.instance Definition _ :=
   @isHom.Build Sets a b (f : (a : choiceType) -> b) I.
-Definition forget_to_Sets_mor : {hom Sets; a, b} :=
+Definition forget_Nmodules_to_Sets_mor : {hom Sets; a, b} :=
   [the {hom Sets; (a : choiceType), b} of f : a -> b].
 
 End ForgetNmodule_to_Set.
 
-Fact forget_ext : FunctorLaws.ext forget_to_Sets_mor.
+Fact forget_ext : FunctorLaws.ext forget_Nmodules_to_Sets_mor.
 Proof. by []. Qed.
-Fact forget_id : FunctorLaws.id forget_to_Sets_mor.
+Fact forget_id : FunctorLaws.id forget_Nmodules_to_Sets_mor.
 Proof. by []. Qed.
-Fact forget_comp  : FunctorLaws.comp forget_to_Sets_mor.
+Fact forget_comp  : FunctorLaws.comp forget_Nmodules_to_Sets_mor.
 Proof. by []. Qed.
 HB.instance Definition _ :=
-  @isFunctor.Build Nmodules Sets
-    forget_to_Sets forget_to_Sets_mor forget_ext forget_id forget_comp.
+  @isFunctor.Build Nmodules Sets forget_Nmodules_to_Sets
+    forget_Nmodules_to_Sets_mor forget_ext forget_id forget_comp.
 
 
 Import GRing.Theory.
@@ -297,13 +315,13 @@ Section Adjoint.
 Implicit Types (a : choiceType) (T : nmodType).
 
 Let eta_fun a (x : a) := [mset x].
-Definition eta : FId ~~> forget_to_Sets \o FreeNmod := eta_fun.
-Fact eta_natural : naturality FId (forget_to_Sets \o FreeNmod) eta.
+Definition eta : FId ~~> forget_Nmodules_to_Sets \o FreeNmod := eta_fun.
+Fact eta_natural : naturality FId (forget_Nmodules_to_Sets \o FreeNmod) eta.
 Proof. by move=> /= a b h x /=; rewrite /eta_fun FIdf hom_mset1. Qed.
 HB.instance Definition _ :=
-  @isNatural.Build Sets Sets FId (forget_to_Sets \o FreeNmod) eta eta_natural.
+  @isNatural.Build Sets Sets FId (forget_Nmodules_to_Sets \o FreeNmod) eta eta_natural.
 
-Let eps_fun T (m : (FreeNmod \o forget_to_Sets) T) : T :=
+Let eps_fun T (m : (FreeNmod \o forget_Nmodules_to_Sets) T) : T :=
       \sum_(i <- m : {mset _}) i.
 Fact eps_fun_additive T : semi_additive (@eps_fun T).
 Proof.
@@ -311,10 +329,10 @@ rewrite /eps_fun; split => [|/= s t]; first by rewrite big_mset0.
 by rewrite big_msetD.
 Qed.
 HB.instance Definition _ T :=
-  isHom.Build Nmodules ((FreeNmod \o forget_to_Sets) T) (FId T)
+  isHom.Build Nmodules ((FreeNmod \o forget_Nmodules_to_Sets) T) (FId T)
     (@eps_fun T) (@eps_fun_additive T).
-Definition eps : FreeNmod \o forget_to_Sets ~~> FId := eps_fun.
-Fact eps_natural : naturality (FreeNmod \o forget_to_Sets) FId eps.
+Definition eps : FreeNmod \o forget_Nmodules_to_Sets ~~> FId := eps_fun.
+Fact eps_natural : naturality (FreeNmod \o forget_Nmodules_to_Sets) FId eps.
 Proof.
 move=> /= a b h x /=; rewrite /eps_fun FIdf /hom_mset.
 rewrite [LHS](raddf_sum h) -{1}(msetE x).
@@ -323,7 +341,7 @@ elim: (enum_mset x) => [|y s IHs] /=.
 by rewrite !big_cons !big_msetD /= {}IHs !big_msetn.
 Qed.
 HB.instance Definition _ :=
-  @isNatural.Build Nmodules Nmodules (FreeNmod \o forget_to_Sets) FId
+  @isNatural.Build Nmodules Nmodules (FreeNmod \o forget_Nmodules_to_Sets) FId
     eps eps_natural.
 
 Lemma triL : TriangularLaws.left eta eps.
@@ -338,8 +356,8 @@ Lemma triR : TriangularLaws.right eta eps.
 Proof. by move=> /= M m; rewrite /eta_fun /= /eps_fun !big_msetn /=. Qed.
 
 Check FreeNmod : {functor Sets -> Nmodules}.
-Check forget_to_Sets : {functor Nmodules -> Sets}.
-Definition adj_FreeNmod_forget : FreeNmod -| forget_to_Sets :=
+Check forget_Nmodules_to_Sets : {functor Nmodules -> Sets}.
+Definition adj_FreeNmod_forget : FreeNmod -| forget_Nmodules_to_Sets :=
   AdjointFunctors.mk triL triR.
 
 End Adjoint.
