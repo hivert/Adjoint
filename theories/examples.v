@@ -348,18 +348,40 @@ HB.instance Definition _ :=
   @isNatural.Build Nmodules Nmodules (FreeNmod \o forget_Nmodules_to_Sets) FId
     eps eps_natural.
 
-Lemma triL : TriangularLaws.left eta eps.
+Fact triL : TriangularLaws.left eta eps.
 Proof.
 move=> /= a.
 rewrite -!additive_of_NmodE; apply: additive_msetE => /= x.
 by rewrite /eta_fun /= /eps_fun /hom_mset /= !big_msetn.
 Qed.
-Lemma triR : TriangularLaws.right eta eps.
+Fact triR : TriangularLaws.right eta eps.
 Proof. by move=> /= M m; rewrite /eta_fun /= /eps_fun !big_msetn /=. Qed.
-
 Check FreeNmod : {functor Sets -> Nmodules}.
 Check forget_Nmodules_to_Sets : {functor Nmodules -> Sets}.
 Definition adj_FreeNmod_forget : FreeNmod -| forget_Nmodules_to_Sets :=
   AdjointFunctors.mk triL triR.
 
 End Adjoint.
+
+
+Section UniversalProperty.
+
+Variable  (A : choiceType) (M : nmodType) (f : A -> M).
+
+Definition univmap : {additive {mset A} -> M} :=
+  eps M \o FreeNmod # f : {hom FreeNmod A, M}.
+
+Lemma univmapP a : univmap [mset a] = f a.
+Proof.
+rewrite /univmap -[[mset a]]/(eta A a) /= hom_mset1.
+by have /= -> := @triR M (f a).
+Qed.
+
+Lemma univmap_uniq (g : {additive {mset A} -> M}) :
+  (forall a : A, g [mset a] = f a) -> g =1 univmap.
+Proof.
+move=> eq m; rewrite -(msetE m) !raddf_sum; apply eq_bigr => x _.
+by rewrite eq univmapP.
+Qed.
+
+End UniversalProperty.
