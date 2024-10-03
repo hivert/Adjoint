@@ -35,6 +35,9 @@ Definition add_of_Nmod a b (f : {hom Nmodules; a, b}) :=
 (* TODO : warning uniform inheritance *)
 Coercion additive_of_Nmod a b (f : {hom Nmodules; a, b}) : {additive a -> b} :=
   HB.pack (Hom.sort f) (add_of_Nmod f).
+Lemma additive_of_NmodE a b (f : {hom Nmodules; a, b}) :
+  @additive_of_Nmod a b f = f :> (_ -> _).
+Proof. by []. Qed.
 
 
 Fact idfun_is_additive (a : zmodType) : GRing.additive (idfun : a -> a).
@@ -53,7 +56,9 @@ Definition add_of_Zmod a b (f : {hom Zmodules; a, b}) :=
 (* TODO : warning uniform inheritance *)
 Coercion additive_of_Zmod a b (f : {hom Zmodules; a, b}) :
   {additive a -> b} := HB.pack (Hom.sort f) (add_of_Zmod f).
-
+Lemma additive_of_ZmodE a b (f : {hom Zmodules; a, b}) :
+  @additive_of_Zmod a b f = f :> (_ -> _).
+Proof. by []. Qed.
 
 Fact idfun_is_multiplicative (a : semiRingType) :
   GRing.multiplicative (idfun : a -> a).
@@ -216,6 +221,10 @@ rewrite mset1E; case: (altP (_ =P _)) => [->|]; last by rewrite muln0.
 by rewrite (negbTE uS).
 Qed.
 
+Lemma additive_msetE (M : nmodType) (f g : {additive {mset K} -> M}) :
+  (forall x : K, f [mset x] = g [mset x]) -> f =1 g.
+Proof. by move=> eq x; rewrite -(msetE x) !raddf_sum; apply: eq_bigr. Qed.
+
 Section Widen.
 
 Variables (R : Type) (idx : R) (op : Monoid.com_law idx).
@@ -258,8 +267,6 @@ Proof. by rewrite -big_cat; apply: (perm_big _ (perm_cat_mseq X Y)). Qed.
 
 End MsetComplement.
 
-
-
 Section Set_to_FreeNmodule.
 
 Variable (a b : choiceType) (f : {hom Sets ; a, b}).
@@ -301,10 +308,9 @@ Fact FreeNmod_id : FunctorLaws.id FreeNmod_mor.
 Proof. by move=> /= a x /=; rewrite /hom_mset /= msetE. Qed.
 Fact FreeNmod_comp  : FunctorLaws.comp FreeNmod_mor.
 Proof.
-move=> /= a b c f g x; rewrite !/hom_mset /= -{1}(msetE x).
-elim: (enum_mset x) => [|y s IHs] /=.
-  by rewrite !big_nil !big_mset0.
-by rewrite !big_cons !big_msetD /= {}IHs !big_msetn.
+move=> /= a b c f g.
+rewrite -!additive_of_NmodE; apply: additive_msetE => /= x.
+by rewrite /hom_mset /= !big_msetn.
 Qed.
 HB.instance Definition _ :=
   @isFunctor.Build Sets Nmodules
@@ -334,11 +340,9 @@ HB.instance Definition _ T :=
 Definition eps : FreeNmod \o forget_Nmodules_to_Sets ~~> FId := eps_fun.
 Fact eps_natural : naturality (FreeNmod \o forget_Nmodules_to_Sets) FId eps.
 Proof.
-move=> /= a b h x /=; rewrite /eps_fun FIdf /hom_mset.
-rewrite [LHS](raddf_sum h) -{1}(msetE x).
-elim: (enum_mset x) => [|y s IHs] /=.
-  by rewrite !big_nil !big_mset0.
-by rewrite !big_cons !big_msetD /= {}IHs !big_msetn.
+move=> /= a b h.
+rewrite -!additive_of_NmodE; apply: additive_msetE => /= x.
+by rewrite FIdf /eps_fun /hom_mset /= !big_msetn.
 Qed.
 HB.instance Definition _ :=
   @isNatural.Build Nmodules Nmodules (FreeNmod \o forget_Nmodules_to_Sets) FId
@@ -346,11 +350,9 @@ HB.instance Definition _ :=
 
 Lemma triL : TriangularLaws.left eta eps.
 Proof.
-move=> /= a m /=.
-rewrite /eta_fun /= /eps_fun /hom_mset -[RHS](msetE m).
-elim: (enum_mset m) => [|y s IHs] /=.
-  by rewrite !big_nil !big_mset0.
-by rewrite !big_cons !big_msetD /= {}IHs !big_msetn.
+move=> /= a.
+rewrite -!additive_of_NmodE; apply: additive_msetE => /= x.
+by rewrite /eta_fun /= /eps_fun /hom_mset /= !big_msetn.
 Qed.
 Lemma triR : TriangularLaws.right eta eps.
 Proof. by move=> /= M m; rewrite /eta_fun /= /eps_fun !big_msetn /=. Qed.
