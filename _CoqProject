@@ -6,4 +6,5 @@
 -arg -w -arg -projection-no-head-constant
 theories/category.v
 theories/examples.v
+theories/msetcompl.v
 
