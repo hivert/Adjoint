@@ -34,8 +34,7 @@ HB.instance Definition _ :=
   isCategory.Build nmodType (fun T : nmodType => T)
     GRing.semi_additive idfun_is_semi_additive comp_is_semi_additive.
 Notation NModules := [the category of nmodType].
-
-(* TODO : warning uniform inheritance *)
+#[warning="-uniform-inheritance"]
 Coercion additive_of_Nmod a b (f : {hom NModules; a, b}) : {additive a -> b} :=
   HB.pack (Hom.sort f) (GRing.isSemiAdditive.Build _ _ _ (isHom_inhom f)).
 Lemma additive_of_NmodE a b (f : {hom NModules; a, b}) :
@@ -76,7 +75,7 @@ HB.instance Definition _ :=
     GRing.semi_additive GRing.idfun_is_semi_additive comp_is_semi_additive.
 Notation ZModules := [the category of zmodType].
 
-(* TODO : warning uniform inheritance *)
+#[warning="-uniform-inheritance"]
 Coercion additive_of_Zmod a b (f : {hom ZModules; a, b}) : {additive a -> b} :=
   HB.pack (Hom.sort f) (GRing.isSemiAdditive.Build _ _ f (isHom_inhom f)).
 Lemma additive_of_ZmodE a b (f : {hom ZModules; a, b}) :
@@ -129,7 +128,7 @@ HB.instance Definition _ :=
     semiring_morph idfun_is_semiring_morph comp_is_semiring_morph.
 Notation SemiRings := [the category of semiRingType].
 
-(* TODO : warning uniform inheritance *)
+#[warning="-uniform-inheritance"]
 Coercion rmorph_of_SRing a b (f : {hom SemiRings; a, b}) : {rmorphism a -> b} :=
   HB.pack (Hom.sort f)
     (GRing.isSemiAdditive.Build _ _ _ (fst (isHom_inhom f)))
@@ -174,6 +173,7 @@ HB.instance Definition _ :=
   isCategory.Build ringType (fun T : ringType => T)
     semiring_morph idfun_is_semiring_morph comp_is_semiring_morph.
 Definition Rings := [the category of ringType].
+#[warning="-uniform-inheritance"]
 Coercion rmorph_of_Ring a b (f : {hom Rings; a, b}) : {rmorphism a -> b} :=
   HB.pack (Hom.sort f)
     (GRing.isSemiAdditive.Build _ _ _ (fst (isHom_inhom f)))
@@ -244,6 +244,7 @@ Definition forget_ComSemiRings_to_SemiRings :=
 Lemma forget_ComSemiRings_to_SemiRingsE a b (f : {hom ComSemiRings; a, b}) :
   forget_ComSemiRings_to_SemiRings # f = f :> (_ -> _).
 Proof. by []. Qed.
+#[warning="-uniform-inheritance"]
 Coercion rmorph_of_ComSemiRing a b (f : {hom ComSemiRings; a, b}) :
   {rmorphism a -> b} := forget_ComSemiRings_to_SemiRings # f.
 Lemma rmorph_of_ComSemiRingE a b (f : {hom ComSemiRings; a, b}) :
@@ -283,6 +284,7 @@ Definition forget_ComRings_to_Rings := ForgetComRings_to_Rings.functor.
 Lemma forget_ComRings_to_RingsE a b (f : {hom ComRings; a, b}) :
   forget_ComRings_to_Rings # f = f :> (_ -> _).
 Proof. by []. Qed.
+#[warning="-uniform-inheritance"]
 Coercion rmorph_of_comRing a b (f : {hom ComRings; a, b}) :
   {rmorphism a -> b} := rmorph_of_Ring (forget_ComRings_to_Rings # f).
 
@@ -302,6 +304,7 @@ HB.instance Definition _ :=
     (fun a b (f : a -> b) => linear f) idfun_is_linear comp_is_linear.
 End LModules.
 Notation LModules R := [the category of lmodType R].
+#[warning="-uniform-inheritance"]
 Coercion linear_of_LModules R a b (f : {hom LModules R; a, b}) : {linear a -> b} :=
   HB.pack (Hom.sort f) (GRing.isLinear.Build _ _ _ _ _ (isHom_inhom f)).
 Lemma linear_of_LModulesE R a b (f : {hom LModules R; a, b}) :
@@ -370,7 +373,7 @@ HB.instance Definition _ :=
     idfun_is_lalg_morph comp_is_lalg_morph.
 End LAlgebras.
 Notation LAlgebras R := [the category of lalgType R].
-
+#[warning="-uniform-inheritance"]
 Coercion lrmorphism_of_LAlgebras R a b (f : {hom LAlgebras R; a, b}) :
   {lrmorphism a -> b} := HB.pack (Hom.sort f)
      (GRing.isLinear.Build _ _ _ _ _ (fst (isHom_inhom f)))
@@ -486,6 +489,7 @@ Definition forget_Algebras_to_LAlgebras := ForgetAlgebras_to_LAlgebras.functor.
 Lemma forget_Algebras_to_LAlgebrasE R a b (f : {hom Algebras R; a, b}) :
   forget_Algebras_to_LAlgebras R # f = f :> (_ -> _).
 Proof. by []. Qed.
+#[warning="-uniform-inheritance"]
 Coercion lrmorphism_of_Algebras R a b (f : {hom Algebras R; a, b}) :
   {lrmorphism a -> b} := forget_Algebras_to_LAlgebras R # f.
 Lemma lrmorphism_of_AlgebrasE R a b (f : {hom Algebras R; a, b}) :
@@ -528,6 +532,7 @@ Definition forget_ComAlgebras_to_Algebras := ForgetComAlgebras_to_Algebras.funct
 Lemma forget_ComAlgebras_to_AlgebrasE R a b (f : {hom ComAlgebras R; a, b}) :
   forget_ComAlgebras_to_Algebras R # f = f :> (_ -> _).
 Proof. by []. Qed.
+#[warning="-uniform-inheritance"]
 Coercion lrmorphism_of_ComAlgebras R a b (f : {hom ComAlgebras R; a, b}) :
   {lrmorphism a -> b} :=
   lrmorphism_of_Algebras (forget_ComAlgebras_to_Algebras R # f).
