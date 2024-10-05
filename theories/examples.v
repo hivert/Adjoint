@@ -34,11 +34,10 @@ HB.instance Definition _ :=
   isCategory.Build nmodType (fun T : nmodType => T)
     GRing.semi_additive idfun_is_semi_additive comp_is_semi_additive.
 Notation NModules := [the category of nmodType].
-Fact Nmod_hom_additive a b (f : {hom NModules; a, b}) : GRing.semi_additive f.
-Proof. by case: f => [/= f [[]]]. Qed.
+
 (* TODO : warning uniform inheritance *)
 Coercion additive_of_Nmod a b (f : {hom NModules; a, b}) : {additive a -> b} :=
-  HB.pack (Hom.sort f) (GRing.isSemiAdditive.Build _ _ _ (Nmod_hom_additive f)).
+  HB.pack (Hom.sort f) (GRing.isSemiAdditive.Build _ _ _ (isHom_inhom f)).
 Lemma additive_of_NmodE a b (f : {hom NModules; a, b}) :
   @additive_of_Nmod a b f = f :> (_ -> _).
 Proof. by []. Qed.
@@ -59,7 +58,7 @@ End Morphism.
 HB.instance Definition _ :=
   @isFunctor.Build NModules Sets forget forget_mor
     (fun _ _ _ _ => id) (fun _ => frefl _) (fun _ _ _ _ _ => frefl _).
-Definition functor := [the {functor NModules -> Sets} of forget].
+Definition functor : {functor NModules -> Sets} := forget.
 
 End ForgetNModules_to_Sets.
 
@@ -77,13 +76,9 @@ HB.instance Definition _ :=
     GRing.semi_additive GRing.idfun_is_semi_additive comp_is_semi_additive.
 Notation ZModules := [the category of zmodType].
 
-Fact Zmodule_mor_additive a b (f : {hom ZModules; a, b}) :
-  GRing.semi_additive f.
-Proof. by case: f => [/= f [[]]]. Qed.
 (* TODO : warning uniform inheritance *)
 Coercion additive_of_Zmod a b (f : {hom ZModules; a, b}) : {additive a -> b} :=
-  HB.pack (Hom.sort f)
-    (GRing.isSemiAdditive.Build _ _ f (Zmodule_mor_additive f)).
+  HB.pack (Hom.sort f) (GRing.isSemiAdditive.Build _ _ f (isHom_inhom f)).
 Lemma additive_of_ZmodE a b (f : {hom ZModules; a, b}) :
   @additive_of_Zmod a b f = f :> (_ -> _).
 Proof. by []. Qed.
@@ -92,21 +87,16 @@ Proof. by []. Qed.
 Module ForgetZModules_to_NModules.
 
 Section Morphism.
-
 Variable (a b : zmodType) (f : {hom ZModules ; a, b}).
 Definition forget (T : zmodType) : nmodType := T.
-Let forget_fun : (a : nmodType) -> (b : nmodType) := f.
-HB.instance Definition _ :=
-  @isHom.Build NModules a b forget_fun (Zmodule_mor_additive f).
-Definition forget_mor : {hom NModules; a, b} :=
-  [the {hom NModules; (a : nmodType), b} of forget_fun].
-
+Definition forget_mor : (a : nmodType) -> (b : nmodType) := f.
+HB.instance Definition _ := @isHom.Build NModules a b forget_mor (isHom_inhom f).
 End Morphism.
 
 HB.instance Definition _ :=
   @isFunctor.Build ZModules NModules forget forget_mor
     (fun _ _ _ _ => id) (fun _ => frefl _) (fun _ _ _ _ _ => frefl _).
-Definition functor := [the {functor ZModules -> NModules} of forget].
+Definition functor : {functor ZModules -> NModules} := forget.
 
 End ForgetZModules_to_NModules.
 
@@ -123,7 +113,7 @@ Proof. by []. Qed.
 
 (* SemiRings ************************************************************)
 
-Definition semiring_morph (a b : semiRingType) (f : a -> b) : Prop:=
+Definition semiring_morph (a b : semiRingType) (f : a -> b) : Prop :=
   GRing.semi_additive f * GRing.multiplicative f.
 Fact idfun_is_semiring_morph (a : semiRingType) :
   semiring_morph (idfun : a -> a).
@@ -139,17 +129,11 @@ HB.instance Definition _ :=
     semiring_morph idfun_is_semiring_morph comp_is_semiring_morph.
 Notation SemiRings := [the category of semiRingType].
 
-Fact SemiRing_mor_additive a b (f : {hom SemiRings; a, b}) :
-  GRing.semi_additive f.
-Proof. by case: f => [/= f [[[]]]]. Qed.
-Fact SemiRing_mor_multiplicative a b (f : {hom SemiRings; a, b}) :
-  GRing.multiplicative f.
-Proof. by case: f => [/= f [[[]]]]. Qed.
 (* TODO : warning uniform inheritance *)
 Coercion rmorph_of_SRing a b (f : {hom SemiRings; a, b}) : {rmorphism a -> b} :=
   HB.pack (Hom.sort f)
-    (GRing.isSemiAdditive.Build _ _ _ (SemiRing_mor_additive f))
-    (GRing.isMultiplicative.Build _ _ _ (SemiRing_mor_multiplicative f)).
+    (GRing.isSemiAdditive.Build _ _ _ (fst (isHom_inhom f)))
+    (GRing.isMultiplicative.Build _ _ _ (snd (isHom_inhom f))).
 Lemma rmorph_of_SRingE a b (f : {hom SemiRings; a, b}) :
   @rmorph_of_SRing a b f = f :> (_ -> _).
 Proof. by []. Qed.
@@ -160,18 +144,16 @@ Section Morphism.
 
 Variable (a b : semiRingType) (f : {hom SemiRings ; a, b}).
 Definition forget (T : semiRingType) : nmodType := T.
-Let forget_fun : (a : nmodType) -> (b : nmodType) := f.
+Definition forget_mor : (a : nmodType) -> (b : nmodType) := f.
 HB.instance Definition _ :=
-  @isHom.Build NModules a b forget_fun (SemiRing_mor_additive f).
-Definition forget_mor : {hom NModules; a, b} :=
-  [the {hom NModules; (a : nmodType), b} of forget_fun].
+  @isHom.Build NModules a b forget_mor (fst (isHom_inhom f)).
 
 End Morphism.
 
 HB.instance Definition _ :=
   @isFunctor.Build SemiRings NModules forget forget_mor
     (fun _ _ _ _ => id) (fun _ => frefl _) (fun _ _ _ _ _ => frefl _).
-Definition functor := [the {functor SemiRings -> NModules} of forget].
+Definition functor : {functor SemiRings -> NModules} := forget.
 
 End ForgetSemiRings_to_NModules.
 
@@ -192,16 +174,10 @@ HB.instance Definition _ :=
   isCategory.Build ringType (fun T : ringType => T)
     semiring_morph idfun_is_semiring_morph comp_is_semiring_morph.
 Definition Rings := [the category of ringType].
-Fact Ring_mor_additive a b (f : {hom Rings; a, b}) :
-  GRing.semi_additive f.
-Proof. by case: f => [/= f [[[]]]]. Qed.
-Fact Ring_mor_multiplicative a b (f : {hom Rings; a, b}) :
-  GRing.multiplicative f.
-Proof. by case: f => [/= f [[[]]]]. Qed.
 Coercion rmorph_of_Ring a b (f : {hom Rings; a, b}) : {rmorphism a -> b} :=
   HB.pack (Hom.sort f)
-    (GRing.isSemiAdditive.Build _ _ _ (Ring_mor_additive f))
-    (GRing.isMultiplicative.Build _ _ _ (Ring_mor_multiplicative f)).
+    (GRing.isSemiAdditive.Build _ _ _ (fst (isHom_inhom f)))
+    (GRing.isMultiplicative.Build _ _ _ (snd (isHom_inhom f))).
 Lemma rmorph_of_RingE a b (f : {hom Rings; a, b}) :
   @rmorph_of_Ring a b f = f :> (_ -> _).
 Proof. by []. Qed.
@@ -212,11 +188,9 @@ Section Morphism.
 
 Variable (a b : ringType) (f : {hom Rings ; a, b}).
 Definition forget (T : ringType) : zmodType := T.
-Let forget_fun : (a : zmodType) -> (b : zmodType) := f.
+Definition forget_mor : (a : zmodType) -> (b : zmodType) := f.
 HB.instance Definition _ :=
-  @isHom.Build ZModules a b forget_fun (Ring_mor_additive f).
-Definition forget_mor : {hom ZModules; a, b} :=
-  [the {hom ZModules; (a : zmodType), b} of forget_fun].
+  @isHom.Build ZModules a b forget_mor (fst (isHom_inhom f)).
 
 End Morphism.
 
@@ -224,7 +198,7 @@ HB.instance Definition _ :=
   @isFunctor.Build Rings ZModules forget forget_mor
     (fun _ _ _ _ => id) (fun _ => frefl _) (fun _ _ _ _ _ => frefl _).
 
-Definition functor := [the {functor Rings -> ZModules} of forget].
+Definition functor : {functor Rings -> ZModules} := forget.
 
 End ForgetRings_to_ZModules.
 
@@ -239,38 +213,78 @@ Lemma forget_Rings_to_SetsE a b (f : {hom Rings; a, b}) :
 Proof. by []. Qed.
 
 
-
 (* ComSemiRings **********************************************************)
 
 HB.instance Definition _ :=
   isCategory.Build comSemiRingType (fun T : comSemiRingType => T)
     semiring_morph idfun_is_semiring_morph comp_is_semiring_morph.
 Definition ComSemiRings := [the category of comSemiRingType].
-(* Q : Should there be a coercion
-   {hom ComSemiRings; a, b} -> {hom SemiRings; a, b}
-(* Need forgetful functor to SemiRings *)
-Coercion rmorph_of_ComSRing a b (f : {hom ComSemiRings; a, b}) : {rmorphism a -> b} :=
-  HB.pack (Hom.sort f)
-    (GRing.isSemiAdditive.Build _ _ _ (SRing_hom_additive f))
-    (GRing.isMultiplicative.Build _ _ _ (SRing_hom_multiplicative f)).
-Lemma rmorph_of_SRingE a b (f : {hom SemiRings; a, b}) :
-  @rmorph_of_SRing a b f = f :> (_ -> _).
+
+Module ForgetComSemiRings_to_SemiRings.
+
+Section Morphism.
+
+Variable (a b : comSemiRingType) (f : {hom ComSemiRings ; a, b}).
+Definition forget (T : comSemiRingType) : semiRingType := T.
+Definition forget_mor : (a : semiRingType) -> (b : semiRingType) := f.
+HB.instance Definition _ :=
+  @isHom.Build SemiRings a b forget_mor (isHom_inhom f).
+
+End Morphism.
+
+HB.instance Definition _ :=
+  @isFunctor.Build ComSemiRings SemiRings forget forget_mor
+    (fun _ _ _ _ => id) (fun _ => frefl _) (fun _ _ _ _ _ => frefl _).
+Definition functor : {functor ComSemiRings -> SemiRings} := forget.
+
+End ForgetComSemiRings_to_SemiRings.
+
+Definition forget_ComSemiRings_to_SemiRings :=
+  ForgetComSemiRings_to_SemiRings.functor.
+Lemma forget_ComSemiRings_to_SemiRingsE a b (f : {hom ComSemiRings; a, b}) :
+  forget_ComSemiRings_to_SemiRings # f = f :> (_ -> _).
 Proof. by []. Qed.
+Coercion rmorph_of_ComSemiRing a b (f : {hom ComSemiRings; a, b}) :
+  {rmorphism a -> b} := forget_ComSemiRings_to_SemiRings # f.
+Lemma rmorph_of_ComSemiRingE a b (f : {hom ComSemiRings; a, b}) :
+  rmorph_of_ComSemiRing f = f :> (_ -> _).
+Proof. by []. Qed.
+
+(* Q : Should there be a coercion
+   {hom ComSemiRings; a, b} -> {hom SemiRings; a, b} *)
+
+
+(* ComRings **********************************************************)
 
 HB.instance Definition _ :=
   isCategory.Build comRingType (fun T : comRingType => T)
     semiring_morph  idfun_is_semiring_morph comp_is_semiring_morph.
-HB.instance Definition _ :=
-  isCategory.Build unitRingType (fun T : unitRingType => T)
-    semiring_morph  idfun_is_semiring_morph comp_is_semiring_morph.
-HB.instance Definition _ :=
-  isCategory.Build comUnitRingType (fun T : comUnitRingType => T)
-    semiring_morph  idfun_is_semiring_morph comp_is_semiring_morph.
-Definition ComSemiRings := [the category of comSemiRingType].
 Definition ComRings := [the category of comRingType].
-Definition UnitRings := [the category of unitRingType].
-Definition ComUnitRings := [the category of comUnitRingType].
- *)
+
+Module ForgetComRings_to_Rings.
+
+Section Morphism.
+
+Variable (a b : comRingType) (f : {hom ComRings ; a, b}).
+Definition forget (T : comRingType) : ringType := T.
+Definition forget_mor : (a : ringType) -> (b : ringType) := f.
+HB.instance Definition _ := @isHom.Build Rings a b forget_mor (isHom_inhom f).
+
+End Morphism.
+
+HB.instance Definition _ :=
+  @isFunctor.Build ComRings Rings forget forget_mor
+    (fun _ _ _ _ => id) (fun _ => frefl _) (fun _ _ _ _ _ => frefl _).
+Definition functor : {functor ComRings -> Rings} := forget.
+
+End ForgetComRings_to_Rings.
+
+Definition forget_ComRings_to_Rings := ForgetComRings_to_Rings.functor.
+Lemma forget_ComRings_to_RingsE a b (f : {hom ComRings; a, b}) :
+  forget_ComRings_to_Rings # f = f :> (_ -> _).
+Proof. by []. Qed.
+Coercion rmorph_of_comRing a b (f : {hom ComRings; a, b}) :
+  {rmorphism a -> b} := rmorph_of_Ring (forget_ComRings_to_Rings # f).
 
 
 (* L-Modules **********************************************************)
@@ -288,10 +302,8 @@ HB.instance Definition _ :=
     (fun a b (f : a -> b) => linear f) idfun_is_linear comp_is_linear.
 End LModules.
 Notation LModules R := [the category of lmodType R].
-Fact LModules_mor_linear R a b (f : {hom LModules R; a, b}) : linear f.
-Proof. by case: f => [/= f [[]]]. Qed.
 Coercion linear_of_LModules R a b (f : {hom LModules R; a, b}) : {linear a -> b} :=
-  HB.pack (Hom.sort f) (GRing.isLinear.Build _ _ _ _ _ (LModules_mor_linear f)).
+  HB.pack (Hom.sort f) (GRing.isLinear.Build _ _ _ _ _ (isHom_inhom f)).
 Lemma linear_of_LModulesE R a b (f : {hom LModules R; a, b}) :
   @linear_of_LModules R a b f = f :> (_ -> _).
 Proof. by []. Qed.
@@ -305,18 +317,15 @@ Qed.
 Module ForgetLModules_to_ZModules.
 
 Section BaseRing.
-
 Variable R : ringType.
 
 Section Morphism.
 
 Variables (a b : lmodType R) (f : {hom LModules R; a, b}).
 Definition forget (T : lmodType R) : zmodType := T.
-Let forget_fun : (a : zmodType) -> (b : zmodType) := f.
+Definition forget_mor : (a : zmodType) -> (b : zmodType) := f.
 HB.instance Definition _ :=
-  @isHom.Build ZModules a b forget_fun (LModules_mor_semi_additive f).
-Definition forget_mor : {hom ZModules; a, b} :=
-  [the {hom ZModules; (a : zmodType), b} of forget_fun].
+  @isHom.Build ZModules a b forget_mor (LModules_mor_semi_additive f).
 
 End Morphism.
 
@@ -325,7 +334,7 @@ HB.instance Definition _ :=
     (fun _ _ _ _ => id) (fun _ => frefl _) (fun _ _ _ _ _ => frefl _).
 End BaseRing.
 
-Definition functor R := [the {functor LModules R -> ZModules} of (@forget R)].
+Definition functor R : {functor LModules R -> ZModules} := @forget R.
 
 End ForgetLModules_to_ZModules.
 
@@ -362,15 +371,10 @@ HB.instance Definition _ :=
 End LAlgebras.
 Notation LAlgebras R := [the category of lalgType R].
 
-Fact LAlgebras_mor_linear R a b (f : {hom LAlgebras R; a, b}) : linear f.
-Proof. by case: f => [/= f [[[]]]]. Qed.
-Fact LAlgebras_mor_multiplicative R a b (f : {hom LAlgebras R; a, b}) :
-  GRing.multiplicative f.
-Proof. by case: f => [/= f [[[]]]]. Qed.
 Coercion lrmorphism_of_LAlgebras R a b (f : {hom LAlgebras R; a, b}) :
   {lrmorphism a -> b} := HB.pack (Hom.sort f)
-     (GRing.isLinear.Build _ _ _ _ _ (LAlgebras_mor_linear f))
-     (GRing.isMultiplicative.Build _ _ _ (LAlgebras_mor_multiplicative f)).
+     (GRing.isLinear.Build _ _ _ _ _ (fst (isHom_inhom f)))
+     (GRing.isMultiplicative.Build _ _ _ (snd (isHom_inhom f))).
 Lemma lrmorphism_of_LAlgebrasE R a b (f : {hom LAlgebras R; a, b}) :
   @lrmorphism_of_LAlgebras R a b f = f :> (_ -> _).
 Proof. by []. Qed.
@@ -385,18 +389,15 @@ Qed.
 Module ForgetLAlgebras_to_LModules.
 
 Section BaseRing.
-
 Variable R : ringType.
 
 Section Morphism.
 
 Variables (a b : lalgType R) (f : {hom LAlgebras R; a, b}).
 Definition forget (T : lalgType R) : lmodType R := T.
-Let forget_fun : (a : lmodType R) -> (b : lmodType R) := f.
+Definition forget_mor : (a : lmodType R) -> (b : lmodType R) := f.
 HB.instance Definition _ :=
-  @isHom.Build (LModules R) a b forget_fun (LAlgebras_mor_linear f).
-Definition forget_mor : {hom LModules R; a, b} :=
-  [the {hom LModules R; (a : lmodType R), b} of forget_fun].
+  @isHom.Build (LModules R) a b forget_mor (fst (isHom_inhom f)).
 
 End Morphism.
 
@@ -405,7 +406,7 @@ HB.instance Definition _ :=
     (fun _ _ _ _ => id) (fun _ => frefl _) (fun _ _ _ _ _ => frefl _).
 End BaseRing.
 
-Definition functor R := [the {functor LAlgebras R -> LModules R} of (@forget R)].
+Definition functor R : {functor LAlgebras R -> LModules R} := @forget R.
 
 End ForgetLAlgebras_to_LModules.
 
@@ -417,18 +418,15 @@ Proof. by []. Qed.
 Module ForgetLAlgebras_to_Rings.
 
 Section BaseRing.
-
 Variable R : ringType.
 
 Section Morphism.
 
 Variables (a b : lalgType R) (f : {hom LAlgebras R; a, b}).
 Definition forget (T : lalgType R) : ringType := T.
-Let forget_fun : (a : ringType) -> (b : ringType) := f.
+Definition forget_mor : (a : ringType) -> (b : ringType) := f.
 HB.instance Definition _ :=
-  @isHom.Build Rings a b forget_fun (LAlgebras_mor_rmorphism f).
-Definition forget_mor : {hom Rings; a, b} :=
-  [the {hom Rings; (a : ringType), b} of forget_fun].
+  @isHom.Build Rings a b forget_mor (LAlgebras_mor_rmorphism f).
 
 End Morphism.
 
@@ -446,29 +444,125 @@ Lemma forget_LAlgebras_to_RingsE R a b (f : {hom LAlgebras R; a, b}) :
   forget_LAlgebras_to_Rings R # f = f :> (_ -> _).
 Proof. by []. Qed.
 
+Lemma unicity_of_forget_ful_functors (R : ringType) :
+  forget_Rings_to_ZModules \O forget_LAlgebras_to_Rings R
+    =#= forget_LModules_to_ZModules R \O forget_LAlgebras_to_LModules R.
+Proof. exact: (@functor_ext _ _ _ _ (fun=> _)). Qed.
 
-(*
+
+(* Algebras ************************************************************)
+
 HB.instance Definition _ R :=
   isCategory.Build (algType R) (fun T : algType R => T)
     (fun a b (f : a -> b) => lalg_morph f)
     (@idfun_is_lalg_morph R) (@comp_is_lalg_morph R).
 Notation Algebras R := [the category of algType R].
+
+Module ForgetAlgebras_to_LAlgebras.
+
+Section BaseRing.
+Variable R : ringType.
+
+Section Morphism.
+
+Variables (a b : algType R) (f : {hom Algebras R; a, b}).
+Definition forget (T : algType R) : lalgType R := T.
+Definition forget_mor : (a : lalgType R) -> (b : lalgType R) := f.
+HB.instance Definition _ :=
+  @isHom.Build (LAlgebras R) a b forget_mor (isHom_inhom f).
+
+End Morphism.
+
+HB.instance Definition _ :=
+  @isFunctor.Build (Algebras R) (LAlgebras R) forget forget_mor
+    (fun _ _ _ _ => id) (fun _ => frefl _) (fun _ _ _ _ _ => frefl _).
+End BaseRing.
+
+Definition functor R : {functor Algebras R -> LAlgebras R} := @forget R.
+
+End ForgetAlgebras_to_LAlgebras.
+
+Definition forget_Algebras_to_LAlgebras := ForgetAlgebras_to_LAlgebras.functor.
+Lemma forget_Algebras_to_LAlgebrasE R a b (f : {hom Algebras R; a, b}) :
+  forget_Algebras_to_LAlgebras R # f = f :> (_ -> _).
+Proof. by []. Qed.
+Coercion lrmorphism_of_Algebras R a b (f : {hom Algebras R; a, b}) :
+  {lrmorphism a -> b} := forget_Algebras_to_LAlgebras R # f.
+Lemma lrmorphism_of_AlgebrasE R a b (f : {hom Algebras R; a, b}) :
+  lrmorphism_of_Algebras f = f :> (_ -> _).
+Proof. by []. Qed.
+
+
+(* ComAlgebras *****************************************************)
+
 HB.instance Definition _ R :=
   isCategory.Build (comAlgType R) (fun T : comAlgType R => T)
     (fun a b (f : a -> b) => lalg_morph f)
     (@idfun_is_lalg_morph R) (@comp_is_lalg_morph R).
 Notation ComAlgebras R := [the category of comAlgType R].
+
+Module ForgetComAlgebras_to_Algebras.
+
+Section BaseRing.
+Variable R : ringType.
+
+Section Morphism.
+
+Variables (a b : comAlgType R) (f : {hom ComAlgebras R; a, b}).
+Definition forget (T : comAlgType R) : algType R := T.
+Definition forget_mor : (a : algType R) -> (b : algType R) := f.
+HB.instance Definition _ :=
+  @isHom.Build (Algebras R) a b forget_mor (isHom_inhom f).
+
+End Morphism.
+
+HB.instance Definition _ :=
+  @isFunctor.Build (ComAlgebras R) (Algebras R) forget forget_mor
+    (fun _ _ _ _ => id) (fun _ => frefl _) (fun _ _ _ _ _ => frefl _).
+End BaseRing.
+
+Definition functor R : {functor ComAlgebras R -> Algebras R} := @forget R.
+
+End ForgetComAlgebras_to_Algebras.
+Definition forget_ComAlgebras_to_Algebras := ForgetComAlgebras_to_Algebras.functor.
+Lemma forget_ComAlgebras_to_AlgebrasE R a b (f : {hom ComAlgebras R; a, b}) :
+  forget_ComAlgebras_to_Algebras R # f = f :> (_ -> _).
+Proof. by []. Qed.
+Coercion lrmorphism_of_ComAlgebras R a b (f : {hom ComAlgebras R; a, b}) :
+  {lrmorphism a -> b} :=
+  lrmorphism_of_Algebras (forget_ComAlgebras_to_Algebras R # f).
+Lemma lrmorphism_of_ComAlgebrasE R a b (f : {hom ComAlgebras R; a, b}) :
+  lrmorphism_of_ComAlgebras f = f :> (_ -> _).
+Proof. by []. Qed.
+
+
+(*
+HB.instance Definition _ :=
+  isCategory.Build unitRingType (fun T : unitRingType => T)
+    semiring_morph idfun_is_semiring_morph comp_is_semiring_morph.
+Notation UnitRings := [the category of unitRingType].
+
+HB.instance Definition _ :=
+  isCategory.Build comUnitRingType (fun T : comUnitRingType => T)
+    semiring_morph idfun_is_semiring_morph comp_is_semiring_morph.
+Notation ComUnitRings := [the category of comUnitRingType].
+
 HB.instance Definition _ R :=
   isCategory.Build (unitAlgType R) (fun T : unitAlgType R => T)
     (fun a b (f : a -> b) => lalg_morph f)
     (@idfun_is_lalg_morph R) (@comp_is_lalg_morph R).
 Notation UnitAlgebras R := [the category of unitAlgType R].
+
 HB.instance Definition _ R :=
   isCategory.Build (comUnitAlgType R) (fun T : comUnitAlgType R => T)
     (fun a b (f : a -> b) => lalg_morph f)
     (@idfun_is_lalg_morph R) (@comp_is_lalg_morph R).
 Notation ComUnitAlgebras R := [the category of comUnitAlgType R].
 *)
+
+
+
+(** Adjonction between forget : NModules -> Sets and free N-Modules *)
 
 Local Open Scope ring_scope.
 Local Open Scope mset_scope.
@@ -489,9 +583,9 @@ rewrite /hom_mset; split => [| /= x y]; first by rewrite big_mset0.
 apply msetP => u /=; rewrite msetDE !mset_sum !sum_mset.
 under eq_bigr => i _ do rewrite msetDE natrDE mulnDl.
 rewrite natrDE big_split /=; congr (_ + _)%N.
-  apply: finsupp_widen => i.
+  apply: finsupp_widenD => i.
   by rewrite msuppE -mset_eq0 => /eqP -> /[!mul0n].
-rewrite addrC; apply: finsupp_widen => i.
+rewrite addrC; apply: finsupp_widenD => i.
 by rewrite msuppE -mset_eq0 => /eqP -> /[!mul0n].
 Qed.
 
@@ -523,6 +617,8 @@ HB.instance Definition _ :=
     FreeNmod FreeNmod_mor FreeNmod_ext FreeNmod_id FreeNmod_comp.
 
 Section Adjoint.
+
+Definition functor_FreeNmod : {functor Sets -> NModules} := FreeNmod.
 
 Implicit Types (a : choiceType) (T : nmodType).
 

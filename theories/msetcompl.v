@@ -69,32 +69,37 @@ Section Widen.
 Variables (R : Type) (idx : R) (op : Monoid.com_law idx).
 Implicit Types (X Y : {mset K}) (P : pred K) (F : K -> R).
 
-Lemma finsupp_widen X Y F :
+Lemma finsupp_widen X (S : {fset K}) F :
+  (forall i, i \notin finsupp X -> F i = idx) ->
+  {subset finsupp X <= S} ->
+  (\big[op/idx]_(i <- S) F i) = (\big[op/idx]_(i <- finsupp X) F i).
+Proof.
+move=> H sub.
+rewrite [LHS](bigID (fun i => i \in finsupp X)) /=.
+rewrite [X in (op _ X)]big1 // Monoid.mulm1.
+apply: eq_fbig_cond => // i; rewrite !inE /= andbT.
+by case: (boolP (i \in finsupp X)); rewrite /= ?andbF ?andbT // => /sub ->.
+Qed.
+
+Lemma finsupp_widenD X Y F :
   (forall i, i \notin finsupp X -> F i = idx) ->
   (\big[op/idx]_(i <- finsupp (X + Y)%R) F i) = (\big[op/idx]_(i <- finsupp X) F i).
-Proof.
-move=> H.
-rewrite (bigID (fun i => i \in finsupp X)) /=.
-rewrite [X in (op _ X)]big1 // Monoid.mulm1.
-apply: eq_fbig_cond => // i.
-rewrite !inE /= andbT.
-case: (boolP (i \in finsupp X)); rewrite /= ?andbF ?andbT //.
-by rewrite !msuppE in_msetD => ->.
-Qed.
+Proof. by move/finsupp_widen; apply=> x; rewrite !msuppE in_msetD => ->. Qed.
+
 
 End Widen.
 
 Variables (R : Type) (idx : R) (op : Monoid.com_law idx).
 Implicit Types (X Y : {mset K}) (P : pred K) (F : K -> R).
 
-Lemma perm_cat_mseq X Y : perm_eq (enum_mset (X + Y)) (X ++ Y).
+Lemma perm_enum_mseqD X Y : perm_eq (enum_mset (X + Y)) (X ++ Y).
 Proof.
 rewrite unlock; apply/permP => i.
 rewrite count_cat !count_flatten !sumnE !big_map -natrDE.
-have cout (Z : {mset K}) j : j \notin finsupp Z -> count i (nseq (Z j) j) = 0.
+have cnotin (Z : {mset K}) j : j \notin finsupp Z -> count i (nseq (Z j) j) = 0.
   by rewrite count_nseq msuppE -mset_eq0 => /eqP -> /[!muln0].
-rewrite -(@finsupp_widen nat 0 _ X Y _ (cout X)) //=.
-rewrite -(@finsupp_widen nat 0 _ Y X _ (cout Y)) //= [Y + X]msetDC.
+rewrite -(@finsupp_widenD nat 0 _ X Y _ (cnotin X)) //=.
+rewrite -(@finsupp_widenD nat 0 _ Y X _ (cnotin Y)) //= [Y + X]msetDC.
 rewrite -[RHS]big_split /=; apply eq_bigr => j _.
 by rewrite msetDE nseqD count_cat.
 Qed.
@@ -102,6 +107,6 @@ Qed.
 Lemma big_msetD X Y P F:
   \big[op/idx]_(i <- (X + Y : {mset K}) | P i) F i =
     op (\big[op/idx]_(i <- X | P i) F i) (\big[op/idx]_(i <- Y | P i) F i).
-Proof. by rewrite -big_cat; apply: (perm_big _ (perm_cat_mseq X Y)). Qed.
+Proof. by rewrite -big_cat; apply: (perm_big _ (perm_enum_mseqD X Y)). Qed.
 
 End MsetComplement.
