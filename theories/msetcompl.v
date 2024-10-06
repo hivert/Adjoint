@@ -13,6 +13,7 @@ Import GRing.Theory.
 Local Open Scope ring_scope.
 Local Open Scope mset_scope.
 
+
 HB.instance Definition _ (S : choiceType) := Choice.on {mset S}.
 HB.instance Definition _ (S : choiceType) :=
   GRing.isNmodule.Build {mset S} msetDA msetDC mset0D.
@@ -110,3 +111,109 @@ Lemma big_msetD X Y P F:
 Proof. by rewrite -big_cat; apply: (perm_big _ (perm_enum_mseqD X Y)). Qed.
 
 End MsetComplement.
+
+Local Close Scope mset_scope.
+
+Local Open Scope fset_scope.
+
+
+Definition freeLModule (R : nmodType) (T : choiceType) :=
+  {fsfun T -> R with 0}.
+Definition freeLModule_of (R : nmodType) (T : choiceType) of phant T :=
+  @freeLModule R T.
+Notation "{ 'freemod' R [ T ] }" := (freeLModule R T).
+
+Identity Coercion fm_fm_of : freeLModule_of >-> freeLModule.
+
+Notation "[ 'fm[' key ] x 'in' aT => F ]" :=
+  ([fsfun[key] x in aT => F] : {freemod _[_]})
+  (at level 0, x ident, only parsing).
+Notation "[ 'fm' x 'in' aT => F ]" := ([fsfun x in aT => F] : {freemod _[_]})
+  (at level 0, x ident, only parsing).
+Notation "[ 'fm' x 'in' aT => F ]" := ([fsfun[_] x in aT => F] : {freemod _[_]})
+  (at level 0, x ident, format "[ 'fm'  x  'in'  aT  =>  F ]").
+
+
+HB.instance Definition _ (R : nmodType) (T : choiceType) :=
+  Choice.on {freemod R[T]}.
+
+Section OnNModule.
+
+Variables (R : nmodType) (T : choiceType).
+Implicit Types (a b c : R) (f g h : {freemod R[T]}) (x y z : T).
+
+Fact addfm_key : unit. Proof. exact: tt. Qed.
+Definition addfm f g : {freemod R[T]} :=
+  [fm[addfm_key] x in finsupp f `|` finsupp g => (f x + g x)%R].
+
+Lemma addfmE f g x : addfm f g x = (f x + g x)%R.
+Proof.
+rewrite fsfun_fun in_fsetU.
+case: (finsuppP f); case: (finsuppP g) => _ _ //=.
+by rewrite addr0.
+Qed.
+
+Fact addfmA : associative addfm.
+Proof. by move=> f g h; apply/fsfunP => x; rewrite !addfmE addrA. Qed.
+Fact addfmC : commutative addfm.
+Proof. by move=> f g; apply/fsfunP => x; rewrite !addfmE addrC. Qed.
+Fact add0fm : left_id [fsfun with 0%R] addfm.
+Proof. by move=> f; apply/fsfunP => x; rewrite addfmE /= fsfun0E add0r. Qed.
+HB.instance Definition _ :=
+  GRing.isNmodule.Build {freemod R[T]} addfmA addfmC add0fm.
+
+End OnNModule.
+
+Section OnZModule.
+
+Variables (R : zmodType) (T : choiceType).
+Implicit Types (a b c : R) (f g h : {freemod R[T]}) (x y z : T).
+
+Fact oppfm_key : unit. Proof. exact: tt. Qed.
+Definition oppfm f : {freemod R[T]} :=
+  [fm[oppfm_key] x in finsupp f => (-f x)%R].
+
+Lemma oppfmE f x : oppfm f x = -(f x)%R.
+Proof. by rewrite fsfun_fun; case: (finsuppP f) => //=; rewrite oppr0. Qed.
+
+Fact addNfm : left_inverse 0 oppfm +%R.
+Proof.
+by move=> f; apply/fsfunP => x; rewrite addfmE oppfmE addNr fsfun0E.
+Qed.
+HB.instance Definition _ :=
+  GRing.Nmodule_isZmodule.Build {freemod R[T]} addNfm.
+
+End OnZModule.
+
+Section OnRing.
+
+Variables (R : ringType) (T : choiceType).
+Implicit Types (a b c : R) (f g h : {freemod R[T]}) (x y z : T).
+
+Fact scalefm_key : unit. Proof. exact: tt. Qed.
+Definition scalefm c f : {freemod R[T]} :=
+  [fm[scalefm_key] x in finsupp f => (c * f x)%R].
+
+Lemma scalefmE c f x : scalefm c f x = (c * f x).
+Proof. by rewrite fsfun_fun; case: (finsuppP f); rewrite //= mulr0. Qed.
+
+Fact scalefmA a b  f : scalefm a (scalefm b f) = scalefm (a * b) f.
+Proof. by apply/fsfunP => x; rewrite !scalefmE mulrA. Qed.
+Fact scale1fm : left_id 1%R scalefm.
+Proof. by move=> f; apply/fsfunP => x; rewrite !scalefmE mul1r. Qed.
+Fact scalefmDr : right_distributive scalefm +%R.
+Proof.
+move=> a f g; apply/fsfunP => x.
+by rewrite !(addfmE, scalefmE) /= mulrDr.
+Qed.
+Fact scalefmDl f : {morph scalefm^~ f: a b / (a + b)%R}.
+Proof.
+move=> a b; apply/fsfunP => x.
+by rewrite !(addfmE, scalefmE) /= mulrDl.
+Qed.
+
+HB.instance Definition _ :=
+  GRing.Zmodule_isLmodule.Build R {freemod R[T]}
+    scalefmA scale1fm scalefmDr scalefmDl.
+
+End OnRing.
