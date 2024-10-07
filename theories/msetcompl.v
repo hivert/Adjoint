@@ -50,7 +50,8 @@ Notation "[ 'fm[' key ] x 'in' aT => F ]" :=
 Notation "[ 'fm' x 'in' aT => F ]" :=
   ([fsfun[fm_key] x in aT => F] : {freemod _[_]})
   (at level 0, x ident, format "[ 'fm'  x  'in'  aT  =>  F ]").
-Notation "[ 'fm' i => j ]" := [fm x in [fset i]%fset => j].
+Notation "[ 'fm' i => j ]" := [fm x in [fset i]%fset => j]
+  (at level 0, format "[ 'fm'  i  =>  j ]").
 
 Lemma fm1E (R : nmodType) (T : choiceType) (i j : T) (r : R) :
   [fm i => r] j = if j == i then r else 0.
@@ -140,6 +141,7 @@ HB.instance Definition _ :=
 
 End OnZModule.
 
+
 Section OnRing.
 
 Variables (R : ringType) (T : choiceType).
@@ -177,14 +179,17 @@ apply/fsetP => y; rewrite !inE mem_finsupp fm1E.
 by case: (y == x); rewrite ?eqxx ?oner_neq0.
 Qed.
 
+Lemma fm1ZE x c : [fm x => c] = c *: [fm x => 1].
+Proof.
+apply/fsfunP => y; rewrite scalefmE !fm1E.
+by case: (y == x); rewrite ?mulr0 ?mulr1.
+Qed.
+
 Lemma linear_fmE (M : lmodType R) (f g : {linear {freemod R[T]} -> M}) :
   (forall x : T, f [fm x => 1] = g [fm x => 1]) -> f =1 g.
 Proof.
 move=> eqfg m; rewrite -(fmE m) !linear_sum; apply eq_bigr=> x _.
-suff -> : [fm x => m x] = (m x) *: [fm x => 1].
-  by rewrite !linearZ /= eqfg.
-apply/fsfunP => y; rewrite scalefmE !fm1E.
-by case: (y == x); rewrite ?mulr0 ?mulr1.
+by rewrite fm1ZE !linearZ /= eqfg.
 Qed.
 
 End OnRing.
@@ -212,9 +217,7 @@ Local Notation coefm a := (mset_head tt a).
 Fact coefm_is_additive a : semi_additive (coefm a).
 Proof.
 split; rewrite /mset_head /= ?mset0E // => A B.
-rewrite fsfunE inE.
-by case: (boolP (a \in finsupp A)); case: (boolP (a \in finsupp B));
-  rewrite !msuppE //= => /mset_eq0P -> /mset_eq0P ->.
+by rewrite -(@fmDE nat K A B a) !fsfunE.
 Qed.
 HB.instance Definition _ a :=
   GRing.isSemiAdditive.Build {mset K} nat _ (coefm_is_additive a).
