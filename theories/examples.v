@@ -28,11 +28,11 @@ Notation Sets := [the category of choiceType].
 
 Definition idfun_is_semi_additive := GRing.idfun_is_semi_additive.
 Fact comp_is_semi_additive (a b c : nmodType) (f : a -> b) (g : b -> c) :
-  GRing.semi_additive f -> GRing.semi_additive g -> GRing.semi_additive (g \o f).
+  semi_additive f -> semi_additive g -> semi_additive (g \o f).
 Proof. by move=> fM gM; split => [|x y]; rewrite /= fM gM. Qed.
 HB.instance Definition _ :=
   isCategory.Build nmodType (fun T : nmodType => T)
-    GRing.semi_additive idfun_is_semi_additive comp_is_semi_additive.
+    semi_additive idfun_is_semi_additive comp_is_semi_additive.
 Notation NModules := [the category of nmodType].
 #[warning="-uniform-inheritance"]
 Coercion additive_of_Nmod a b (f : {hom NModules; a, b}) : {additive a -> b} :=
@@ -44,7 +44,7 @@ Proof. by []. Qed.
 Module ForgetNModules_to_Sets.
 
 Section Morphism.
-Variable (a b : nmodType) (f : {hom NModules ; a, b}).
+Variable (a b : nmodType) (f : {hom NModules; a, b}).
 Definition forget (T : nmodType) : choiceType := T.
 HB.instance Definition _ :=
   @isHom.Build Sets a b (f : (a : choiceType) -> b) I.
@@ -69,7 +69,7 @@ Proof. by []. Qed.
 (* Full subcategory of N-module *)
 HB.instance Definition _ :=
   isCategory.Build zmodType (fun T : zmodType => T)
-    GRing.semi_additive GRing.idfun_is_semi_additive comp_is_semi_additive.
+    semi_additive idfun_is_semi_additive comp_is_semi_additive.
 Notation ZModules := [the category of zmodType].
 
 #[warning="-uniform-inheritance"]
@@ -83,7 +83,7 @@ Proof. by []. Qed.
 Module ForgetZModules_to_NModules.
 
 Section Morphism.
-Variable (a b : zmodType) (f : {hom ZModules ; a, b}).
+Variable (a b : zmodType) (f : {hom ZModules; a, b}).
 Definition forget (T : zmodType) : nmodType := T.
 Definition forget_mor : (a : nmodType) -> (b : nmodType) := f.
 HB.instance Definition _ := @isHom.Build NModules a b forget_mor (isHom_inhom f).
@@ -109,7 +109,7 @@ Proof. by []. Qed.
 (* SemiRings ************************************************************)
 
 Definition semiring_morph (a b : semiRingType) (f : a -> b) : Prop :=
-  GRing.semi_additive f * GRing.multiplicative f.
+  semi_additive f * multiplicative f.
 Fact idfun_is_semiring_morph (a : semiRingType) :
   semiring_morph (idfun : a -> a).
 Proof. by []. Qed.
@@ -136,7 +136,7 @@ Proof. by []. Qed.
 Module ForgetSemiRings_to_NModules.
 
 Section Morphism.
-Variable (a b : semiRingType) (f : {hom SemiRings ; a, b}).
+Variable (a b : semiRingType) (f : {hom SemiRings; a, b}).
 Definition forget (T : semiRingType) : nmodType := T.
 Definition forget_mor : (a : nmodType) -> (b : nmodType) := f.
 HB.instance Definition _ :=
@@ -178,7 +178,7 @@ Proof. by []. Qed.
 Module ForgetRings_to_ZModules.
 
 Section Morphism.
-Variable (a b : ringType) (f : {hom Rings ; a, b}).
+Variable (a b : ringType) (f : {hom Rings; a, b}).
 Definition forget (T : ringType) : zmodType := T.
 Definition forget_mor : (a : zmodType) -> (b : zmodType) := f.
 HB.instance Definition _ :=
@@ -212,7 +212,7 @@ Definition ComSemiRings := [the category of comSemiRingType].
 Module ForgetComSemiRings_to_SemiRings.
 
 Section Morphism.
-Variable (a b : comSemiRingType) (f : {hom ComSemiRings ; a, b}).
+Variable (a b : comSemiRingType) (f : {hom ComSemiRings; a, b}).
 Definition forget (T : comSemiRingType) : semiRingType := T.
 Definition forget_mor : (a : semiRingType) -> (b : semiRingType) := f.
 HB.instance Definition _ :=
@@ -251,7 +251,7 @@ Definition ComRings := [the category of comRingType].
 Module ForgetComRings_to_Rings.
 
 Section Morphism.
-Variable (a b : comRingType) (f : {hom ComRings ; a, b}).
+Variable (a b : comRingType) (f : {hom ComRings; a, b}).
 Definition forget (T : comRingType) : ringType := T.
 Definition forget_mor : (a : ringType) -> (b : ringType) := f.
 HB.instance Definition _ := @isHom.Build Rings a b forget_mor (isHom_inhom f).
@@ -288,15 +288,15 @@ HB.instance Definition _ :=
 End LModules.
 Notation LModules R := [the category of lmodType R].
 #[warning="-uniform-inheritance"]
-Coercion linear_of_LModules R a b (f : {hom LModules R; a, b}) : {linear a -> b} :=
+Coercion linear_of_Lmod R a b (f : {hom LModules R; a, b}) : {linear a -> b} :=
   HB.pack (Hom.sort f) (GRing.isLinear.Build _ _ _ _ _ (isHom_inhom f)).
-Lemma linear_of_LModulesE R a b (f : {hom LModules R; a, b}) :
-  @linear_of_LModules R a b f = f :> (_ -> _).
+Lemma linear_of_LmodE R a b (f : {hom LModules R; a, b}) :
+  @linear_of_Lmod R a b f = f :> (_ -> _).
 Proof. by []. Qed.
 Fact LModules_mor_semi_additive R a b (f : {hom LModules R; a, b}) :
-  GRing.semi_additive f.
+  semi_additive f.
 Proof.
-rewrite -linear_of_LModulesE; split => [| x y]; first by rewrite raddf0.
+rewrite -linear_of_LmodE; split => [| x y]; first by rewrite raddf0.
 by rewrite raddfD.
 Qed.
 
@@ -336,7 +336,7 @@ Section LAlgebras.
 
 Variable (R : ringType).
 Definition lalg_morph (a b : lalgType R) (f : a -> b) : Prop:=
-  linear f * GRing.multiplicative f.
+  linear f * multiplicative f.
 Fact idfun_is_lalg_morph (a : lalgType R) :
   lalg_morph (idfun : a -> a).
 Proof. by []. Qed.
@@ -538,9 +538,9 @@ Local Open Scope mset_scope.
 
 Section Set_to_FreeNmodule.
 
-Variable (a b : choiceType) (f : {hom Sets ; a, b}).
+Variable (a b : choiceType) (f : {hom Sets; a, b}).
 
-Definition hom_mset (m : {mset a}) : [the nmodType of {mset b}] :=
+Definition hom_mset (m : {mset a}) : {mset b} :=
   \sum_(i <- m) [mset f i].
 
 Lemma hom_mset1 x : hom_mset [mset x] = [mset f x].
@@ -596,7 +596,8 @@ Definition eta : FId ~~> forget_NModules_to_Sets \o FreeNmod := eta_fun.
 Fact eta_natural : naturality FId (forget_NModules_to_Sets \o FreeNmod) eta.
 Proof. by move=> /= a b h x /=; rewrite /eta_fun FIdf hom_mset1. Qed.
 HB.instance Definition _ :=
-  @isNatural.Build Sets Sets FId (forget_NModules_to_Sets \o FreeNmod) eta eta_natural.
+  @isNatural.Build Sets Sets FId
+    (forget_NModules_to_Sets \o FreeNmod) eta eta_natural.
 
 Let eps_fun T (m : (FreeNmod \o forget_NModules_to_Sets) T) : T :=
       \sum_(i <- m : {mset _}) i.
@@ -616,8 +617,8 @@ rewrite -!additive_of_NmodE; apply: additive_msetE => /= x.
 by rewrite FIdf /eps_fun /hom_mset /= !big_msetn.
 Qed.
 HB.instance Definition _ :=
-  @isNatural.Build NModules NModules (FreeNmod \o forget_NModules_to_Sets) FId
-    eps eps_natural.
+  @isNatural.Build NModules NModules
+    (FreeNmod \o forget_NModules_to_Sets) FId eps eps_natural.
 
 Fact triL : TriangularLaws.left eta eps.
 Proof.
@@ -658,3 +659,76 @@ by rewrite eq univmapP.
 Qed.
 
 End UniversalProperty.
+
+
+(** Adjonction between forget : L-Modules -> Sets and free L-Modules *)
+
+Section Set_to_FreeLmodule.
+
+Variable R : ringType.
+
+Variable (a b : choiceType) (f : {hom Sets; a, b}).
+
+Definition hom_fm (m : {freemod R[a]}) : {freemod R[b]} :=
+  \sum_(i <- finsupp m) [fm f i => m i].
+
+Fact hom_fm_linear : linear hom_fm.
+Proof.
+rewrite /hom_fm => c /= m n; rewrite scaler_sumr.
+rewrite -!(finsupp_widen _ (S := finsupp m `|` finsupp n)%fset) /=.
+- rewrite -big_split /=; apply: eq_bigr => x _.
+  apply/fsfunP => y; rewrite !addfmE !scalefmE !fm1E.
+  by case: eqP => // _; rewrite addr0 mulr0.
+- move=> i /[!memNfinsupp] /eqP ->.
+  by apply/fsfunP => y; rewrite !fm1E if_same fsfunE.
+- by move=> x; rewrite inE orbC => ->.
+- move=> i /[!memNfinsupp] /eqP ->.
+  by apply/fsfunP => y; rewrite scalefmE !fm1E if_same fsfunE mulr0.
+- by move=> x; rewrite inE => ->.
+- move=> i /[!memNfinsupp] /eqP ->.
+  by apply/fsfunP => y; rewrite !fm1E if_same fsfunE.
+- move=> x; rewrite inE; apply contraLR.
+  rewrite negb_or !memNfinsupp addfmE scalefmE => /andP [/eqP -> /eqP ->].
+  by rewrite mulr0 addr0.
+Qed.
+
+End Set_to_FreeLmodule.
+
+Section Functor.
+Variable (R : ringType).
+
+HB.instance Definition _ (a b : Sets) (f : {hom Sets; a, b}) :=
+  @isHom.Build (LModules R) {freemod R[a]} {freemod R[b]}
+    (hom_fm f : [the lmodType R of {freemod R[a]}] ->
+                [the lmodType R of {freemod R[b]}])
+    (hom_fm_linear f).
+Definition freeLmod_mor (a b : Sets) (f : a -> b) :=
+  [the {hom LModules R; {freemod R[a]}, {freemod R[b]}} of hom_fm f].
+
+Fact freeLmod_ext : FunctorLaws.ext freeLmod_mor.
+Proof.
+move=> /= a b f g eq y; rewrite /hom_mset.
+by apply eq_bigr => x _; rewrite eq.
+Qed.
+Fact freeLmod_id : FunctorLaws.id freeLmod_mor.
+Proof.
+move=> /= a x /=; rewrite /hom_mset /= -[RHS]fmE.
+by rewrite /hom_fm; apply: eq_bigr => i _.
+Qed.
+Fact freeLmod_comp  : FunctorLaws.comp freeLmod_mor.
+Proof.
+move=> /= a b c f g.
+rewrite -!linear_of_LmodE; apply: linear_fmE => /= x.
+by rewrite /hom_fm /= !(finsupp_fm1, big_seq_fset1, fm1E, eqxx).
+Qed.
+
+Check @isFunctor.Build Sets (LModules R)
+    (@freeLmod R) freeLmod_mor freeLmod_ext freeLmod_id freeLmod_comp.
+
+HB.instance Definition _ :=
+  @isFunctor.Build Sets (LModules R)
+    (@freeLmod R) freeLmod_mor freeLmod_ext freeLmod_id freeLmod_comp.
+
+End Functor.
+
+
