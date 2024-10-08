@@ -639,7 +639,7 @@ End Adjoint.
 
 Section UniversalProperty.
 
-Variable  (A : choiceType) (M : nmodType) (f : A -> M).
+Variables (A : choiceType) (M : nmodType) (f : A -> M).
 
 Definition univmap : {additive {mset A} -> M} :=
   eps M \o FreeNmod # f : {hom FreeNmod A, M}.
@@ -670,6 +670,9 @@ Variable (a b : choiceType) (f : {hom Sets; a, b}).
 
 Definition hom_fm (m : {freemod R[a]}) : {freemod R[b]} :=
   \sum_(i <- finsupp m) [fm f i => m i].
+
+Lemma hom_fm1 (x : a) : hom_fm [fm x => 1] = [fm f x => 1].
+Proof. by rewrite /hom_fm finsupp_fm1 /= big_seq_fset1 fm1E eqxx. Qed.
 
 Fact hom_fm_linear : linear hom_fm.
 Proof.
@@ -721,13 +724,103 @@ rewrite -!linear_of_LmodE; apply: linear_fmE => /= x.
 by rewrite /hom_fm /= !(finsupp_fm1, big_seq_fset1, fm1E, eqxx).
 Qed.
 
-Check @isFunctor.Build Sets (LModules R)
-    (@freeLmod R) freeLmod_mor freeLmod_ext freeLmod_id freeLmod_comp.
-
+Definition functor_freeLmod a : lmodType R := {freemod R[a]}.
 HB.instance Definition _ :=
-  @isFunctor.Build Sets (LModules R)
-    (@freeLmod R) freeLmod_mor freeLmod_ext freeLmod_id freeLmod_comp.
+  @isFunctor.Build Sets (LModules R) functor_freeLmod
+     freeLmod_mor freeLmod_ext freeLmod_id freeLmod_comp.
 
 End Functor.
+
+Section Adjoint.
+
+Variable R : ringType.
+Implicit Types (a : choiceType) (T : lmodType R).
+Local Notation fmf := (@functor_freeLmod R).
+Local Notation forgetf := (forget_LModules_to_Sets R).
+Let eta_fun a (x : a) : {freemod R[a]} := [fm x => 1].
+Definition eta_fm : FId ~~> forgetf \o fmf := eta_fun.
+Fact eta_fm_natural : naturality FId (forgetf \o fmf) eta_fm.
+Proof. by move=> /= a b h x /=; rewrite /eta_fun FIdf hom_fm1. Qed.
+HB.instance Definition _ :=
+  @isNatural.Build Sets Sets FId
+    (forgetf \o fmf) eta_fm eta_fm_natural.
+
+Let eps_fun T (m : (fmf \o forgetf) T) : T :=
+      \sum_(i <- finsupp (m : {freemod R[_]})) (m i) *: i.
+Fact eps_fun_linear T : linear (@eps_fun T).
+Proof.
+rewrite /eps_fun => c s t; rewrite scaler_sumr.
+rewrite -!(finsupp_widen _ (S := finsupp s `|` finsupp t)%fset) /=.
+- rewrite -big_split /=; apply: eq_bigr => x _.
+  by rewrite addfmE scalefmE scalerDl scalerA.
+- by move=> i /[!memNfinsupp] /eqP ->; rewrite scale0r.
+- by move=> x; rewrite inE orbC => ->.
+- by move=> i /[!memNfinsupp] /eqP ->; rewrite scale0r scaler0.
+- by move=> x; rewrite inE => ->.
+- by move=> i /[!memNfinsupp] /eqP ->; rewrite scale0r.
+- move=> x; rewrite inE; apply contraLR.
+  rewrite negb_or !memNfinsupp addfmE scalefmE => /andP [/eqP -> /eqP ->].
+  by rewrite mulr0 addr0.
+Qed.
+HB.instance Definition _ T :=
+  isHom.Build (LModules R) ((fmf \o forgetf) T) (FId T)
+    (@eps_fun T) (@eps_fun_linear T).
+Definition eps_fm : fmf \o forgetf ~~> FId := eps_fun.
+Fact eps_fm_natural : naturality (fmf \o forgetf) FId eps_fm.
+Proof.
+move=> /= a b h.
+rewrite -!linear_of_LmodE; apply: linear_fmE => /= x.
+rewrite FIdf /eps_fun /= hom_fm1.
+by rewrite !finsupp_fm1 !big_seq_fset1 !fm1E !eqxx !scale1r.
+Qed.
+HB.instance Definition _ :=
+  @isNatural.Build (LModules R) (LModules R)
+    (fmf \o forgetf) FId eps_fm eps_fm_natural.
+
+Fact triL_fm : TriangularLaws.left eta_fm eps_fm.
+Proof.
+move=> /= a.
+rewrite -!linear_of_LmodE; apply: linear_fmE => /= x.
+rewrite /eta_fun /= /eps_fun /= hom_fm1.
+by rewrite !finsupp_fm1 !big_seq_fset1 !fm1E !eqxx !scale1r.
+Qed.
+Fact triR_fm : TriangularLaws.right eta_fm eps_fm.
+Proof.
+move=> /= M m; rewrite /eta_fun /= /eps_fun.
+by rewrite finsupp_fm1 big_seq_fset1 fm1E eqxx scale1r.
+Qed.
+
+Let F : {functor Sets -> LModules R} := functor_freeLmod R.
+Let G : {functor LModules R -> Sets} := forget_LModules_to_Sets R.
+
+Definition adj_FreeLmod_forget : F -| G :=
+  AdjointFunctors.mk triL_fm triR_fm.
+
+End Adjoint.
+
+Section UniversalProperty.
+
+Variable (R : ringType).
+
+Variables (A : choiceType) (M : lmodType R) (f : A -> M).
+
+Definition univmap_fm : {linear {freemod R[A]} -> M} :=
+  eps_fm M \o (functor_freeLmod R) # f : {hom _, M}.
+
+Lemma univmap_fmP a : univmap_fm [fm a => 1] = f a.
+Proof.
+rewrite /univmap_fm -[[fm a => 1]]/(eta_fm R A a) /= !hom_fm1.
+exact: triR_fm.
+Qed.
+
+Lemma univmap_fm_uniq (g : {linear {freemod R[A]} -> M}) :
+  (forall a : A, g [fm a => 1] = f a) -> g =1 univmap_fm.
+Proof.
+move=> eq m.
+rewrite -(fmE m) !raddf_sum; apply eq_bigr => x _.
+by rewrite fm1ZE [LHS]linearZ [RHS]linearZ eq univmap_fmP.
+Qed.
+
+End UniversalProperty.
 
 
