@@ -73,6 +73,9 @@ Local Open Scope category_scope.
 
 Lemma compfid A B (f : A -> B) : f \o id = f. Proof. by []. Qed.
 Lemma compidf A B (f : A -> B) : id \o f = f. Proof. by []. Qed.
+(* Help to rewrite with compositions *)
+Lemma compapp A B C (f : A -> B) (g : B -> C) (a : A) :
+  (g \o f) a = g (f a). Proof. by []. Qed.
 
 (* opaque ssrfun.frefl blocks some proofs involving functor_ext *)
 #[global]
@@ -419,7 +422,7 @@ exact: nat_t a b h (f x).
 Qed.
 
 Definition eq_nattrans (phi psi : F ~> G) :=
-  forall a, (phi a =1 psi a :> (_ -> _)).
+  forall a : C, (phi a =1 psi a :> (_ -> _)).
 Notation "p =%= q" := (eq_nattrans p q).
 
 Lemma eq_nattrans_refl (phi : F ~> G) : phi =%= phi.
@@ -461,9 +464,7 @@ Lemma natural : naturality F G f.
 Proof.
 move=> a b h x.
 rewrite /f /= 2!transport_codomF 2!homcompE 2!compfid.
-rewrite -[LHS]/(( _ \o _) x) -[RHS]/(( _ \o _) x).
-have -> : [hom (hom_of_eq (Iobj b) \o F # h)] =1 [hom tc (F # h)].
-  by move=> {}x; rewrite transport_codomF.
+rewrite !hom_compE -[RHS]transport_codomF.
 by rewrite Imor transport_domF homfunK /= esymK.
 Qed.
 
@@ -492,8 +493,7 @@ Definition vcomp := fun a => [hom g a \o f a].
 Definition natural_vcomp : naturality _ _ vcomp.
 Proof.
 move=> A B h x.
-have /= -> := natural g _ _ h (f A x).
-by have /= -> := natural f _ _ h x.
+by rewrite (natural_head g) compapp (natural f).
 Qed.
 HB.instance Definition _ := isNatural.Build C D F H
   vcomp natural_vcomp.
@@ -527,8 +527,7 @@ Definition hcomp : F' \O F ~~> G' \O G :=
 Fact natural_hcomp : naturality (F' \O F) (G' \O G) hcomp.
 Proof.
 move=> c0 c1 h x; rewrite [in LHS]compA [LHS](natural t).
-rewrite !hom_compE -[in LHS]compA -[in RHS]compA.
-apply: eq_comp => // {}x.
+rewrite !hom_compE -[in LHS]compA -[in RHS]compA; apply: eq_comp => // {}x.
 rewrite [in RHS]FCompE -2!functor_o; apply: functor_ext_hom => {}x.
 by rewrite /= !hom_compE natural.
 Qed.
@@ -640,18 +639,15 @@ Import comps_notation.
 Lemma hom_isoK (c : C) (d : D) (f : {hom F c, d}) : hom_inv (hom_iso f) =1 f.
 Proof.
 rewrite /hom_inv /hom_iso => x.
-rewrite /= functor_o.
-have /= <- := (natural_head (eps A) _ _ _ _ _ x).
-by have /= -> := (triL A x).
+rewrite /= functor_o -[LHS](natural_head (eps A)).
+by rewrite compapp triL.
 Qed.
 Lemma hom_invK (c : C) (d : D) (g : {hom c, G d}) : hom_iso (hom_inv g) =1 g.
 Proof.
 rewrite /hom_inv /hom_iso => x.
 rewrite /= functor_o.
-rewrite !hom_compE hom_compA.
-have /= -> := natural (eta A) _ _ _ _.
-rewrite !(hom_compE _ _ x) -hom_compA.
-by have /= -> := triR A _.
+rewrite !hom_compE hom_compA compapp (natural (eta A)).
+by rewrite !(hom_compE _ _ x) -hom_compA compapp triR.
 Qed.
 
 Lemma hom_iso_inj (c : C) (d : D) (f g : {hom F c, d}) :
@@ -745,18 +741,18 @@ rewrite 2!(hom_compE _ _ x) -(functor_o_head F1).
 set X := [hom [\o _, _]].
 have /= -> : F1 # X =1 F1 # ((FId # eta1 (F0 c)) \o (eps0 (F0 c))).
   by move=> y; apply functor_ext_hom => {}y /=; rewrite -[LHS](natural eps0).
-rewrite (hom_compE _ _ x) (functor_o_head F1) FIdf.
-rewrite (hom_compE _ _ x); have /= -> := triL1 (c := F0 c) (_ (_ x)).
+  rewrite (hom_compE _ _ x) (functor_o_head F1) FIdf.
+have /= -> := triL1 (_ (_ x)).
 rewrite -[RHS]/(idfun x) -[in RHS](functor_id (F := F1)).
-rewrite -[LHS](functor_o (F := F1)).
-apply functor_ext_hom => {x} /= x.
+rewrite -[LHS]functor_o; apply functor_ext_hom => /= {}x.
 by rewrite triL0.
 Qed.
 
+(* [\o eps (F c), F # eta c] =1 idfun *)
 Lemma triR : TriangularLaws.right Eta Eps.
 Proof.
 move=> c x.
-have := functor_ext_hom (s := G) _ _ _ _ (EpsE_hom (a := c)) (Eta (G c) x).
+have := functor_ext_hom _ _ _ _ (EpsE_hom (a := c)) (Eta (G c) x).
 rewrite (hom_compE _ _ x) => ->; rewrite EtaE.
 rewrite (hom_compE _ _ x) (functor_o_head G).
 have /= <- := functor_o_head G0 (eta0 (G c)) x.
@@ -766,7 +762,7 @@ have /= -> : G0 # X =1 G0 # [\o eta1 (G1 c), FId # eps0 (G1 c)].
   move => {}x; apply functor_ext_hom => {}x; rewrite /X /=.
   by rewrite !(hom_compE _ _ x) (natural eta1). 
 rewrite (functor_o (F := G0)) (hom_compE _ _ x) hom_compA FIdf.
-rewrite !(hom_compE _ _ x); have /= -> := triR0 (_ x).
+have /= -> := triR0 (_ x).
 rewrite -[RHS]/(idfun x) -[in RHS](functor_id (F := G0)).
 rewrite -[LHS](functor_o (F := G0)).
 apply functor_ext_hom => {x} /= x.

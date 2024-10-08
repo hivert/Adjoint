@@ -647,7 +647,7 @@ Definition univmap : {additive {mset A} -> M} :=
 Lemma univmapP a : univmap [mset a] = f a.
 Proof.
 rewrite /univmap -[[mset a]]/(eta A a) /= hom_mset1.
-by have /= -> := @triR M (f a).
+exact: triR.
 Qed.
 
 Lemma univmap_uniq (g : {additive {mset A} -> M}) :
