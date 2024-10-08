@@ -19,8 +19,8 @@ Local Open Scope category_scope.
 HB.instance Definition _ :=
   isCategory.Build choiceType (fun T : choiceType => T)
     (fun _ _ _ => True) (fun => I) (fun _ _ _ _ _ _ _ => I).
-HB.instance Definition _ (a b : [the category of choiceType]) (f : a -> b)
-  := isHom.Build [the category of choiceType] a b (f : el a -> el b) I.
+HB.instance Definition _ (a b : choiceType) (f : a -> b)
+  := isHom.Build choiceType a b (f : el a -> el b) I.
 Notation Sets := [the category of choiceType].
 
 
@@ -48,8 +48,7 @@ Variable (a b : nmodType) (f : {hom NModules; a, b}).
 Definition forget (T : nmodType) : choiceType := T.
 HB.instance Definition _ :=
   @isHom.Build Sets a b (f : (a : choiceType) -> b) I.
-Definition forget_mor : {hom Sets; a, b} :=
-  [the {hom Sets; (a : choiceType), b} of f : a -> b].
+Definition forget_mor : {hom Sets; a, b} := f : a -> b.
 End Morphism.
 HB.instance Definition _ :=
   @isFunctor.Build NModules Sets forget forget_mor
@@ -165,7 +164,7 @@ Proof. by []. Qed.
 HB.instance Definition _ :=
   isCategory.Build ringType (fun T : ringType => T)
     semiring_morph idfun_is_semiring_morph comp_is_semiring_morph.
-Definition Rings := [the category of ringType].
+Notation Rings := [the category of ringType].
 #[warning="-uniform-inheritance"]
 Coercion rmorph_of_Ring a b (f : {hom Rings; a, b}) : {rmorphism a -> b} :=
   HB.pack (Hom.sort f)
@@ -207,7 +206,7 @@ Proof. by []. Qed.
 HB.instance Definition _ :=
   isCategory.Build comSemiRingType (fun T : comSemiRingType => T)
     semiring_morph idfun_is_semiring_morph comp_is_semiring_morph.
-Definition ComSemiRings := [the category of comSemiRingType].
+Notation ComSemiRings := [the category of comSemiRingType].
 
 Module ForgetComSemiRings_to_SemiRings.
 
@@ -246,7 +245,7 @@ Proof. by []. Qed.
 HB.instance Definition _ :=
   isCategory.Build comRingType (fun T : comRingType => T)
     semiring_morph  idfun_is_semiring_morph comp_is_semiring_morph.
-Definition ComRings := [the category of comRingType].
+Notation ComRings := [the category of comRingType].
 
 Module ForgetComRings_to_Rings.
 
@@ -409,7 +408,7 @@ HB.instance Definition _ :=
   @isFunctor.Build (LAlgebras R) Rings forget forget_mor
     (fun _ _ _ _ => id) (fun _ => frefl _) (fun _ _ _ _ _ => frefl _).
 End BaseRing.
-Definition functor R := [the {functor LAlgebras R -> Rings} of (@forget R)].
+Definition functor R : {functor LAlgebras R -> Rings} := @forget R.
 
 End ForgetLAlgebras_to_Rings.
 
@@ -565,8 +564,8 @@ HB.instance Definition _ (a b : Sets) (f : a -> b) :=
   @isHom.Build NModules {mset a} {mset b}
     (hom_mset f : [the nmodType of {mset a}] -> [the nmodType of {mset b}])
     (hom_mset_additive f).
-Definition FreeNmod_mor (a b : Sets) (f : a -> b) :=
-  [the {hom NModules; FreeNmod a, FreeNmod b} of hom_mset f].
+Definition FreeNmod_mor (a b : Sets) (f : a -> b)
+  : {hom NModules; FreeNmod a, FreeNmod b} := hom_mset f.
 
 Fact FreeNmod_ext : FunctorLaws.ext FreeNmod_mor.
 Proof.
@@ -702,8 +701,8 @@ HB.instance Definition _ (a b : Sets) (f : {hom Sets; a, b}) :=
     (hom_fm f : [the lmodType R of {freemod R[a]}] ->
                 [the lmodType R of {freemod R[b]}])
     (hom_fm_linear f).
-Definition freeLmod_mor (a b : Sets) (f : a -> b) :=
-  [the {hom LModules R; {freemod R[a]}, {freemod R[b]}} of hom_fm f].
+Definition freeLmod_mor (a b : Sets) (f : a -> b)
+  : {hom LModules R; {freemod R[a]}, {freemod R[b]}} := hom_fm f.
 
 Fact freeLmod_ext : FunctorLaws.ext freeLmod_mor.
 Proof.
