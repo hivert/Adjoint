@@ -50,11 +50,11 @@ Notation "[ 'fm[' key ] x 'in' aT => F ]" :=
 Notation "[ 'fm' x 'in' aT => F ]" :=
   ([fsfun[fm_key] x in aT => F] : {freemod _[_]})
   (at level 0, x ident, format "[ 'fm'  x  'in'  aT  =>  F ]").
-Notation "[ 'fm' i => j ]" := [fm x in [fset i]%fset => j]
-  (at level 0, format "[ 'fm'  i  =>  j ]").
+Notation "[ 'fm:' i => j ]" := [fm x in [fset i]%fset => j]
+  (at level 0, format "[ 'fm:'  i  =>  j ]").
 
 Lemma fm1E (R : nmodType) (T : choiceType) (i j : T) (r : R) :
-  [fm i => r] j = if j == i then r else 0.
+  [fm: i => r] j = if j == i then r else 0.
 Proof. by rewrite !fsfunE in_fset1. Qed.
 
 HB.instance Definition _ (R : nmodType) (T : choiceType) :=
@@ -98,6 +98,8 @@ Qed.
 HB.instance Definition _ x :=
   GRing.isSemiAdditive.Build {freemod R[T]} R _ (fmeval_is_additive x).
 
+Lemma fm0E x : (0 : {freemod R[T]}) x = 0.
+Proof. exact: (raddf0 (fmeval x)). Qed.
 Lemma fmDE f g x : (f + g) x = f x + g x.
 Proof. exact: (raddfD (fmeval x)). Qed.
 Lemma fmMn f n x : (f *+ n) x = (f x) *+ n.
@@ -106,7 +108,13 @@ Lemma fm_sum I (r : seq I) (s : pred I) (F : I -> {freemod R[T]}) x :
   (\sum_(i <- r | s i) F i) x = \sum_(i <- r | s i) (F i) x.
 Proof. exact: (raddf_sum (fmeval x)). Qed.
 
-Lemma fmE f : \sum_(i <- finsupp f) [fm i => f i] = f.
+Lemma fm0eq0 S : [fm x in S => 0] = 0 :> {freemod R[T]}.
+Proof. by apply/fsfunP => y; rewrite fsfunE if_same fm0E. Qed.
+Lemma fm10eq0 i : [fm: i => 0] = 0 :> {freemod R[T]}.
+Proof. exact: fm0eq0. Qed.
+
+
+Lemma fmE f : \sum_(i <- finsupp f) [fm: i => f i] = f.
 Proof.
 apply/fsfunP => x; rewrite fm_sum.
 case: (boolP (x \in finsupp f)) => [x_in_f | /[dup] x_notin_f /fsfun_dflt ->].
@@ -115,6 +123,13 @@ case: (boolP (x \in finsupp f)) => [x_in_f | /[dup] x_notin_f /fsfun_dflt ->].
   by rewrite eq_sym => /andP[/negbTE ->].
 rewrite big_seq big1 // => y; rewrite fm1E.
 by case: eqP => // <-; rewrite (negbTE x_notin_f).
+Qed.
+
+Lemma finsupp_fmZ x c :
+  c != 0 -> finsupp ([fm: x => c] : {freemod R[T]}) = [fset x].
+Proof.
+move=> cn0; apply/fsetP => y; rewrite !inE mem_finsupp fm1E.
+by case: (y == x); rewrite ?eqxx ?oner_neq0.
 Qed.
 
 End OnNModule.
@@ -138,6 +153,17 @@ by move=> f; apply/fsfunP => x; rewrite addfmE oppfmE addNr fsfun0E.
 Qed.
 HB.instance Definition _ :=
   GRing.Nmodule_isZmodule.Build {freemod R[T]} addNfm.
+
+Local Notation fmeval x := (fmeval_head tt x).
+
+Lemma fmN f x : (- f) x = - (f x).
+Proof. exact: (raddfN (fmeval x)). Qed.
+Lemma fmB f g x : (f - g) x = f x - g x.
+Proof. exact: (raddfB (fmeval x)). Qed.
+Lemma fmMNn f n x : (f *- n) x = (f x) *- n.
+Proof. exact: (raddfMNn (fmeval x)). Qed.
+Lemma fmMz f (n : int) x : (f *~ n) x = (f x) *~ n.
+Proof. exact: (raddfMz (fmeval x)). Qed.
 
 End OnZModule.
 
@@ -173,20 +199,17 @@ HB.instance Definition _ :=
   GRing.Zmodule_isLmodule.Build R {freemod R[T]}
     scalefmA scale1fm scalefmDr scalefmDl.
 
-Lemma finsupp_fm1 x : finsupp ([fm x => 1] : {freemod R[T]}) = [fset x].
-Proof.
-apply/fsetP => y; rewrite !inE mem_finsupp fm1E.
-by case: (y == x); rewrite ?eqxx ?oner_neq0.
-Qed.
+Lemma finsupp_fm1 x : finsupp ([fm: x => 1] : {freemod R[T]}) = [fset x].
+Proof. exact/finsupp_fmZ/oner_neq0. Qed.
 
-Lemma fm1ZE x c : [fm x => c] = c *: [fm x => 1].
+Lemma fm1ZE x c : [fm: x => c] = c *: [fm: x => 1].
 Proof.
 apply/fsfunP => y; rewrite scalefmE !fm1E.
 by case: (y == x); rewrite ?mulr0 ?mulr1.
 Qed.
 
 Lemma linear_fmE (M : lmodType R) (f g : {linear {freemod R[T]} -> M}) :
-  (forall x : T, f [fm x => 1] = g [fm x => 1]) -> f =1 g.
+  (forall x : T, f [fm: x => 1] = g [fm: x => 1]) -> f =1 g.
 Proof.
 move=> eqfg m; rewrite -(fmE m) !linear_sum; apply eq_bigr=> x _.
 by rewrite fm1ZE !linearZ /= eqfg.
