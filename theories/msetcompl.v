@@ -38,7 +38,8 @@ Definition freeLmod (R : nmodType) (T : choiceType) :=
   {fsfun T -> R with 0%R}.
 Definition freeLmod_of (R : nmodType) (T : choiceType) of phant T :=
   @freeLmod R T.
-Notation "{ 'freemod' R [ T ] }" := (freeLmod R T).
+Notation "{ 'freemod' R [ T ] }" := (freeLmod R T)
+  (at level 0, format "{ 'freemod'  R [ T ] }").
 
 Identity Coercion fm_fm_of : freeLmod_of >-> freeLmod.
 

@@ -559,10 +559,21 @@ Qed.
 
 End Set_to_FreeNmodule.
 
+
+Definition FreeNmod (T : Sets) : NModules := {mset T}.
+(* TODO Cyril : The following declaration was
+
 Definition FreeNmod (T : choiceType) : nmodType := {mset T}.
+  HB.instance Definition _ (a b : Sets) (f : a -> b) :=
+   @isHom.Build NModules {mset a} {mset b}
+   (hom_mset f : [the nmodType of {mset a}] -> [the nmodType of {mset b}])
+   (hom_mset_additive f).
+
+the [the nmodType of ... ] was needed... Why ???
+*)
 HB.instance Definition _ (a b : Sets) (f : a -> b) :=
-  @isHom.Build NModules {mset a} {mset b}
-    (hom_mset f : [the nmodType of {mset a}] -> [the nmodType of {mset b}])
+  @isHom.Build NModules (FreeNmod a) (FreeNmod b)
+    (hom_mset f : FreeNmod a -> FreeNmod b)
     (hom_mset_additive f).
 Definition FreeNmod_mor (a b : Sets) (f : a -> b)
   : {hom NModules; FreeNmod a, FreeNmod b} := hom_mset f.
