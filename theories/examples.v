@@ -44,10 +44,10 @@ Proof. by []. Qed.
 Module ForgetNModules_to_Sets.
 
 Section Morphism.
-Variable (a b : nmodType) (f : {hom NModules; a, b}).
-Definition forget (T : nmodType) : choiceType := T.
+Variable (a b : NModules) (f : {hom NModules; a, b}).
+Definition forget (T : NModules) : Sets := T.
 HB.instance Definition _ :=
-  @isHom.Build Sets a b (f : (a : choiceType) -> b) I.
+  @isHom.Build Sets a b (f : (a : Sets) -> b) I.
 Definition forget_mor : {hom Sets; a, b} := f : a -> b.
 End Morphism.
 HB.instance Definition _ :=
@@ -82,9 +82,9 @@ Proof. by []. Qed.
 Module ForgetZModules_to_NModules.
 
 Section Morphism.
-Variable (a b : zmodType) (f : {hom ZModules; a, b}).
-Definition forget (T : zmodType) : nmodType := T.
-Definition forget_mor : (a : nmodType) -> (b : nmodType) := f.
+Variable (a b : ZModules) (f : {hom ZModules; a, b}).
+Definition forget (T : ZModules) : NModules := T.
+Definition forget_mor : (a : NModules) -> (b : NModules) := f.
 HB.instance Definition _ := @isHom.Build NModules a b forget_mor (isHom_inhom f).
 End Morphism.
 HB.instance Definition _ :=
@@ -135,9 +135,9 @@ Proof. by []. Qed.
 Module ForgetSemiRings_to_NModules.
 
 Section Morphism.
-Variable (a b : semiRingType) (f : {hom SemiRings; a, b}).
-Definition forget (T : semiRingType) : nmodType := T.
-Definition forget_mor : (a : nmodType) -> (b : nmodType) := f.
+Variable (a b : SemiRings) (f : {hom SemiRings; a, b}).
+Definition forget (T : SemiRings) : NModules := T.
+Definition forget_mor : (a : NModules) -> (b : NModules) := f.
 HB.instance Definition _ :=
   @isHom.Build NModules a b forget_mor (fst (isHom_inhom f)).
 End Morphism.
@@ -177,9 +177,9 @@ Proof. by []. Qed.
 Module ForgetRings_to_ZModules.
 
 Section Morphism.
-Variable (a b : ringType) (f : {hom Rings; a, b}).
-Definition forget (T : ringType) : zmodType := T.
-Definition forget_mor : (a : zmodType) -> (b : zmodType) := f.
+Variable (a b : Rings) (f : {hom Rings; a, b}).
+Definition forget (T : Rings) : ZModules := T.
+Definition forget_mor : (a : ZModules) -> (b : ZModules) := f.
 HB.instance Definition _ :=
   @isHom.Build ZModules a b forget_mor (fst (isHom_inhom f)).
 End Morphism.
@@ -211,9 +211,9 @@ Notation ComSemiRings := [the category of comSemiRingType].
 Module ForgetComSemiRings_to_SemiRings.
 
 Section Morphism.
-Variable (a b : comSemiRingType) (f : {hom ComSemiRings; a, b}).
-Definition forget (T : comSemiRingType) : semiRingType := T.
-Definition forget_mor : (a : semiRingType) -> (b : semiRingType) := f.
+Variable (a b : ComSemiRings) (f : {hom ComSemiRings; a, b}).
+Definition forget (T : ComSemiRings) : SemiRings := T.
+Definition forget_mor : (a : SemiRings) -> (b : SemiRings) := f.
 HB.instance Definition _ :=
   @isHom.Build SemiRings a b forget_mor (isHom_inhom f).
 End Morphism.
@@ -250,9 +250,9 @@ Notation ComRings := [the category of comRingType].
 Module ForgetComRings_to_Rings.
 
 Section Morphism.
-Variable (a b : comRingType) (f : {hom ComRings; a, b}).
-Definition forget (T : comRingType) : ringType := T.
-Definition forget_mor : (a : ringType) -> (b : ringType) := f.
+Variable (a b : ComRings) (f : {hom ComRings; a, b}).
+Definition forget (T : ComRings) : Rings := T.
+Definition forget_mor : (a : Rings) -> (b : Rings) := f.
 HB.instance Definition _ := @isHom.Build Rings a b forget_mor (isHom_inhom f).
 End Morphism.
 HB.instance Definition _ :=
@@ -305,9 +305,9 @@ Section BaseRing.
 Variable R : ringType.
 
 Section Morphism.
-Variables (a b : lmodType R) (f : {hom LModules R; a, b}).
-Definition forget (T : lmodType R) : zmodType := T.
-Definition forget_mor : (a : zmodType) -> (b : zmodType) := f.
+Variables (a b : LModules R) (f : {hom LModules R; a, b}).
+Definition forget (T : LModules R) : ZModules := T.
+Definition forget_mor : (a : ZModules) -> (b : ZModules) := f.
 HB.instance Definition _ :=
   @isHom.Build ZModules a b forget_mor (LModules_mor_semi_additive f).
 End Morphism.
@@ -373,9 +373,9 @@ Section BaseRing.
 Variable R : ringType.
 
 Section Morphism.
-Variables (a b : lalgType R) (f : {hom LAlgebras R; a, b}).
-Definition forget (T : lalgType R) : lmodType R := T.
-Definition forget_mor : (a : lmodType R) -> (b : lmodType R) := f.
+Variables (a b : LAlgebras R) (f : {hom LAlgebras R; a, b}).
+Definition forget (T : LAlgebras R) : LModules R := T.
+Definition forget_mor : (a : LModules R) -> (b : LModules R) := f.
 HB.instance Definition _ :=
   @isHom.Build (LModules R) a b forget_mor (fst (isHom_inhom f)).
 End Morphism.
@@ -398,9 +398,9 @@ Section BaseRing.
 Variable R : ringType.
 
 Section Morphism.
-Variables (a b : lalgType R) (f : {hom LAlgebras R; a, b}).
-Definition forget (T : lalgType R) : ringType := T.
-Definition forget_mor : (a : ringType) -> (b : ringType) := f.
+Variables (a b : LAlgebras R) (f : {hom LAlgebras R; a, b}).
+Definition forget (T : LAlgebras R) : Rings := T.
+Definition forget_mor : (a : Rings) -> (b : Rings) := f.
 HB.instance Definition _ :=
   @isHom.Build Rings a b forget_mor (LAlgebras_mor_rmorphism f).
 End Morphism.
@@ -417,7 +417,7 @@ Lemma forget_LAlgebras_to_RingsE R a b (f : {hom LAlgebras R; a, b}) :
   forget_LAlgebras_to_Rings R # f = f :> (_ -> _).
 Proof. by []. Qed.
 
-Lemma unicity_of_forgetful_functors (R : ringType) :
+Lemma unicity_of_forgetful_functors (R : Rings) :
   forget_Rings_to_ZModules \O forget_LAlgebras_to_Rings R
     =#= forget_LModules_to_ZModules R \O forget_LAlgebras_to_LModules R.
 Proof. exact: (@functor_ext _ _ _ _ (fun=> _)). Qed.
@@ -437,9 +437,9 @@ Section BaseRing.
 Variable R : ringType.
 
 Section Morphism.
-Variables (a b : algType R) (f : {hom Algebras R; a, b}).
-Definition forget (T : algType R) : lalgType R := T.
-Definition forget_mor : (a : lalgType R) -> (b : lalgType R) := f.
+Variables (a b : Algebras R) (f : {hom Algebras R; a, b}).
+Definition forget (T : Algebras R) : LAlgebras R := T.
+Definition forget_mor : (a : LAlgebras R) -> (b : LAlgebras R) := f.
 HB.instance Definition _ :=
   @isHom.Build (LAlgebras R) a b forget_mor (isHom_inhom f).
 End Morphism.
@@ -477,9 +477,9 @@ Section BaseRing.
 Variable R : ringType.
 
 Section Morphism.
-Variables (a b : comAlgType R) (f : {hom ComAlgebras R; a, b}).
-Definition forget (T : comAlgType R) : algType R := T.
-Definition forget_mor : (a : algType R) -> (b : algType R) := f.
+Variables (a b : ComAlgebras R) (f : {hom ComAlgebras R; a, b}).
+Definition forget (T : ComAlgebras R) : Algebras R := T.
+Definition forget_mor : (a : Algebras R) -> (b : Algebras R) := f.
 HB.instance Definition _ :=
   @isHom.Build (Algebras R) a b forget_mor (isHom_inhom f).
 End Morphism.
@@ -537,7 +537,7 @@ Local Open Scope mset_scope.
 
 Section Set_to_FreeNmodule.
 
-Variable (a b : choiceType) (f : {hom Sets; a, b}).
+Variable (a b : Sets) (f : {hom Sets; a, b}).
 
 Definition hom_mset (m : {mset a}) : {mset b} :=
   \sum_(i <- m) [mset f i].
@@ -571,11 +571,11 @@ Definition FreeNmod (T : choiceType) : nmodType := {mset T}.
 
 the [the nmodType of ... ] was needed... Why ???
 *)
-HB.instance Definition _ (a b : Sets) (f : a -> b) :=
+HB.instance Definition _ (a b : Sets) (f : {hom Sets; a, b}) :=
   @isHom.Build NModules (FreeNmod a) (FreeNmod b)
     (hom_mset f : FreeNmod a -> FreeNmod b)
     (hom_mset_additive f).
-Definition FreeNmod_mor (a b : Sets) (f : a -> b)
+Definition FreeNmod_mor (a b : Sets) (f : {hom Sets; a, b})
   : {hom NModules; FreeNmod a, FreeNmod b} := hom_mset f.
 
 Fact FreeNmod_ext : FunctorLaws.ext FreeNmod_mor.
@@ -599,7 +599,7 @@ Section Adjoint.
 
 Definition functor_FreeNmod : {functor Sets -> NModules} := FreeNmod.
 
-Implicit Types (a : choiceType) (T : nmodType).
+Implicit Types (a : Sets) (T : NModules).
 
 Let eta_fun a (x : a) := [mset x].
 Definition eta : FId ~~> forget_NModules_to_Sets \o FreeNmod := eta_fun.
@@ -677,7 +677,7 @@ Section Set_to_FreeLmodule.
 
 Variable R : ringType.
 
-Variable (a b : choiceType) (f : a -> b).
+Variable (a b : Sets) (f : {hom Sets; a, b}).
 
 Definition hom_fm (m : {freemod R[a]}) : {freemod R[b]} :=
   \sum_(i <- finsupp m) [fm: f i => m i].
@@ -711,8 +711,8 @@ Variable (R : ringType).
 
 HB.instance Definition _ (a b : Sets) (f : {hom Sets; a, b}) :=
   @isHom.Build (LModules R) {freemod R[a]} {freemod R[b]}
-    (hom_fm f : (_ : lmodType R) -> _) (hom_fm_linear f).
-Definition freeLmod_mor (a b : Sets) (f : a -> b)
+    (hom_fm f : (_ : LModules R) -> _) (hom_fm_linear f).
+Definition freeLmod_mor (a b : Sets) (f : {hom Sets; a, b})
   : {hom LModules R; {freemod R[a]}, {freemod R[b]}} := hom_fm f.
 
 Fact freeLmod_ext : FunctorLaws.ext freeLmod_mor.
@@ -732,7 +732,7 @@ rewrite -!linear_of_LmodE; apply: linear_fmE => /= x.
 by rewrite /hom_fm /= !(finsupp_fm1, big_seq_fset1, fm1E, eqxx).
 Qed.
 
-Definition functor_freeLmod a : lmodType R := {freemod R[a]}.
+Definition functor_freeLmod a : LModules R := {freemod R[a]}.
 HB.instance Definition _ :=
   @isFunctor.Build Sets (LModules R) functor_freeLmod
      freeLmod_mor freeLmod_ext freeLmod_id freeLmod_comp.
@@ -742,7 +742,7 @@ End Functor.
 Section Adjoint.
 
 Variable R : ringType.
-Implicit Types (a : choiceType) (T : lmodType R).
+Implicit Types (a : Sets) (T : LModules R).
 Local Notation fmf := (@functor_freeLmod R).
 Local Notation forgetf := (forget_LModules_to_Sets R).
 Let eta_fun a (x : a) : {freemod R[a]} := [fm: x => 1].

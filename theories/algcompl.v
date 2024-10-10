@@ -313,10 +313,10 @@ Proof. by []. Qed.
 Module ForgetMonoids_to_Sets.
 
 Section Morphism.
-Variable (a b : monoidType) (f : {hom Monoids; a, b}).
-Definition forget (T : monoidType) : choiceType := T.
+Variable (a b : Monoids) (f : {hom Monoids; a, b}).
+Definition forget (T : Monoids) : Sets := T.
 HB.instance Definition _ :=
-  @isHom.Build Sets a b (f : (a : choiceType) -> b) I.
+  @isHom.Build Sets a b (f : (a : Sets) -> b) I.
 Definition forget_mor : {hom Sets; a, b} := f : a -> b.
 End Morphism.
 HB.instance Definition _ :=
@@ -365,11 +365,11 @@ Proof. by rewrite /hom_freeMonoid; split => [/= x y| //]; rewrite map_cat. Qed.
 
 End FreeMonoid.
 
-HB.instance Definition _ (a b : Sets) (f : a -> b) :=
+HB.instance Definition _ (a b : Sets) (f : {hom Sets; a, b}) :=
   @isHom.Build Monoids {freemon a} {freemon b}
     (hom_freeMonoid f : [the Monoids of {freemon a}] -> {freemon b})
     (hom_freeMonoid_monmorphism f).
-Definition freeMonoid_mor (a b : choiceType) (f : a -> b)
+Definition freeMonoid_mor (a b : Sets) (f : {hom Sets; a, b})
   : {hom Monoids; {freemon a}, {freemon b}} := hom_freeMonoid f.
 
 Fact freeMonoid_ext : FunctorLaws.ext freeMonoid_mor.
@@ -379,14 +379,14 @@ Proof. by move=> /= a x /=; rewrite /hom_freeMonoid /= map_id. Qed.
 Fact freeMonoid_comp  : FunctorLaws.comp freeMonoid_mor.
 Proof. by move=> /= a b c f g x; rewrite /hom_freeMonoid /= map_comp. Qed.
 
-Definition functor_freeMon T : monoidType := {freemon T}.
+Definition functor_freeMon T : Monoids := {freemon T}.
 HB.instance Definition _ :=
   @isFunctor.Build Sets Monoids
     functor_freeMon freeMonoid_mor freeMonoid_ext freeMonoid_id freeMonoid_comp.
 
 Section Adjoint.
 
-Implicit Types (a : choiceType) (T : monoidType).
+Implicit Types (a : Sets) (T : Monoids).
 
 Let eta_fun a (x : a) := [fm x].
 Definition eta : FId ~~> forget_Monoids_to_Sets \o functor_freeMon := eta_fun.

@@ -7,4 +7,4 @@
 theories/category.v
 theories/examples.v
 theories/msetcompl.v
-
+theories/algcompl.v
