@@ -457,3 +457,84 @@ Qed.
 End UniversalProperty.
 
 
+(* Full subcategory of Monoid *)
+HB.instance Definition _ :=
+  isCategory.Build comMonoidType (fun T : comMonoidType => T)
+    (@inhom Monoids) (@idfun_inhom Monoids) (@funcomp_inhom Monoids).
+
+Notation ComMonoids := [the category of comMonoidType].
+#[warning="-uniform-inheritance"]
+Coercion mmorphism_of_ComMonoids a b (f : {hom ComMonoids; a, b}) :
+  {mmorphism a -> b} :=
+  HB.pack (Hom.sort f) (isMonMorphism.Build _ _ _ (isHom_inhom f)).
+Lemma mmorphism_of_ComMonoidsE a b (f : {hom ComMonoids; a, b}) :
+  @mmorphism_of_ComMonoids a b f = f :> (_ -> _).
+Proof. by []. Qed.
+
+
+
+(** Equivalence ComMonoid NModule *)
+Definition NMod_of_ComMonoid (M : ComMonoids) : Type := M.
+HB.lock Definition nmod_of_commonoid (M : ComMonoids) (x : M)
+  : (NMod_of_ComMonoid M) := x.
+Canonical nmod_of_commonoid_unlock := Unlockable nmod_of_commonoid.unlock.
+HB.lock Definition commonoid_of_nmod M (x : NMod_of_ComMonoid M) : M := x.
+Canonical commonoid_of_nmod_unlock := Unlockable commonoid_of_nmod.unlock.
+
+Lemma nmod_of_commonoidK M : cancel (@nmod_of_commonoid M) (@commonoid_of_nmod M).
+Proof. by rewrite !unlock. Qed.
+Lemma commonoid_of_nmodK M : cancel (@commonoid_of_nmod M) (@nmod_of_commonoid M).
+Proof. by rewrite !unlock. Qed.
+
+Section Defs.
+
+Variable M : ComMonoids.
+Local Notation nmod := (NMod_of_ComMonoid M).
+HB.instance Definition _ := Choice.on nmod.
+
+Definition zeronm := @nmod_of_commonoid M 1%M.
+Definition addnm (x y : nmod) :=
+  nmod_of_commonoid (commonoid_of_nmod x * commonoid_of_nmod y).
+Lemma addnmA : associative addnm.
+Proof. by move=> x y z; rewrite /addnm !unlock mulmA. Qed.
+Lemma addnmC : commutative addnm.
+Proof. by move=> x y; rewrite /addnm !unlock mulmC. Qed.
+Lemma add0nm : left_id zeronm addnm.
+Proof. by move=> x; rewrite /addnm /zeronm !unlock mul1m. Qed.
+
+HB.instance Definition _ := GRing.isNmodule.Build nmod addnmA addnmC add0nm.
+
+Lemma nmod_of_commonoid0 : 0%R = nmod_of_commonoid 1 :> nmod.
+Proof. by []. Qed.
+Lemma nmod_of_commonoidM :
+  {morph @nmod_of_commonoid M : x y / (x * y)%M >-> (x + y)%R}.
+Proof. by move=> x y; rewrite /GRing.add /= /addnm !nmod_of_commonoidK. Qed.
+
+End Defs.
+
+Section Functor.
+
+Variables (M N : ComMonoids) (f : {hom ComMonoids; M, N}).
+
+Definition nmod_of_commonoid_mor :=
+  (@nmod_of_commonoid N) \o f \o (@commonoid_of_nmod M).
+Fact nmod_of_commonoid_mor_is_additive : semi_additive nmod_of_commonoid_mor.
+Proof.
+rewrite /nmod_of_commonoid_mor; split => /= [|x y /=].
+  rewrite nmod_of_commonoid0 nmod_of_commonoidK.
+  by rewrite -(mmorphism_of_ComMonoidsE f) mmorph1.
+rewrite -nmod_of_commonoidM -(mmorphism_of_ComMonoidsE f) -mmorphM; congr (_ (f _)).
+apply (can_inj (@nmod_of_commonoidK _)).
+by rewrite nmod_of_commonoidM !commonoid_of_nmodK.
+Qed.
+
+Let bla :=
+  isHom.Build NModules (NMod_of_ComMonoid M) (NMod_of_ComMonoid N)
+    nmod_of_commonoid_mor nmod_of_commonoid_mor_is_additive.
+Check bla.
+
+HB.instance Definition _ := bla.
+  isHom.Build NModules (NMod_of_ComMonoid M) (NMod_of_ComMonoid N)
+    nmod_of_commonoid_mor nmod_of_commonoid_mor_is_additive.
+
+End Functor.
