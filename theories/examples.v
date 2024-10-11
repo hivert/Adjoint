@@ -66,6 +66,10 @@ Proof. by []. Qed.
 (* Z-Modules ************************************************************)
 
 (* Full subcategory of N-module *)
+(*  TODO the following breaks some Inheritance later...
+HB.instance Definition _ :=
+  isFullSubcategory.Build NModules zmodType _ (fun T => T) (fun T => erefl).
+*)
 HB.instance Definition _ :=
   isCategory.Build zmodType (fun T : zmodType => T)
     (@inhom NModules) (@idfun_inhom NModules) (@funcomp_inhom NModules).

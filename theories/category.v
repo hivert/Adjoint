@@ -227,6 +227,39 @@ Proof. by subst a a' b b'. Qed.
 End transport_lemmas.
 
 
+(* Factory for full subcategories *)
+HB.factory Record isFullSubcategory (C : category) (Obj : Type) := {
+    elsub : Obj -> Type;
+    forget : Obj -> C;
+    is_forget : forall (o : Obj), el (forget o) = elsub o;
+  }.
+HB.builders Context C Sub of isFullSubcategory C Sub.
+
+Definition cast_fun (a b : Sub) (f : elsub a -> elsub b) :
+  (el (forget a) -> el (forget b)).
+by rewrite !is_forget.
+Defined.
+Lemma cast_fun_id (a : Sub) : @cast_fun a a idfun = idfun.
+Proof. by rewrite /cast_fun; case:_/(is_forget a). Qed.
+
+Definition sub_inhom (a b : Sub) (f : elsub a -> elsub b) :=
+  @inhom C _ _ (cast_fun f).
+Fact sub_idfun_inhom a : @sub_inhom a a idfun.
+Proof. by have := idfun_inhom (forget a); rewrite -cast_fun_id. Qed.
+Fact sub_funcomp_inhom
+  (a b c : Sub) (f : elsub a -> elsub b) (g : elsub b -> elsub c) :
+  sub_inhom f -> sub_inhom g -> sub_inhom (g \o f).
+Proof.
+rewrite /sub_inhom /cast_fun => /funcomp_inhom/[apply]; move: f g.
+by case:_/(is_forget a); case:_/(is_forget b); case:_/(is_forget c).
+Qed.
+HB.instance Definition _ :=
+  isCategory.Build Sub elsub sub_inhom sub_idfun_inhom sub_funcomp_inhom.
+
+HB.end.
+Arguments isFullSubcategory.phant_Build : clear implicits.
+
+
 Module FunctorLaws.
 Section def.
 Variable (C D : category).
