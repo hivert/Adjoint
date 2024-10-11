@@ -427,7 +427,7 @@ Proof. by move=> /= M m; rewrite /eta_fun /= /eps_fun big_cons big_nil mulm1. Qe
 Let F : {functor Sets -> Monoids} := functor_freeMon.
 Let G : {functor Monoids -> Sets} := forget_Monoids_to_Sets.
 
-Definition adj_functor_freeMon_forget : functor_freeMon -| forget_Monoids_to_Sets :=
+Definition adj_functor_freeMon_forget : F -| G :=
   AdjointFunctors.mk triL triR.
 
 End Adjoint.
