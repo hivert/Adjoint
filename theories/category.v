@@ -38,15 +38,13 @@ From mathcomp Require Import ssralg.
 (*                        Module AdjointFunctors); see also TriangularLaws.   *)
 (*      Module AdjComp == define a pair of adjoint functors by composition of *)
 (*                        two pairs of adjoint functors                       *)
-(*  JoinLaws, BindLaws == modules that define the monad laws                  *)
+(* MonadLaws, BindLaws == modules that define the monad laws                  *)
 (*             isMonad == mixin that defines the monad interface              *)
 (*   Monad_of_ret_bind == factory, monad defined by ret and bind              *)
-(*   Monad_of_ret_join == factory, monad defined by ret and join              *)
+(*   Monad_of_munit_mu == factory, monad defined by munit and mu              *)
 (* Monad_of_adjoint_functors == module that defines a monad by a pair of      *)
 (*                        adjoint functors                                    *)
 (* Monad_of_category_monad == module, interface to isMonad from hierarchy.v   *)
-(* Monad_of_category_monad.m == turns a monad over the Type category into     *)
-(*                        a monad in the sense of isMonad from hierarchy.v    *)
 (******************************************************************************)
 
 Set Implicit Arguments.
@@ -783,27 +781,6 @@ End AdjComp.
 Export AdjComp.Exports.
 
 
-(*  Module CoherenceConditions. *)
-(* Section CoherenceConditions. *)
-(* Variables (C : category) (T : {functor C -> C}) . *)
-(* Variables (eta : FId ~> T) (mu : T \O T ~> T). *)
-(* Definition assoc := forall X, mu X \o T # (mu X) =1 mu X \o mu (T X). *)
-(* Definition left_unit  := forall X, mu X \o eta (T X) =1 idfun. *)
-(* Definition right_unit := forall X, mu X \o T # (eta X) =1 idfun. *)
-(* End CoherenceConditions. *)
-(* End CoherenceConditions. *)
-
-(* HB.mixin Record isMonad (C : category) (T : {functor C -> C}) := { *)
-(*   eta :  FId ~> T; *)
-(*   mu : T \O T ~> T; *)
-(*   monad_assoc : CoherenceConditions.assoc mu; *)
-(*   monad_left_neutral : CoherenceConditions.left_unit eta mu; *)
-(*   monad_right_neutral : CoherenceConditions.right_unit eta mu; *)
-(* }. *)
-(* #[short(type=monad)] *)
-(* HB.structure Definition Monad (C : category) := {T of isMonad C T}. *)
-
-
 Module MonadLaws.
 Section monad_laws.
 Variables (C : category) (M : {functor C -> C}) .
@@ -906,20 +883,20 @@ HB.instance Definition _ :=
   isMonad.Build C M bind_ext bindE mumunitM muMmunit muA.
 HB.end.
 
-(* Monads defined by munit and bind; M need not be a priori a functor *)
-HB.factory Record Monad_of_munit_bind (C : category) (acto : C -> C) := {
-  munit' : forall a, {hom a, acto a} ;
+(* Monads defined by ret and bind; M need not be a priori a functor *)
+HB.factory Record Monad_of_ret_bind (C : category) (acto : C -> C) := {
+  ret : forall a, {hom a, acto a} ;
   bind : forall (a b : C), {hom a, acto b} -> {hom acto a, acto b} ;
   bind_ext_hom : forall (a b : C) (f g : {hom a, acto b}),
     f =1 g -> bind a b f =1 bind a b g;
-  bindmunitf : BindLaws.left_neutral bind munit' ;
-  bindmmunit : BindLaws.right_neutral bind munit' ;
+  bindmunitf : BindLaws.left_neutral bind ret ;
+  bindmmunit : BindLaws.right_neutral bind ret ;
   bindA : BindLaws.associative bind ;
 }.
-HB.builders Context C M of Monad_of_munit_bind C M.
-Let fmap a b (f : {hom a, b}) := bind [hom munit' b \o f].
+HB.builders Context C M of Monad_of_ret_bind C M.
+Let fmap a b (f : {hom a, b}) := bind [hom ret b \o f].
 Let bindmunitf_fun : (forall (a b : C) (f : {hom a, M b}),
-  bind f \o munit' a =1 f).
+  bind f \o ret a =1 f).
 Proof. by apply/bind_left_neutral_hom_fun/bindmunitf. Qed.
 Let fmap_ext : FunctorLaws.ext fmap.
 Proof.
@@ -940,11 +917,11 @@ Qed.
 HB.instance Definition _ := isFunctor.Build C C M fmap_ext fmap_id fmap_o.
 Notation F := [the {functor _ -> _} of M].
 
-Let munit'_naturality : naturality FId F munit'.
+Let ret_naturality : naturality FId F ret.
 Proof. by move=> A B h x; rewrite FIdf bindmunitf_fun. Qed.
 HB.instance Definition _ := isNatural.Build _ _ FId F
-  (munit' : FId ~~> M)(*NB: fails without this type constraint*) munit'_naturality.
-Definition munit := [the FId ~> F of munit'].
+  (ret : FId ~~> M)(*NB: fails without this type constraint*) ret_naturality.
+Definition munit := [the FId ~> F of ret].
 Let mu' : F \O F ~~> F := fun _ => bind [hom idfun].
 Let fmap_bind a b c (f : {hom a,b}) m (g : {hom c,F a}) :
   (fmap f) (bind g m) = bind [hom fmap f \o g] m.
@@ -987,6 +964,7 @@ Qed.
 HB.instance Definition _ :=
   isMonad.Build C M bind_ext_hom bindE mumunitM muMmunit muA.
 HB.end.
+
 
 Module _Monad_of_adjoint_functors.
 Section def.
@@ -1051,4 +1029,9 @@ Definition build (C D : category)
 End _Monad_of_adjoint_functors.
 Notation Monad_of_adjoint_functors := _Monad_of_adjoint_functors.build.
 (* TODO: Can we turn this into a factory? *)
+
+Lemma Monad_of_adjoint_functorsE (C D : category)
+  (F : {functor C -> D}) (G : {functor D -> C}) (A : F -| G) :
+  Monad_of_adjoint_functors A = G \O F :> {functor C -> C}.
+Proof. by []. Qed.
 
