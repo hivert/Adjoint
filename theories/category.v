@@ -64,7 +64,7 @@ Reserved Notation "F =%= g" (at level 70, no associativity).
 Reserved Notation "F -| G" (at level 51, G at next level).
 Reserved Notation "f \v g" (at level 50, format "'[v' f '/' \v  g ']'", left associativity).
 Reserved Notation "f \h g" (at level 50, format "f  \h  g").
-
+Reserved Notation "m >>= f" (at level 49).
 
 Declare Scope category_scope.
 Delimit Scope category_scope with category.
@@ -783,66 +783,58 @@ End AdjComp.
 Export AdjComp.Exports.
 
 
-(************ Florent : Monad related stuff / Do I need these ? *****************)
-(*
+(*  Module CoherenceConditions. *)
+(* Section CoherenceConditions. *)
+(* Variables (C : category) (T : {functor C -> C}) . *)
+(* Variables (eta : FId ~> T) (mu : T \O T ~> T). *)
+(* Definition assoc := forall X, mu X \o T # (mu X) =1 mu X \o mu (T X). *)
+(* Definition left_unit  := forall X, mu X \o eta (T X) =1 idfun. *)
+(* Definition right_unit := forall X, mu X \o T # (eta X) =1 idfun. *)
+(* End CoherenceConditions. *)
+(* End CoherenceConditions. *)
+
+(* HB.mixin Record isMonad (C : category) (T : {functor C -> C}) := { *)
+(*   eta :  FId ~> T; *)
+(*   mu : T \O T ~> T; *)
+(*   monad_assoc : CoherenceConditions.assoc mu; *)
+(*   monad_left_neutral : CoherenceConditions.left_unit eta mu; *)
+(*   monad_right_neutral : CoherenceConditions.right_unit eta mu; *)
+(* }. *)
+(* #[short(type=monad)] *)
+(* HB.structure Definition Monad (C : category) := {T of isMonad C T}. *)
 
 
-Module JoinLaws.
-Section join_laws.
+Module MonadLaws.
+Section monad_laws.
 Variables (C : category) (M : {functor C -> C}) .
-Variables (ret : FId ~~> M) (join : M \O M ~~> M).
+Variables (unit : FId ~~> M) (mu : M \O M ~~> M).
 Definition left_unit :=
-  forall a, join a \o ret (M a) = idfun :> (el (M a) -> el (M a)).
+  forall a, mu a \o unit (M a) =1 idfun :> (el (M a) -> el (M a)).
 Definition right_unit :=
-  forall a, join a \o M # ret a = idfun :> (el (M a) -> el (M a)).
+  forall a, mu a \o M # unit a =1 idfun :> (el (M a) -> el (M a)).
 Definition associativity :=
-  forall a, join a \o M # join a = join a \o join (M a) :> (el (M (M (M a))) -> el (M a)).
-End join_laws.
-End JoinLaws.
+  forall a, mu a \o M # mu a =1 mu a \o mu (M a) :>
+                                    (el (M (M (M a))) -> el (M a)).
+End monad_laws.
+End MonadLaws.
 
 Module BindLaws.
 Section bindlaws.
 Variables (C : category) (M : C -> C).
 Variable b : forall A B, {hom A, M B} -> {hom M A, M B}.
 Local Notation "m >>= f" := (b f m).
-(*
-bind is usually typed in the literature as follows:
 
-Variable b : forall A B, M A -> (A -> M B) -> M B.
-Local Notation "m >>= f" := (b m f).
-
-This does not work well since it does not keep the {hom _, _} structure
-in the result.
-*)
 Fact associative_aux x y z (f : {hom x, M y}) (g : {hom y, M z}) :
-  (fun w => (f w >>= g)) = (b g \o f).
+  (fun w => (f w >>= g)) =1 (b g \o f).
 Proof. by []. Qed.
-Definition associative := forall A B C (m : el (M A)) (f : {hom A, M B}) (g : {hom B, M C}),
+Definition associative :=
+  forall A B C (m : el (M A)) (f : {hom A, M B}) (g : {hom B, M C}),
   (m >>= f) >>= g = m >>= [hom b g \o f].
 Definition left_neutral (r : forall A, {hom A, M A}) :=
-  forall A B (f : {hom A, M B}), [hom (b f \o r A)] = f.
+  forall A B (f : {hom A, M B}), [hom (b f \o r A)] =1 f.
 Definition right_neutral (r : forall A, {hom A, M A}) :=
   forall A (m : el (M A)), m >>= r _ = m.
 End bindlaws.
-
-Section misc_laws_on_Type_monad.
-Variable M : {functor CT -> CT}.
-Variable b : forall A B, (A -> M B) -> M A -> M B.
-Local Notation "m >>= f" := (b f m).
-Definition bind_right_distributive (add : forall B, M B -> M B -> M B) :=
-  forall A B (m : M A) (k1 k2 : A -> M B),
-    m >>= (fun x => add _ (k1 x) (k2 x)) = add _ (m >>= k1) (m >>= k2).
-Definition bind_left_distributive (add : forall B, M B -> M B -> M B) :=
-  forall A B (m1 m2 : M A) (k : A -> M B),
-    (add _ m1 m2) >>= k = add _ (m1 >>= k) (m2 >>= k).
-Definition right_zero (f : forall A, M A) :=
-  forall A B (g : M B), g >>= (fun _ => f A) = f A.
-Definition left_zero (f : forall A, M A) := forall A B g, f A >>= g = f B.
-Definition left_id (r : forall A, M A) (add : forall B, M B -> M B -> M B) :=
-  forall A (m : M A), add _ (r _) m = m.
-Definition right_id (r : forall A, M A) (add : forall B, M B -> M B -> M B) :=
-  forall A (m : M A), add _ m (r _) = m.
-End misc_laws_on_Type_monad.
 End BindLaws.
 
 Section bind_lemmas.
@@ -851,162 +843,149 @@ Variable b : forall A B, {hom A, M B} -> {hom M A, M B}.
 Local Notation "m >>= f" := (b f m).
 Lemma bind_left_neutral_hom_fun (r : forall A, {hom A, M A})
   : BindLaws.left_neutral b r
-    <-> forall A B (f : {hom A, M B}), b f \o r A = f.
-Proof. by split; move=> H A B f; move: (H A B f); move/hom_ext. Qed.
+    <-> forall A B (f : {hom A, M B}), b f \o r A =1 f.
+Proof. by split; move=> H A B f; exact: (H A B f). Qed.
 End bind_lemmas.
 
-(*
-The following definition of the structure fails with:
-Error: HB: coercion not to Sortclass or Funclass not supported yet.
-
-HB.mixin Record isMonad (C : category) (M : {functor C -> C}) := {
-  ret : FId ~> M ;
-  join : M \O M ~> M ;
-  bind : forall (a b : C), {hom a, M b} -> {hom M a, M b} ;
-  bindE : forall (a b : C) (f : {hom a, M b}) (m : el (M a)),
-    bind a b f m = join b ((M # f) m) ;
-  joinretM : JoinLaws.left_unit ret join ;
-  joinMret : JoinLaws.right_unit ret join ;
-  joinA : JoinLaws.associativity join
-}.
-HB.structure Definition Monad (C : category) := {M of isMonad C M}.
-*)
-
 HB.mixin Record isMonad (C : category) (M : C -> C) of @Functor C C M := {
-  ret : FId ~> [the {functor C -> C} of M] ;
-  join : [the {functor C -> C} of M] \O [the {functor C -> C} of M] ~>
+  munit : FId ~> [the {functor C -> C} of M] ;
+  mu : [the {functor C -> C} of M] \O [the {functor C -> C} of M] ~>
          [the {functor C -> C} of M] ;
   bind : forall (a b : C), {hom a, M b} -> {hom M a, M b} ;
+  bind_ext : forall (a b : C) (f g : {hom a, M b}),
+    f =1 g -> bind a b f =1 bind a b g;
   bindE : forall (a b : C) (f : {hom a, M b}) (m : el (M a)),
-    bind a b f m = join b (([the {functor C -> C} of M] # f) m) ;
-  joinretM : JoinLaws.left_unit ret join ;
-  joinMret : JoinLaws.right_unit ret join ;
-  joinA : JoinLaws.associativity join
+    bind a b f m = mu b (([the {functor C -> C} of M] # f) m) ;
+  mumunitM : MonadLaws.left_unit munit mu ;
+  muMmunit : MonadLaws.right_unit munit mu ;
+  muA : MonadLaws.associativity mu
 }.
 #[short(type=monad)]
 HB.structure Definition Monad (C : category) :=
-  {M of isMonad C M & isFunctor C C M}.
+  {M of isMonad C M & @Functor C C M}.
 Arguments bind {C M a b} : rename, simpl never.
 Notation "m >>= f" := (bind f m).
+
 
 Section monad_interface.
 Variable (C : category) (M : monad C).
 (* *_head lemmas are for [fun of f] \o ([fun of g] \o ([fun of h] \o ..))*)
 Import comps_notation.
-Lemma joinretM_head a (c : C) (f : {hom c, M a}) : [\o join _, ret _, f] = f.
-Proof. by rewrite compA joinretM. Qed.
-Lemma joinMret_head a (c : C) (f : {hom c, M a}) : [\o join _, M # ret _, f] = f.
-Proof. by rewrite compA joinMret. Qed.
-Lemma joinA_head a (c : C) (f : {hom c, M (M (M a))}) :
-  [\o join _, M # join _, f] = [\o join _, join _, f].
-Proof. by rewrite compA joinA. Qed.
+Lemma mumunitM_head a (c : C) (f : {hom c, M a}) : [\o mu _, munit _, f] =1 f.
+Proof.
+by move=> x; rewrite compA (compapp _ (mu a \o munit (M a))) mumunitM.
+Qed.
+Lemma muMmunit_head a (c : C) (f : {hom c, M a}) : [\o mu _, M # munit _, f] =1 f.
+Proof.
+by move=> x; rewrite compA (compapp _ (mu a \o M # munit a)) muMmunit.
+Qed.
+Lemma muA_head a (c : C) (f : {hom c, M (M (M a))}) :
+  [\o mu _, M # mu _, f] =1 [\o mu _, mu _, f].
+Proof. by move=> x; rewrite compA compapp muA. Qed.
 End monad_interface.
 
-HB.factory Record Monad_of_ret_join (C : category) (M : C -> C)
+
+HB.factory Record Monad_of_munit_mu (C : category) (M : C -> C)
            of @Functor C C M := {
-  ret : FId ~> [the {functor C -> C} of M] ;
-  join : M \O M ~> [the {functor C -> C} of M] ;
-  joinretM : JoinLaws.left_unit ret join ;
-  joinMret : JoinLaws.right_unit ret join ;
-  joinA : JoinLaws.associativity join
+  munit : FId ~> [the {functor C -> C} of M] ;
+  mu : M \O M ~> [the {functor C -> C} of M] ;
+  mumunitM : MonadLaws.left_unit munit mu ;
+  muMmunit : MonadLaws.right_unit munit mu ;
+  muA : MonadLaws.associativity mu
 }.
-HB.builders Context C M of Monad_of_ret_join C M.
+HB.builders Context C M of Monad_of_munit_mu C M.
 Let F := [the {functor _ -> _} of M].
-Let bind (a b : C) (f : {hom a, M b}) : {hom M a, M b} := [hom join _ \o (F # f)].
+Let bind (a b : C) (f : {hom a, M b}) : {hom M a, M b} := [hom mu _ \o (F # f)].
+Let bind_ext (a b : C) (f g : {hom a, M b}) :
+  f =1 g -> bind f =1 bind g.
+Proof. by rewrite /bind => eq x /=; rewrite (functor_ext_hom _ _ _ _ eq). Qed.
 Let bindE (a b : C) (f : {hom a, M b}) (m : el (M a)) :
-    bind f m = join b (([the {functor C -> C} of M] # f) m).
+    bind f m = mu b (([the {functor C -> C} of M] # f) m).
 Proof. by []. Qed.
-HB.instance Definition _ := isMonad.Build C M bindE joinretM joinMret joinA.
+HB.instance Definition _ :=
+  isMonad.Build C M bind_ext bindE mumunitM muMmunit muA.
 HB.end.
 
-(* Monads defined by ret and bind; M need not be a priori a functor *)
-HB.factory Record Monad_of_ret_bind (C : category) (acto : C -> C) := {
-  ret' : forall a, {hom a, acto a} ;
+(* Monads defined by munit and bind; M need not be a priori a functor *)
+HB.factory Record Monad_of_munit_bind (C : category) (acto : C -> C) := {
+  munit' : forall a, {hom a, acto a} ;
   bind : forall (a b : C), {hom a, acto b} -> {hom acto a, acto b} ;
-  bindretf : BindLaws.left_neutral bind ret' ;
-  bindmret : BindLaws.right_neutral bind ret' ;
+  bind_ext_hom : forall (a b : C) (f g : {hom a, acto b}),
+    f =1 g -> bind a b f =1 bind a b g;
+  bindmunitf : BindLaws.left_neutral bind munit' ;
+  bindmmunit : BindLaws.right_neutral bind munit' ;
   bindA : BindLaws.associative bind ;
 }.
-HB.builders Context C M of Monad_of_ret_bind C M.
-Let fmap a b (f : {hom a, b}) := bind [hom ret' b \o f].
-Let bindretf_fun : (forall (a b : C) (f : {hom a, M b}),
-  bind f \o ret' a = f).
-Proof. by apply/bind_left_neutral_hom_fun/bindretf. Qed.
+HB.builders Context C M of Monad_of_munit_bind C M.
+Let fmap a b (f : {hom a, b}) := bind [hom munit' b \o f].
+Let bindmunitf_fun : (forall (a b : C) (f : {hom a, M b}),
+  bind f \o munit' a =1 f).
+Proof. by apply/bind_left_neutral_hom_fun/bindmunitf. Qed.
+Let fmap_ext : FunctorLaws.ext fmap.
+Proof.
+by move=> A B f g eq; rewrite /fmap; apply: bind_ext_hom => x /= /[!eq].
+Qed.
 Let fmap_id : FunctorLaws.id fmap.
 Proof.
-move=> A; apply/hom_ext/funext=>m. rewrite /fmap.
-rewrite/idfun/=.
-rewrite -[in RHS](bindmret m).
-congr (fun f => bind f m).
-by rewrite hom_ext.
+move=> A m; rewrite /fmap; rewrite /idfun.
+rewrite -[in RHS](bindmmunit m).
+by apply: bind_ext_hom => x.
 Qed.
 Let fmap_o : FunctorLaws.comp fmap.
 Proof.
-move=> a b c g h; apply/hom_ext/funext=>m; rewrite /fmap/=.
-rewrite bindA/=.
-congr (fun f => bind f m); rewrite hom_ext/=.
-by rewrite -[in RHS]hom_compA bindretf_fun.
+move=> a b c g h x; rewrite /fmap.
+rewrite [RHS]bindA/=; apply: bind_ext_hom => {}x /=.
+by rewrite -[RHS]compapp bindmunitf_fun.
 Qed.
-HB.instance Definition _ := isFunctor.Build _ _ _ fmap_id fmap_o.
+HB.instance Definition _ := isFunctor.Build C C M fmap_ext fmap_id fmap_o.
 Notation F := [the {functor _ -> _} of M].
-Let ret'_naturality : naturality FId F ret'.
-Proof. by move=> A B h; rewrite FIdf bindretf_fun. Qed.
+
+Let munit'_naturality : naturality FId F munit'.
+Proof. by move=> A B h x; rewrite FIdf bindmunitf_fun. Qed.
 HB.instance Definition _ := isNatural.Build _ _ FId F
-  (ret' : FId ~~> M)(*NB: fails without this type constraint*) ret'_naturality.
-Definition ret := [the FId ~> F of ret'].
-Let join' : F \O F ~~> F := fun _ => bind [hom idfun].
+  (munit' : FId ~~> M)(*NB: fails without this type constraint*) munit'_naturality.
+Definition munit := [the FId ~> F of munit'].
+Let mu' : F \O F ~~> F := fun _ => bind [hom idfun].
 Let fmap_bind a b c (f : {hom a,b}) m (g : {hom c,F a}) :
   (fmap f) (bind g m) = bind [hom fmap f \o g] m.
 Proof. by rewrite /fmap bindA. Qed.
-Let join'_naturality : naturality (F \O F) F join'.
+Let mu'_naturality : naturality (F \O F) F mu'.
 Proof.
-move => A B h.
-rewrite /join /= funeqE => m /=.
-rewrite fmap_bind bindA /=.
-congr (fun f => bind f m).
-rewrite hom_ext/=.
-rewrite -[in RHS]hom_compA.
-by rewrite bindretf_fun.
+move=> A B h m; rewrite /mu /=.
+rewrite fmap_bind bindA; apply: bind_ext_hom => {}m /=.
+by rewrite -[RHS]compapp bindmunitf_fun.
 Qed.
-HB.instance Definition _ := isNatural.Build _ _ _ _ _ join'_naturality.
-Definition join := [the F \O F ~> F of join'].
+HB.instance Definition _ := isNatural.Build _ _ _ _ _ mu'_naturality.
+Definition mu := [the F \O F ~> F of mu'].
 
 Let bind_fmap a b c (f : {hom a, b}) (m : el (F a)) (g : {hom b, F c}) :
   bind g (fmap f m) = bind [hom g \o f] m .
 Proof.
-rewrite bindA /=; congr (fun f => bind f m); apply hom_ext => /=.
-by rewrite -hom_compA bindretf_fun.
+rewrite bindA /=; apply: bind_ext_hom => {}m /=.
+by rewrite -[LHS]compapp bindmunitf_fun.
 Qed.
 Lemma bindE (a b : C) (f : {hom a, F b}) (m : el (F a)) :
-  bind f m = join b (([the {functor C -> C} of F] # f) m).
-Proof.
-rewrite /join /=.
-rewrite /=bind_fmap/idfun/=.
-congr (fun f => bind f m).
-by rewrite hom_ext.
-Qed.
-Lemma joinretM : JoinLaws.left_unit ret join.
-Proof. by rewrite /join => A; rewrite bindretf_fun. Qed.
+  bind f m = mu b (([the {functor C -> C} of F] # f) m).
+Proof. by rewrite /mu /= bind_fmap /=; apply: bind_ext_hom. Qed.
+Lemma mumunitM : MonadLaws.left_unit munit mu.
+Proof. by rewrite /mu => A m /=; rewrite -[LHS]compapp bindmunitf_fun. Qed.
 Let bind_fmap_fun a b c (f : {hom a,b}) (g : {hom b, F c}) :
-  bind g \o fmap f = bind [hom g \o f].
-Proof. rewrite funeqE => ?; exact: bind_fmap. Qed.
-Lemma joinMret : JoinLaws.right_unit ret join.
+  bind g \o fmap f =1 bind [hom g \o f].
+Proof. by move=> m; exact: bind_fmap. Qed.
+Lemma muMmunit : MonadLaws.right_unit munit mu.
 Proof.
-rewrite /join => A; rewrite funeqE => ma.
-rewrite bind_fmap_fun/= -[in RHS](bindmret ma).
-congr (fun f => bind f ma).
-by rewrite hom_ext.
+rewrite /mu => A ma /=.
+rewrite -[LHS]compapp bind_fmap_fun/= -[in RHS](bindmmunit ma).
+exact: bind_ext_hom.
 Qed.
-Lemma joinA : JoinLaws.associativity join.
+Lemma muA : MonadLaws.associativity mu.
 Proof.
-move => A; rewrite funeqE => mmma.
-rewrite /join.
+move => A mmma; rewrite /mu.
 rewrite bind_fmap_fun/= bindA/=.
-congr (fun f => bind f mmma).
-by rewrite hom_ext.
+exact: bind_ext_hom.
 Qed.
-HB.instance Definition _ := isMonad.Build C F bindE joinretM joinMret joinA.
-(* TODO: eliminate Warning: non forgetful inheritance detected *)
+HB.instance Definition _ :=
+  isMonad.Build C M bind_ext_hom bindE mumunitM muMmunit muA.
 HB.end.
 
 Module _Monad_of_adjoint_functors.
@@ -1018,49 +997,53 @@ Variable A : F -| G.
 Definition eps := AdjointFunctors.eps A.
 Definition eta := AdjointFunctors.eta A.
 Definition M := G \O F.
-Definition join : M \O M ~~> M := fun a => G # (eps (F a)).
-Definition ret : FId ~~> M := fun a => eta a.
+Definition mu : M \O M ~~> M := fun a => G # (eps (F a)).
+Definition munit : FId ~~> M := fun a => eta a.
 Let triL := AdjointFunctors.triL A.
 Let triR := AdjointFunctors.triR A.
-Lemma naturality_ret : naturality FId M ret.
-Proof. by move=> *; rewrite (natural eta). Qed.
-HB.instance Definition _ := isNatural.Build C C FId M ret naturality_ret.
-Lemma naturality_join : naturality (M \O M) M join.
+Lemma naturality_munit : naturality FId M munit.
+Proof. by move=> a b f x; rewrite (natural eta). Qed.
+HB.instance Definition _ := isNatural.Build C C FId M munit naturality_munit.
+Lemma naturality_mu : naturality (M \O M) M mu.
 Proof.
-rewrite /join => a b h.
-rewrite /M !FCompE -2!(functor_o G); congr (G # _).
-by rewrite hom_ext /= (natural eps).
+rewrite /mu => a b h x.
+rewrite /M !FCompE -2!(@functor_o _ _ G) /=; apply: functor_ext_hom => {}x.
+exact: (natural eps).
 Qed.
-HB.instance Definition _ := isNatural.Build C C (M \O M) M join naturality_join.
-Let joinE : join = fun a => G # (@eps (F a)).
+HB.instance Definition _ := isNatural.Build C C (M \O M) M mu naturality_mu.
+Let muE : mu = fun a => G # (@eps (F a)).
 Proof. by []. Qed.
-Let join_associativity' a : join a \o join (M a) = join a \o (M # join a).
+Let mu_associativity' a : mu a \o mu (M a) =1 mu a \o (M # mu a).
 Proof.
-rewrite joinE -2!(functor_o G).
-by congr (G # _); rewrite hom_ext /= (natural eps).
+move=> x; rewrite muE -2!(@functor_o _ _ G) /=; apply: functor_ext_hom => {}x /=.
+exact: (natural eps).
 Qed.
-Lemma join_associativity : JoinLaws.associativity join.
-Proof. by move=> a; rewrite join_associativity'. Qed.
-Lemma join_left_unit : JoinLaws.left_unit ret join.
-Proof. by move=> a; rewrite joinE triR. Qed.
-Lemma join_right_unit : JoinLaws.right_unit ret join.
+Lemma mu_associativity : MonadLaws.associativity mu.
+Proof. by move=> a x; rewrite mu_associativity'. Qed.
+Lemma mu_left_unit : MonadLaws.left_unit munit mu.
+Proof. by move=> a x; rewrite muE triR. Qed.
+Lemma mu_right_unit : MonadLaws.right_unit munit mu.
 Proof.
-move=> a; rewrite joinE. rewrite /M FCompE.
-rewrite /= -functor_o -[in RHS]functor_id.
-congr (G # _).
-by rewrite hom_ext/= triL.
+move=> a x; rewrite muE /M FCompE /=.
+rewrite -[LHS](@functor_o _ _ G) -[RHS](@functor_id _ _ G).
+apply: functor_ext_hom => {}x; exact: triL.
 Qed.
 (*TODO: make this go through
 HB.instance Definition _ :=
- Monad_of_ret_join.Build _ _ join_left_unit join_right_unit join_associativity.*)
+ Monad_of_munit_mu.Build _ _ mu_left_unit mu_right_unit mu_associativity.*)
 Let bind (a b : C) (f : {hom a, M b}) : {hom M a, M b} :=
-  [hom join _ \o (M # f)].
+      [hom mu _ \o (M # f)].
+Fact bind_ext (a b : C) (f g : {hom a, M b}) :
+  f =1 g -> bind f =1 bind g.
+Proof.
+by rewrite /bind => eq x /=; rewrite (functor_ext_hom _ _ _ _ eq).
+Qed.
 Let bindE (a b : C) (f : {hom a, M b}) (m : el (M a)) :
-  bind f m = join b (([the {functor C -> C} of M] # f) m).
+  bind f m = mu b (([the {functor C -> C} of M] # f) m).
 Proof. by []. Qed.
 HB.instance Definition monad_of_adjoint_mixin :=
-  isMonad.Build C M bindE join_left_unit join_right_unit join_associativity.
-(* TODO: eliminate Warning: non forgetful inheritance detected *)
+  isMonad.Build C (M : _ -> _)
+    bind_ext bindE mu_left_unit mu_right_unit mu_associativity.
 End def.
 Definition build (C D : category)
            (F : {functor C -> D}) (G : {functor D -> C}) (A : F -| G) :=
@@ -1069,77 +1052,3 @@ End _Monad_of_adjoint_functors.
 Notation Monad_of_adjoint_functors := _Monad_of_adjoint_functors.build.
 (* TODO: Can we turn this into a factory? *)
 
-(* Converter from category.monad to hierarchy.monad *)
-Require Import hierarchy.
-
-Module Monad_of_category_monad.
-Section def.
-Variable M : category.Monad.Exports.monad CT.
-
-Definition acto : Type -> Type := M.
-
-Definition actm (A B : Type) (h : A -> B) (x : acto A) : acto B :=
-  (M # [the {hom A, B} of h]) x.
-
-Lemma actm_id A : actm id = @id (acto A).
-Proof. by rewrite /actm category.functor_id. Qed.
-
-Lemma actm_comp A B C (g : B -> C) (h : A -> B) :
-  actm (g \o h) = actm g \o actm h.
-Proof. by rewrite {1}/actm category.functor_o. Qed.
-
-HB.instance Definition _ := hierarchy.isFunctor.Build acto actm_id actm_comp.
-
-Let F := [the functor of acto].
-
-Lemma actmE (a b : CT) (h : {hom a, b}) : (F # h)%monae = (M # h)%category.
-Proof. by congr (category.actm M); apply hom_ext. Qed.
-
-Definition ret_ : forall A, idfun A -> F A :=
-  fun A (a : A) => @category.ret _ M A a.
-
-Definition join_ : forall A, [the functor of F \o F] A -> F A :=
-  fun A => @category.join _ M A.
-
-Lemma naturality_ret : hierarchy.naturality _ _ ret_.
-Proof. by move=> ? ? ?; rewrite (category.natural (@category.ret _ M)). Qed.
-
-HB.instance Definition _ := hierarchy.isNatural.Build _ _ ret_ naturality_ret.
-
-Definition ret : (FId ~> F)%monae := [the nattrans _ _ of ret_].
-
-Lemma naturality_join : hierarchy.naturality [the functor of F \o F] F join_.
-Proof.
-move=> a b h; rewrite (_ : h = [the {hom a, b} of h])//.
-rewrite /join_ actmE (category.natural category.join a).
-congr (_ \o _).
-by rewrite category.FCompE -2!actmE.
-Qed.
-
-HB.instance Definition _ := hierarchy.isNatural.Build _ _ join_ naturality_join.
-
-Definition join := [the nattrans _ _ of join_].
-
-Lemma retE a : ret a = category.ret a. Proof. by []. Qed.
-
-Lemma joinE a : join a = category.join a. Proof. by []. Qed.
-
-Lemma joinretM : hierarchy.JoinLaws.left_unit ret join.
-Proof.
-by move=> a; apply funext=> x; rewrite joinE retE (category.joinretM a).
-Qed.
-
-Lemma joinMret : hierarchy.JoinLaws.right_unit ret join.
-Proof. by move=> a; rewrite joinE retE actmE (@category.joinMret _ M). Qed.
-
-Lemma joinA : hierarchy.JoinLaws.associativity join.
-Proof. by move=> a; rewrite joinE actmE (category.joinA a). Qed.
-
-HB.instance Definition _ := @hierarchy.isMonad_ret_join.Build acto ret join
-  joinretM joinMret joinA.
-End def.
-End Monad_of_category_monad.
-HB.export Monad_of_category_monad.
-(* TODO: Can we turn this into a factory? *)
-
-*)

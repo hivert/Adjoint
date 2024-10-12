@@ -528,6 +528,7 @@ apply (can_inj (@nmod_of_commonoidK _)).
 by rewrite nmod_of_commonoidM !commonoid_of_nmodK.
 Qed.
 
+(*
 Let bla :=
   isHom.Build NModules (NMod_of_ComMonoid M) (NMod_of_ComMonoid N)
     nmod_of_commonoid_mor nmod_of_commonoid_mor_is_additive.
@@ -536,5 +537,6 @@ Check bla.
 HB.instance Definition _ := bla.
   isHom.Build NModules (NMod_of_ComMonoid M) (NMod_of_ComMonoid N)
     nmod_of_commonoid_mor nmod_of_commonoid_mor_is_additive.
+ *)
 
 End Functor.
