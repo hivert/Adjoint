@@ -684,23 +684,23 @@ Variable R : ringType.
 Variable (a b : Sets) (f : {hom Sets; a, b}).
 
 Definition hom_fm (m : {freemod R[a]}) : {freemod R[b]} :=
-  \sum_(i <- finsupp m) [fm: f i => m i].
+  \sum_(i <- finsupp m) [fm / f i |-> m i].
 
-Lemma hom_fm1 (x : a) : hom_fm [fm: x => 1] = [fm: f x => 1].
+Lemma hom_fm1 (x : a) : hom_fm [fm / x |-> 1] = [fm / f x |-> 1].
 Proof. by rewrite /hom_fm finsupp_fm1 /= big_seq_fset1 fm1E eqxx. Qed.
 
 Fact hom_fm_linear : linear hom_fm.
 Proof.
-rewrite /hom_fm => c /= m n; rewrite scaler_sumr.
+rewrite /hom_fm => c /= m n; rewrite scaler_sumr /=.
 rewrite -!(finsupp_widen _ (S := finsupp m `|` finsupp n)%fset) /=.
 - rewrite -big_split /=; apply: eq_bigr => x _.
   apply/fsfunP => y; rewrite !addfmE !scalefmE !fm1E.
   by case: eqP => // _; rewrite addr0 mulr0.
-- by move=> i /[!memNfinsupp] /eqP ->; rewrite fm10eq0.
+- by move=> i /[!memNfinsupp] /eqP ->; rewrite fm0eq0.
 - by move=> x; rewrite inE orbC => ->.
-- by move=> i /[!memNfinsupp] /eqP ->; rewrite fm10eq0 scaler0.
+- by move=> i /[!memNfinsupp] /eqP ->; rewrite fm0eq0 scaler0.
 - by move=> x; rewrite inE => ->.
-- by move=> i /[!memNfinsupp] /eqP ->; rewrite fm10eq0.
+- by move=> i /[!memNfinsupp] /eqP ->; rewrite fm0eq0.
 - move=> x; rewrite inE; apply contraLR.
   rewrite negb_or !memNfinsupp addfmE scalefmE => /andP [/eqP -> /eqP ->].
   by rewrite mulr0 addr0.
@@ -749,7 +749,7 @@ Variable R : ringType.
 Implicit Types (a : Sets) (T : LModules R).
 Local Notation fmf := (@functor_freeLmod R).
 Local Notation forgetf := (forget_LModules_to_Sets R).
-Let eta_fun a (x : a) : {freemod R[a]} := [fm: x => 1].
+Let eta_fun a (x : a) : {freemod R[a]} := [fm / x |-> 1].
 Definition eta_fm : FId ~~> forgetf \o fmf := eta_fun.
 Fact eta_fm_natural : naturality FId (forgetf \o fmf) eta_fm.
 Proof. by move=> /= a b h x /=; rewrite /eta_fun FIdf hom_fm1. Qed.
@@ -819,14 +819,14 @@ Variables (A : choiceType) (M : lmodType R) (f : A -> M).
 Definition univmap_fm : {linear {freemod R[A]} -> M} :=
   eps_fm M \o (functor_freeLmod R) # f : {hom _, M}.
 
-Lemma univmap_fmP a : univmap_fm [fm: a => 1] = f a.
+Lemma univmap_fmP a : univmap_fm [fm / a |-> 1] = f a.
 Proof.
-rewrite /univmap_fm -[[fm: a => 1]]/(eta_fm R A a) /= !hom_fm1.
+rewrite /univmap_fm -[[fm / a |-> 1]]/(eta_fm R A a) /= !hom_fm1.
 exact: triR_fm.
 Qed.
 
 Lemma univmap_fm_uniq (g : {linear {freemod R[A]} -> M}) :
-  (forall a : A, g [fm: a => 1] = f a) -> g =1 univmap_fm.
+  (forall a : A, g [fm / a |-> 1] = f a) -> g =1 univmap_fm.
 Proof.
 move=> eq m.
 rewrite -(fmE m) !raddf_sum; apply eq_bigr => x _.

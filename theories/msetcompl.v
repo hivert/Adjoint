@@ -50,12 +50,33 @@ Notation "[ 'fm[' key ] x 'in' aT => F ]" :=
   (at level 0, x ident, only parsing).
 Notation "[ 'fm' x 'in' aT => F ]" :=
   ([fsfun[fm_key] x in aT => F] : {freemod _[_]})
-  (at level 0, x ident, format "[ 'fm'  x  'in'  aT  =>  F ]").
-Notation "[ 'fm:' i => j ]" := [fm x in [fset i]%fset => j]
-  (at level 0, format "[ 'fm:'  i  =>  j ]").
+    (at level 0, x ident, format "[ 'fm'  x  'in'  aT  =>  F ]").
+
+Section FreeModuleWith.
+
+Variables (R : nmodType) (T : choiceType).
+
+Variant free_delta : Type := FreeDelta of T & R.
+
+Definition fm_delta (df : free_delta) :=
+  let: FreeDelta i j := df in [fm x in [fset i]%fset => j] : {freemod R[T]}.
+
+End FreeModuleWith.
+Arguments fm_delta {R T%type} df%FUN_DELTA.
+
+Declare Scope free_delta_scope.
+Delimit Scope free_delta_scope with FREE_DELTA.
+
+Notation "x |-> y" := (FreeDelta x y)
+  (at level 190, no associativity,
+   format "'[hv' x '/ '  |->  y ']'") : free_delta_scope.
+
+Notation "[ 'fm' / d ]" := (fm_delta d%FREE_DELTA)
+  (at level 0, format "[ 'fm'  /  d ]").
+
 
 Lemma fm1E (R : nmodType) (T : choiceType) (i j : T) (r : R) :
-  [fm: i => r] j = if j == i then r else 0.
+  [fm x in [fset i]%fset => r] j = if j == i then r else 0.
 Proof. by rewrite !fsfunE in_fset1. Qed.
 
 HB.instance Definition _ (R : nmodType) (T : choiceType) :=
@@ -111,11 +132,9 @@ Proof. exact: (raddf_sum (fmeval x)). Qed.
 
 Lemma fm0eq0 S : [fm x in S => 0] = 0 :> {freemod R[T]}.
 Proof. by apply/fsfunP => y; rewrite fsfunE if_same fm0E. Qed.
-Lemma fm10eq0 i : [fm: i => 0] = 0 :> {freemod R[T]}.
-Proof. exact: fm0eq0. Qed.
 
 
-Lemma fmE f : \sum_(i <- finsupp f) [fm: i => f i] = f.
+Lemma fmE f : \sum_(i <- finsupp f) [fm / i |-> f i] = f.
 Proof.
 apply/fsfunP => x; rewrite fm_sum.
 case: (boolP (x \in finsupp f)) => [x_in_f | /[dup] x_notin_f /fsfun_dflt ->].
@@ -127,7 +146,7 @@ by case: eqP => // <-; rewrite (negbTE x_notin_f).
 Qed.
 
 Lemma finsupp_fmZ x c :
-  c != 0 -> finsupp ([fm: x => c] : {freemod R[T]}) = [fset x].
+  c != 0 -> finsupp ([fm / x |-> c] : {freemod R[T]}) = [fset x].
 Proof.
 move=> cn0; apply/fsetP => y; rewrite !inE mem_finsupp fm1E.
 by case: (y == x); rewrite ?eqxx ?oner_neq0.
@@ -200,17 +219,17 @@ HB.instance Definition _ :=
   GRing.Zmodule_isLmodule.Build R {freemod R[T]}
     scalefmA scale1fm scalefmDr scalefmDl.
 
-Lemma finsupp_fm1 x : finsupp ([fm: x => 1] : {freemod R[T]}) = [fset x].
+Lemma finsupp_fm1 x : finsupp ([fm / x |-> 1] : {freemod R[T]}) = [fset x].
 Proof. exact/finsupp_fmZ/oner_neq0. Qed.
 
-Lemma fm1ZE x c : [fm: x => c] = c *: [fm: x => 1].
+Lemma fm1ZE x c : [fm / x |-> c] = c *: [fm / x |-> 1].
 Proof.
 apply/fsfunP => y; rewrite scalefmE !fm1E.
 by case: (y == x); rewrite ?mulr0 ?mulr1.
 Qed.
 
 Lemma linear_fmE (M : lmodType R) (f g : {linear {freemod R[T]} -> M}) :
-  (forall x : T, f [fm: x => 1] = g [fm: x => 1]) -> f =1 g.
+  (forall x : T, f [fm / x |-> 1] = g [fm / x |-> 1]) -> f =1 g.
 Proof.
 move=> eqfg m; rewrite -(fmE m) !linear_sum; apply eq_bigr=> x _.
 by rewrite fm1ZE !linearZ /= eqfg.
