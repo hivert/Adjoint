@@ -64,6 +64,11 @@ Reserved Notation "f \v g" (at level 50, format "'[v' f '/' \v  g ']'", left ass
 Reserved Notation "f \h g" (at level 50, format "f  \h  g").
 Reserved Notation "m >>= f" (at level 49).
 
+Reserved Notation "'{' 'hom' U '->' V '}'"
+  (at level 0, U at level 98, V at level 99, format "{ 'hom'  U  ->  V }").
+Reserved Notation "'{' 'hom' '[' C ']' U '->' V '}'"
+  (at level 0, U at level 98, V at level 99, format "{ 'hom' [ C ]  U  ->  V }").
+
 Declare Scope category_scope.
 Delimit Scope category_scope with category.
 Local Open Scope category_scope.
@@ -108,13 +113,19 @@ HB.structure Definition Hom (C : category) (a b : C) :=
   {f of isHom C a b f}.
 Arguments isHom_inhom [C a b].
 
+Notation "{ 'hom' U -> V }" := (Hom.type U V) : category_scope.
+Notation "{ 'hom' '[' C ']' U '->' V }" := (@Hom.type C U V)
+  (only parsing) : category_scope.
+
+(*
 (* TODO: use -> in the following notations *)
 Notation "{ 'hom' U , V }" := (Hom.type U V)
   (at level 0, format "{ 'hom'  U ,  V }") : category_scope.
 Notation "{ 'hom' C ; U , V }" := (@Hom.type C U V)
   (only parsing) : category_scope.
 (*(at level 0, format "{ 'hom'  C ;  U ,  V }", only parsing) : category_scope.*)
-Notation "[ 'hom' f ]" := [the {hom _ , _} of (f : _ -> _)]
+*)
+Notation "[ 'hom' f ]" := [the {hom _ -> _} of (f : _ -> _)]
   (at level 0, format "[ 'hom'  f ]") : category_scope.
 (* TODO: FIX: At some places, this [hom f] notation is not used for printing and
    [the {hom ...} of f] is undesirably printed instead. *)
@@ -126,7 +137,7 @@ Implicit Types a b c : C.
 
 HB.instance Definition _ c := isHom.Build _ _ _ (@idfun (el c)) (idfun_inhom c).
 
-HB.instance Definition _ (a b c : C) (f : {hom b, c}) (g : {hom a, b}):=
+HB.instance Definition _ (a b c : C) (f : {hom b -> c}) (g : {hom[C] a -> b}):=
   isHom.Build _ _ _ (f \o g) (funcomp_inhom (isHom_inhom g) (isHom_inhom f)).
 End hom_interface.
 
@@ -139,19 +150,19 @@ End comps_notation.
 Section category_lemmas.
 Variable C : category.
 
-Lemma homfunK (a b : C) (f : {hom a, b}) : [hom f] =1 f.
+Lemma homfunK (a b : C) (f : {hom a -> b}) : [hom f] =1 f.
 Proof. by []. Qed.
 
 Lemma homcompA (a b c d : C)
-  (h : {hom c, d}) (g : {hom b, c}) (f : {hom a, b}) :
+  (h : {hom c -> d}) (g : {hom b -> c}) (f : {hom a -> b}) :
   [hom [hom h \o g] \o f] =1 [hom h \o [hom g \o f]].
 Proof. by []. Qed.
 
-Lemma homcompE (a b c : C) (g : {hom b, c}) (f : {hom a, b}) :
+Lemma homcompE (a b c : C) (g : {hom b -> c}) (f : {hom a -> b}) :
   [hom g \o f] =1 g \o f :> (el a -> el c).
 Proof. by []. Qed.
 
-Lemma hom_compE (a b c : C) (g : {hom b, c}) (f : {hom a, b}) x :
+Lemma hom_compE (a b c : C) (g : {hom b -> c}) (f : {hom a -> b}) x :
   g (f x) = (g \o f) x.
 Proof. by [].  Qed.
 
@@ -161,12 +172,12 @@ Import comps_notation.
    homcompA, we can avoid the infinite sequence of redundunt compositions
    "_ \o id" or "id \o _" that pops out when we "rewrite !compA".*)
 Lemma hom_compA (a b c d : C)
-  (h : {hom c, d}) (g : {hom b, c}) (f : {hom a, b}) :
+  (h : {hom c -> d}) (g : {hom b -> c}) (f : {hom a -> b}) :
   (h \o g) \o f =1 [\o h, g, f] :> (el a -> el d).
 Proof. exact: homcompA. Qed.
 
 Example hom_compA' (a b c d : C)
-  (h : {hom c, d}) (g : {hom b, c}) (f : {hom a, b}) :
+  (h : {hom c -> d}) (g : {hom b -> c}) (f : {hom a -> b}) :
   (h \o g) \o f = [\o h, g, f].
 Proof. by []. Qed.
 
@@ -183,41 +194,41 @@ End category_lemmas.
 Section transport_lemmas.
 Variable C : category.
 Definition transport_dom
-  (a a' b : C) (p : a = a') (f : {hom a, b}) : {hom a', b} :=
-    eq_rect a (fun x => {hom x, b}) f a' p.
+  (a a' b : C) (p : a = a') (f : {hom a -> b}) : {hom a' -> b} :=
+    eq_rect a (fun x => {hom x -> b}) f a' p.
 Definition transport_codom
-  (a b b' : C) (p : b = b') (f : {hom a, b}) : {hom a, b'} :=
-    eq_rect b (fun x => {hom a, x}) f b' p.
+  (a b b' : C) (p : b = b') (f : {hom a -> b}) : {hom a -> b'} :=
+    eq_rect b (fun x => {hom a -> x}) f b' p.
 Definition transport_hom (a a' b b' : C) (pa : a = a') (pb : b = b')
-  (f : {hom a, b}) : {hom a', b'} :=
-  eq_rect b (fun y => {hom a', y})
-          (eq_rect a (fun x => {hom x, b}) f a' pa)
+  (f : {hom a -> b}) : {hom a' -> b'} :=
+  eq_rect b (fun y => {hom a' -> y})
+          (eq_rect a (fun x => {hom x -> b}) f a' pa)
           b' pb.
-Definition hom_of_eq (a b : C) (p : a = b) : {hom a, b} :=
+Definition hom_of_eq (a b : C) (p : a = b) : {hom a -> b} :=
   transport_codom p [hom idfun].
 
 
 (* F for factorization *)
-Lemma transport_domF (a a' b : C) (p : a = a') (f : {hom a, b}) :
+Lemma transport_domF (a a' b : C) (p : a = a') (f : {hom a -> b}) :
   transport_dom p f =1 [hom f \o hom_of_eq (esym p)].
 Proof. by subst a'. Qed.
-Lemma transport_codomF (a b b' : C) (p : b = b') (f : {hom a, b}) :
+Lemma transport_codomF (a b b' : C) (p : b = b') (f : {hom a -> b}) :
   transport_codom p f =1 [hom hom_of_eq p \o f].
 Proof. by subst b'. Qed.
-Lemma transport_homF (a a' b b' : C) (pa : a = a') (pb : b = b') (f : {hom a, b}) :
+Lemma transport_homF (a a' b b' : C) (pa : a = a') (pb : b = b') (f : {hom a -> b}) :
   transport_hom pa pb f =1 [hom hom_of_eq pb \o f \o hom_of_eq (esym pa)].
 Proof. by subst a' b'. Qed.
 
 Lemma transport_homE (a a' b b' : C) (pa : a = a') (pb : b = b')
-  (f g : {hom a, b}) :
+  (f g : {hom a -> b}) :
   f =1 g -> transport_hom pa pb f =1 transport_hom pa pb g.
 Proof. by subst a b. Qed.
 Lemma transport_hom_inj (a a' b b' : C) (pa : a = a') (pb : b = b')
-  (f g : {hom a, b}) :
+  (f g : {hom a -> b}) :
   transport_hom pa pb f =1 transport_hom pa pb g -> f =1 g.
 Proof. by subst a b. Qed.
 Lemma transport_hom_trans (a a' a'' b b' b'' : C)
-  (pa : a = a') (pa' : a' = a'') (pb : b = b') (pb' : b' = b'') (f : {hom a, b}) :
+  (pa : a = a') (pa' : a' = a'') (pb : b = b') (pb' : b' = b'') (f : {hom a -> b}) :
   (transport_hom pa' pb' \o transport_hom pa pb) f =1
     transport_hom (eq_trans pa pa') (eq_trans pb pb') f.
 Proof. by subst a a' b b'. Qed.
@@ -228,18 +239,18 @@ End transport_lemmas.
 Module FunctorLaws.
 Section def.
 Variable (C D : category).
-Variable (F : C -> D) (actm : forall a b, {hom a, b} -> {hom F a, F b}).
-Definition ext := forall a b (f g : {hom a, b}),
+Variable (F : C -> D) (actm : forall a b, {hom a -> b} -> {hom F a -> F b}).
+Definition ext := forall a b (f g : {hom a -> b}),
     f =1 g -> actm f =1 actm g.
 Definition id := forall a,
-    actm [hom idfun] =1 [hom idfun] :> {hom F a, F a}.
-Definition comp := forall a b c (g : {hom b, c}) (h : {hom a, b}),
+    actm [hom idfun] =1 [hom idfun] :> {hom F a -> F a}.
+Definition comp := forall a b c (g : {hom b -> c}) (h : {hom a -> b}),
     actm [hom g \o h] =1 [hom actm g \o actm h].
 End def.
 End FunctorLaws.
 
 HB.mixin Record isFunctor (C D : category) (F : C -> D) := {
-    actm : forall a b, {hom a, b} -> {hom F a, F b} ;
+    actm : forall a b, {hom a -> b} -> {hom F a -> F b} ;
     functor_ext_hom : FunctorLaws.ext actm ;
     functor_id_hom : FunctorLaws.id actm ;
     functor_comp_hom : FunctorLaws.comp actm
@@ -259,7 +270,7 @@ Notation "{ 'functor' fCD }" := (functor_phant (Phant fCD))
 Record eq_functor (C D : category)
   (F : {functor C -> D}) (G : {functor C -> D}) : Prop := EqFunctor {
     pm : F =1 G;
-    eq_transport : forall (A B : C) (f : {hom A , B}),
+    eq_transport : forall (A B : C) (f : {hom A  -> B}),
       transport_hom (pm A) (pm B) (F # f) =1 G # f
   }.
 Notation "F =#= G" := (eq_functor F G).
@@ -273,12 +284,12 @@ move=> x.
 by rewrite (functor_ext_hom _ _ _ _ (homfunK _)) functor_id_hom.
 Qed.
 
-Lemma functor_o a b c (g : {hom b, c}) (h : {hom a, b}) :
+Lemma functor_o a b c (g : {hom b -> c}) (h : {hom a -> b}) :
   F # [hom g \o h] =1 F # g \o F # h :> (el (F a) -> el (F c)).
 Proof. by move=> fa; rewrite functor_comp_hom. Qed.
 
 Lemma functor_ext (G : {functor C -> D}) (pm : F =1 G) :
-  (forall (A B : C) (f : {hom A, B}),
+  (forall (A B : C) (f : {hom A -> B}),
       transport_hom (pm A) (pm B) (F # f) =1 G # f) -> F =#= G.
 Proof. exact: EqFunctor. Qed.
 
@@ -319,9 +330,9 @@ Section functor_o_head.
 Import comps_notation.
 Variable C D : category.
 
-Lemma functor_o_head a b c
-  (g : {hom C; b, c}) (h : {hom C; a, b}) d (F : {functor C -> D})
-    (k : {hom d, F a}) :
+Lemma functor_o_head (a b c : C)
+  (g : {hom b -> c}) (h : {hom a -> b}) d (F : {functor C -> D})
+    (k : {hom d -> F a}) :
   (F # [hom g \o h]) \o k =1 [\o F # g, F # h, k].
 Proof. by move=> x /=; rewrite functor_comp_hom. Qed.
 
@@ -332,7 +343,7 @@ Arguments functor_o_head [C D a b c g h d] F.
 Section functorid.
 
 Variables C : category.
-Definition id_f (A B : C) (f : {hom A, B}) := f.
+Definition id_f (A B : C) (f : {hom A -> B}) := f.
 
 Fact id_ext : FunctorLaws.ext id_f. Proof. by []. Qed.
 Fact id_id : FunctorLaws.id id_f. Proof. by []. Qed.
@@ -340,7 +351,7 @@ Fact id_comp : FunctorLaws.comp id_f. Proof. by []. Qed.
 HB.instance Definition _ := isFunctor.Build _ _ idfun id_ext id_id id_comp.
 
 Definition FId : {functor C -> C} := idfun.
-Lemma FIdf (A B : C) (f : {hom A, B}) : FId # f = f.
+Lemma FIdf (A B : C) (f : {hom A -> B}) : FId # f = f.
 Proof. by []. Qed.
 
 End functorid.
@@ -352,7 +363,7 @@ Section functorcomposition.
 Variables C0 C1 C2 : category.
 Variables (F : {functor C1 -> C2}) (G : {functor C0 -> C1}).
 Definition functorcomposition a b :=
-  fun h : {hom C0; a, b} => F # (G # h) : {hom C2; F (G a), F (G b)}.
+  fun h : {hom[C0] a -> b} => F # (G # h) : {hom[C2] F (G a) -> F (G b)}.
 
 Fact functorcomposition_ext : FunctorLaws.ext functorcomposition.
 Proof.
@@ -383,7 +394,7 @@ Notation "F \O G" := ([the {functor _ -> _} of F \o G]) : category_scope.
 Section functorcomposition_lemmas.
 Variables (C0 C1 C2 C3 : category).
 
-Lemma FCompE (F : {functor C1 -> C2}) (G : {functor C0 -> C1}) a b (k : {hom a, b}) :
+Lemma FCompE (F : {functor C1 -> C2}) (G : {functor C0 -> C1}) a b (k : {hom a -> b}) :
   (F \O G) # k = F # (G # k).
 Proof. by []. Qed.
 
@@ -401,9 +412,9 @@ Proof. exact: (@functor_ext _ _ _ _ (fun=> _)). Qed.
 End functorcomposition_lemmas.
 
 
-Notation "F ~~> G" := (forall a, {hom F a, G a}) : category_scope.
+Notation "F ~~> G" := (forall a, {hom F a -> G a}) : category_scope.
 Definition naturality (C D : category) (F G : {functor C -> D}) (f : F ~~> G) :=
-  forall a b (h : {hom a, b}), (G # h) \o (f a) =1 (f b) \o (F # h).
+  forall a b (h : {hom a -> b}), (G # h) \o (f a) =1 (f b) \o (F # h).
 Arguments naturality [C D].
 HB.mixin Record isNatural
     (C D : category) (F G : {functor C -> D}) (f : F ~~> G) :=
@@ -420,7 +431,7 @@ Section natural_transformation_lemmas.
 Import comps_notation.
 Variables (C D : category) (F G : {functor C -> D}).
 
-Lemma natural_head (phi : F ~> G) a b c (h : {hom a, b}) (f : {hom c, F a}) :
+Lemma natural_head (phi : F ~> G) a b c (h : {hom a -> b}) (f : {hom c -> F a}) :
   [\o G # h, phi a, f] =1 [\o phi b, F # h, f].
 Proof.
 move=> x; rewrite -!hom_compA /=.
@@ -466,8 +477,8 @@ Variables (C D : category) (F G : {functor C -> D}).
 Variable (Iobj : forall c, F c = G c).
 Local Notation tc := (transport_codom (Iobj _)).
 Local Notation td := (transport_dom (esym (Iobj _))).
-Variable (Imor : forall a b (f : {hom a, b}), tc (F # f) =1 td (G # f)).
-(* tc (F # f) and td (G # f) : {hom F a, G b}) *)
+Variable (Imor : forall a b (f : {hom a -> b}), tc (F # f) =1 td (G # f)).
+(* tc (F # f) and td (G # f) : {hom F a -> G b}) *)
 Definition f : F ~~> G := fun (c : C) => tc [hom idfun].
 
 Fact natural : naturality F G f.
@@ -652,21 +663,21 @@ Local Notation "F -| G" := (t F G).
 Variables (C D : category) (F : {functor C -> D}) (G : {functor D -> C}).
 Variable A : F -| G.
 
-Definition hom_iso c d : {hom F c, d} -> {hom c, G d} :=
+Definition hom_iso c d : {hom F c -> d} -> {hom c -> G d} :=
   fun h => [hom (G # h) \o (eta A c)].
 
-Definition hom_inv c d : {hom c, G d} -> {hom F c, d} :=
+Definition hom_inv c d : {hom c -> G d} -> {hom F c -> d} :=
   fun h => [hom (eps A d) \o (F # h)].
 
 Import comps_notation.
 
-Lemma hom_isoK (c : C) (d : D) (f : {hom F c, d}) : hom_inv (hom_iso f) =1 f.
+Lemma hom_isoK (c : C) (d : D) (f : {hom F c -> d}) : hom_inv (hom_iso f) =1 f.
 Proof.
 rewrite /hom_inv /hom_iso => x.
 rewrite /= functor_o -[LHS](natural_head (eps A)).
 by rewrite compapp triL.
 Qed.
-Lemma hom_invK (c : C) (d : D) (g : {hom c, G d}) : hom_iso (hom_inv g) =1 g.
+Lemma hom_invK (c : C) (d : D) (g : {hom c -> G d}) : hom_iso (hom_inv g) =1 g.
 Proof.
 rewrite /hom_inv /hom_iso => x.
 rewrite /= functor_o.
@@ -674,14 +685,14 @@ rewrite !hom_compE hom_compA compapp (natural (eta A)).
 by rewrite !(hom_compE _ _ x) -hom_compA compapp triR.
 Qed.
 
-Lemma hom_iso_inj (c : C) (d : D) (f g : {hom F c, d}) :
+Lemma hom_iso_inj (c : C) (d : D) (f g : {hom F c -> d}) :
   hom_iso f =1 hom_iso g -> f =1 g.
 Proof.
 move=> eq x.
 rewrite -[LHS]hom_isoK -[RHS]hom_isoK /=.
 by rewrite (functor_ext_hom (s := F) _ _ _ _ eq).
 Qed.
-Lemma hom_inv_inj (c : C) (d : D) (f g : {hom c, G d}) :
+Lemma hom_inv_inj (c : C) (d : D) (f g : {hom c -> G d}) :
   hom_inv f =1 hom_inv g -> f =1 g.
 Proof.
 move=> eq x.
@@ -828,18 +839,18 @@ Module BindLaws.
 Section bindlaws.
 
 Variables (C : category) (M : C -> C).
-Variable b : forall A B, {hom A, M B} -> {hom M A, M B}.
+Variable b : forall A B, {hom A -> M B} -> {hom M A -> M B}.
 Local Notation "m >>= f" := (b f m).
 
-Fact associative_aux x y z (f : {hom x, M y}) (g : {hom y, M z}) :
+Fact associative_aux x y z (f : {hom x -> M y}) (g : {hom y -> M z}) :
   (fun w => (f w >>= g)) =1 (b g \o f).
 Proof. by []. Qed.
 Definition associative :=
-  forall A B C (m : el (M A)) (f : {hom A, M B}) (g : {hom B, M C}),
+  forall A B C (m : el (M A)) (f : {hom A -> M B}) (g : {hom B -> M C}),
   (m >>= f) >>= g = m >>= [hom b g \o f].
-Definition left_neutral (r : forall A, {hom A, M A}) :=
-  forall A B (f : {hom A, M B}), [hom (b f \o r A)] =1 f.
-Definition right_neutral (r : forall A, {hom A, M A}) :=
+Definition left_neutral (r : forall A, {hom A -> M A}) :=
+  forall A B (f : {hom A -> M B}), [hom (b f \o r A)] =1 f.
+Definition right_neutral (r : forall A, {hom A -> M A}) :=
   forall A (m : el (M A)), m >>= r _ = m.
 
 End bindlaws.
@@ -849,12 +860,12 @@ End BindLaws.
 Section bind_lemmas.
 
 Variables (C : category) (M : C -> C).
-Variable b : forall A B, {hom A, M B} -> {hom M A, M B}.
+Variable b : forall A B, {hom A -> M B} -> {hom M A -> M B}.
 Local Notation "m >>= f" := (b f m).
 
-Lemma bind_left_neutral_hom_fun (r : forall A, {hom A, M A})
+Lemma bind_left_neutral_hom_fun (r : forall A, {hom A -> M A})
   : BindLaws.left_neutral b r
-    <-> forall A B (f : {hom A, M B}), b f \o r A =1 f.
+    <-> forall A B (f : {hom A -> M B}), b f \o r A =1 f.
 Proof. by split; move=> H A B f; exact: (H A B f). Qed.
 
 End bind_lemmas.
@@ -864,10 +875,10 @@ HB.mixin Record isMonad (C : category) (M : C -> C) of @Functor C C M := {
   munit : FId ~> [the {functor C -> C} of M] ;
   mu : [the {functor C -> C} of M] \O [the {functor C -> C} of M] ~>
          [the {functor C -> C} of M] ;
-  bind : forall (a b : C), {hom a, M b} -> {hom M a, M b} ;
-  bind_ext : forall (a b : C) (f g : {hom a, M b}),
+  bind : forall (a b : C), {hom a -> M b} -> {hom M a -> M b} ;
+  bind_ext : forall (a b : C) (f g : {hom a -> M b}),
     f =1 g -> bind a b f =1 bind a b g;
-  bindE : forall (a b : C) (f : {hom a, M b}) (m : el (M a)),
+  bindE : forall (a b : C) (f : {hom a -> M b}) (m : el (M a)),
     bind a b f m = mu b (([the {functor C -> C} of M] # f) m) ;
   mumunitM : MonadLaws.left_unit munit mu ;
   muMmunit : MonadLaws.right_unit munit mu ;
@@ -886,15 +897,15 @@ Variable (C : category) (M : monad C).
 (* *_head lemmas are for [fun of f] \o ([fun of g] \o ([fun of h] \o ..))*)
 
 Import comps_notation.
-Lemma mumunitM_head a (c : C) (f : {hom c, M a}) : [\o mu _, munit _, f] =1 f.
+Lemma mumunitM_head a (c : C) (f : {hom c -> M a}) : [\o mu _, munit _, f] =1 f.
 Proof.
 by move=> x; rewrite compA (compapp _ (mu a \o munit (M a))) mumunitM.
 Qed.
-Lemma muMmunit_head a (c : C) (f : {hom c, M a}) : [\o mu _, M # munit _, f] =1 f.
+Lemma muMmunit_head a (c : C) (f : {hom c -> M a}) : [\o mu _, M # munit _, f] =1 f.
 Proof.
 by move=> x; rewrite compA (compapp _ (mu a \o M # munit a)) muMmunit.
 Qed.
-Lemma muA_head a (c : C) (f : {hom c, M (M (M a))}) :
+Lemma muA_head a (c : C) (f : {hom c -> M (M (M a))}) :
   [\o mu _, M # mu _, f] =1 [\o mu _, mu _, f].
 Proof. by move=> x; rewrite compA compapp muA. Qed.
 
@@ -911,11 +922,11 @@ HB.factory Record Monad_of_munit_mu (C : category) (M : C -> C)
 }.
 HB.builders Context C M of Monad_of_munit_mu C M.
 Let F := [the {functor _ -> _} of M].
-Let bind (a b : C) (f : {hom a, M b}) : {hom M a, M b} := [hom mu _ \o (F # f)].
-Let bind_ext (a b : C) (f g : {hom a, M b}) :
+Let bind (a b : C) (f : {hom a -> M b}) : {hom M a -> M b} := [hom mu _ \o (F # f)].
+Let bind_ext (a b : C) (f g : {hom a -> M b}) :
   f =1 g -> bind f =1 bind g.
 Proof. by rewrite /bind => eq x /=; rewrite (functor_ext_hom _ _ _ _ eq). Qed.
-Let bindE (a b : C) (f : {hom a, M b}) (m : el (M a)) :
+Let bindE (a b : C) (f : {hom a -> M b}) (m : el (M a)) :
     bind f m = mu b (([the {functor C -> C} of M] # f) m).
 Proof. by []. Qed.
 HB.instance Definition _ :=
@@ -925,17 +936,17 @@ HB.end.
 
 (* Monads defined by ret and bind; M need not be a priori a functor *)
 HB.factory Record Monad_of_ret_bind (C : category) (acto : C -> C) := {
-  ret : forall a, {hom a, acto a} ;
-  bind : forall (a b : C), {hom a, acto b} -> {hom acto a, acto b} ;
-  bind_ext_hom : forall (a b : C) (f g : {hom a, acto b}),
+  ret : forall a, {hom a -> acto a} ;
+  bind : forall (a b : C), {hom a -> acto b} -> {hom acto a -> acto b} ;
+  bind_ext_hom : forall (a b : C) (f g : {hom a -> acto b}),
     f =1 g -> bind a b f =1 bind a b g;
   bindmunitf : BindLaws.left_neutral bind ret ;
   bindmmunit : BindLaws.right_neutral bind ret ;
   bindA : BindLaws.associative bind ;
 }.
 HB.builders Context C M of Monad_of_ret_bind C M.
-Let fmap a b (f : {hom a, b}) := bind [hom ret b \o f].
-Let bindmunitf_fun : (forall (a b : C) (f : {hom a, M b}),
+Let fmap a b (f : {hom a -> b}) := bind [hom ret b \o f].
+Let bindmunitf_fun : (forall (a b : C) (f : {hom a -> M b}),
   bind f \o ret a =1 f).
 Proof. by apply/bind_left_neutral_hom_fun/bindmunitf. Qed.
 Let fmap_ext : FunctorLaws.ext fmap.
@@ -963,7 +974,7 @@ HB.instance Definition _ := isNatural.Build _ _ FId F
   (ret : FId ~~> M)(*NB: fails without this type constraint*) ret_naturality.
 Definition munit := [the FId ~> F of ret].
 Let mu' : F \O F ~~> F := fun _ => bind [hom idfun].
-Let fmap_bind a b c (f : {hom a,b}) m (g : {hom c,F a}) :
+Let fmap_bind a b c (f : {hom a ->b}) m (g : {hom c ->F a}) :
   (fmap f) (bind g m) = bind [hom fmap f \o g] m.
 Proof. by rewrite /fmap bindA. Qed.
 Let mu'_naturality : naturality (F \O F) F mu'.
@@ -975,18 +986,18 @@ Qed.
 HB.instance Definition _ := isNatural.Build _ _ _ _ _ mu'_naturality.
 Definition mu := [the F \O F ~> F of mu'].
 
-Let bind_fmap a b c (f : {hom a, b}) (m : el (F a)) (g : {hom b, F c}) :
+Let bind_fmap a b c (f : {hom a -> b}) (m : el (F a)) (g : {hom b -> F c}) :
   bind g (fmap f m) = bind [hom g \o f] m .
 Proof.
 rewrite bindA /=; apply: bind_ext_hom => {}m /=.
 by rewrite -[LHS]compapp bindmunitf_fun.
 Qed.
-Lemma bindE (a b : C) (f : {hom a, F b}) (m : el (F a)) :
+Lemma bindE (a b : C) (f : {hom a -> F b}) (m : el (F a)) :
   bind f m = mu b (([the {functor C -> C} of F] # f) m).
 Proof. by rewrite /mu /= bind_fmap /=; apply: bind_ext_hom. Qed.
 Lemma mumunitM : MonadLaws.left_unit munit mu.
 Proof. by rewrite /mu => A m /=; rewrite -[LHS]compapp bindmunitf_fun. Qed.
-Let bind_fmap_fun a b c (f : {hom a,b}) (g : {hom b, F c}) :
+Let bind_fmap_fun a b c (f : {hom a ->b}) (g : {hom b -> F c}) :
   bind g \o fmap f =1 bind [hom g \o f].
 Proof. by move=> m; exact: bind_fmap. Qed.
 Lemma muMmunit : MonadLaws.right_unit munit mu.
@@ -1054,14 +1065,14 @@ Qed.
 HB.instance Definition _ :=
  Monad_of_munit_mu.Build _ _ mu_left_unit mu_right_unit mu_associativity.*)
 
-Let bind (a b : C) (f : {hom a, M b}) : {hom M a, M b} :=
+Let bind (a b : C) (f : {hom a -> M b}) : {hom M a -> M b} :=
       [hom mu _ \o (M # f)].
-Fact bind_ext (a b : C) (f g : {hom a, M b}) :
+Fact bind_ext (a b : C) (f g : {hom a -> M b}) :
   f =1 g -> bind f =1 bind g.
 Proof.
 by rewrite /bind => eq x /=; rewrite (functor_ext_hom _ _ _ _ eq).
 Qed.
-Let bindE (a b : C) (f : {hom a, M b}) (m : el (M a)) :
+Let bindE (a b : C) (f : {hom a -> M b}) (m : el (M a)) :
   bind f m = mu b (([the {functor C -> C} of M] # f) m).
 Proof. by []. Qed.
 HB.instance Definition monad_of_adjoint_mixin :=

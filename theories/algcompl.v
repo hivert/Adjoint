@@ -304,20 +304,20 @@ HB.instance Definition _ :=
     monmorphism idfun_is_monmorphism comp_is_monmorphism_fun.
 Notation Monoids := [the category of monoidType].
 #[warning="-uniform-inheritance"]
-Coercion mmorphism_of_Monoids a b (f : {hom Monoids; a, b}) : {mmorphism a -> b} :=
+Coercion mmorphism_of_Monoids a b (f : {hom[Monoids] a -> b}) : {mmorphism a -> b} :=
   HB.pack (Hom.sort f) (isMonMorphism.Build _ _ _ (isHom_inhom f)).
-Lemma mmorphism_of_MonoidsE a b (f : {hom Monoids; a, b}) :
+Lemma mmorphism_of_MonoidsE a b (f : {hom[Monoids] a -> b}) :
   @mmorphism_of_Monoids a b f = f :> (_ -> _).
 Proof. by []. Qed.
 
 Module ForgetMonoids_to_Sets.
 
 Section Morphism.
-Variable (a b : Monoids) (f : {hom Monoids; a, b}).
+Variable (a b : Monoids) (f : {hom[Monoids] a -> b}).
 Definition forget (T : Monoids) : Sets := T.
 HB.instance Definition _ :=
   @isHom.Build Sets a b (f : (a : Sets) -> b) I.
-Definition forget_mor : {hom Sets; a, b} := f : a -> b.
+Definition forget_mor : {hom[Sets] a -> b} := f : a -> b.
 End Morphism.
 HB.instance Definition _ :=
   @isFunctor.Build Monoids Sets forget forget_mor
@@ -327,7 +327,7 @@ Definition functor : {functor Monoids -> Sets} := forget.
 End ForgetMonoids_to_Sets.
 
 Definition forget_Monoids_to_Sets := ForgetMonoids_to_Sets.functor.
-Lemma forget_Monoids_to_SetsE a b (f : {hom Monoids; a, b}) :
+Lemma forget_Monoids_to_SetsE a b (f : {hom[Monoids] a -> b}) :
   forget_Monoids_to_Sets # f = f :> (_ -> _).
 Proof. by []. Qed.
 
@@ -350,7 +350,7 @@ Qed.
 
 Section FreeMonoid.
 
-Variables (a b c : Sets) (f : {hom Sets; a, b}).
+Variables (a b c : Sets) (f : {hom[Sets] a -> b}).
 
 Definition hom_freeMonoid (m : {freemon a}) : {freemon b} :=
   [seq f i | i <- m].
@@ -365,12 +365,12 @@ Proof. by rewrite /hom_freeMonoid; split => [/= x y| //]; rewrite map_cat. Qed.
 
 End FreeMonoid.
 
-HB.instance Definition _ (a b : Sets) (f : {hom Sets; a, b}) :=
+HB.instance Definition _ (a b : Sets) (f : {hom[Sets] a -> b}) :=
   @isHom.Build Monoids {freemon a} {freemon b}
     (hom_freeMonoid f : [the Monoids of {freemon a}] -> {freemon b})
     (hom_freeMonoid_monmorphism f).
-Definition freeMonoid_mor (a b : Sets) (f : {hom Sets; a, b})
-  : {hom Monoids; {freemon a}, {freemon b}} := hom_freeMonoid f.
+Definition freeMonoid_mor (a b : Sets) (f : {hom[Sets] a -> b})
+  : {hom[Monoids] {freemon a} -> {freemon b}} := hom_freeMonoid f.
 
 Fact freeMonoid_ext : FunctorLaws.ext freeMonoid_mor.
 Proof. by move=> /= a b f g eq y; rewrite /hom_freeMonoid; exact: eq_map. Qed.
@@ -438,7 +438,7 @@ Section UniversalProperty.
 Variables (A : choiceType) (M : monoidType) (f : A -> M).
 
 Definition univmap_fm : {mmorphism {freemon A} -> M} :=
-  eps M \o functor_freeMon # f : {hom _, M}.
+  eps M \o functor_freeMon # f : {hom _ -> M}.
 
 Lemma univmap_fmP a : univmap_fm [fm a] = f a.
 Proof.
@@ -464,10 +464,10 @@ HB.instance Definition _ :=
 
 Notation ComMonoids := [the category of comMonoidType].
 #[warning="-uniform-inheritance"]
-Coercion mmorphism_of_ComMonoids a b (f : {hom ComMonoids; a, b}) :
+Coercion mmorphism_of_ComMonoids a b (f : {hom[ComMonoids] a -> b}) :
   {mmorphism a -> b} :=
   HB.pack (Hom.sort f) (isMonMorphism.Build _ _ _ (isHom_inhom f)).
-Lemma mmorphism_of_ComMonoidsE a b (f : {hom ComMonoids; a, b}) :
+Lemma mmorphism_of_ComMonoidsE a b (f : {hom[ComMonoids] a -> b}) :
   @mmorphism_of_ComMonoids a b f = f :> (_ -> _).
 Proof. by []. Qed.
 
@@ -514,7 +514,7 @@ End Defs.
 
 Section Functor.
 
-Variables (M N : ComMonoids) (f : {hom ComMonoids; M, N}).
+Variables (M N : ComMonoids) (f : {hom[ComMonoids] M -> N}).
 
 Definition nmod_of_commonoid_mor :=
   (@nmod_of_commonoid N) \o f \o (@commonoid_of_nmod M).
