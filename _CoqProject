@@ -4,7 +4,7 @@
 -arg -w -arg -redundant-canonical-projection
 -arg -w -arg -deprecated-since-8.19
 -arg -w -arg -projection-no-head-constant
-theories/category.v
-theories/examples.v
 theories/msetcompl.v
 theories/algcompl.v
+theories/category.v
+theories/algcat.v

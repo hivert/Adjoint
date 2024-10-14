@@ -72,7 +72,7 @@ Notation "x |-> y" := (FreeDelta x y)
    format "'[hv' x '/ '  |->  y ']'") : free_delta_scope.
 
 Notation "[ 'fm' / d ]" := (fm_delta d%FREE_DELTA)
-  (at level 0, format "[ 'fm'  /  d ]").
+  (at level 0, format "[ 'fm'  /  d ]") : ring_scope.
 
 
 Lemma fm1E (R : nmodType) (T : choiceType) (i j : T) (r : R) :
