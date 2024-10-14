@@ -635,7 +635,7 @@ HB.instance Definition _ :=
   @isFunctor.Build NModules ComMonoids ComMonoid_of_NMod ComMonoid_of_NMod_mor
     ComMonoid_of_NMod_ext ComMonoid_of_NMod_id ComMonoid_of_NMod_comp.
 
-(** Doest seems to be provable
+(** Doesn't seems to be provable
 Lemma CM_id : ComMonoid_of_NMod \O NMod_of_ComMonoid =#= FId.
  *)
 
@@ -651,22 +651,17 @@ Definition isoCM_map : CM M -> FId M :=
 Definition isoCM_inv : FId M -> CM M :=
   (@commonoid_of_nmod _) \o (@nmod_of_commonoid M).
 
-Lemma isoCM_mapK : cancel isoCM_map isoCM_inv.
+Fact isoCM_mapK : cancel isoCM_map isoCM_inv.
 Proof.
 rewrite /isoCM_map {}/isoCM_inv => x /=.
 by rewrite !(nmod_of_commonoid_invK, commonoid_of_nmod_invK).
 Qed.
-
-Lemma isoCM_invK : cancel isoCM_inv isoCM_map.
+Fact isoCM_invK : cancel isoCM_inv isoCM_map.
 Proof.
 rewrite /isoCM_map {}/isoCM_inv => x /=.
 by rewrite !(nmod_of_commonoidK, commonoid_of_nmodK).
 Qed.
-
-Lemma isoCM_map_bij : bijective isoCM_map.
-Proof. by exists isoCM_inv; [exact isoCM_mapK | exact isoCM_invK]. Qed.
-
-Lemma isoCM_monmorphism : monmorphism isoCM_map.
+Fact isoCM_monmorphism : monmorphism isoCM_map.
 Proof.
 split => [x y |].
   rewrite -{1}(isoCM_mapK x) -{1}(isoCM_mapK y).
@@ -680,14 +675,15 @@ Qed.
 HB.instance Definition _ :=
   isHom.Build ComMonoids (CM M) M isoCM_map isoCM_monmorphism.
 
-Lemma isoCM_inv_monmorphism : monmorphism isoCM_inv.
+Fact isoCM_inv_monmorphism : monmorphism isoCM_inv.
 Proof.
 rewrite /isoCM_inv; split => [x y |] /=.
   by rewrite nmod_of_commonoidM commonoid_of_nmodD.
 by rewrite commonoid_of_nmod0 nmod_of_commonoid1.
 Qed.
 HB.instance Definition _ :=
-  isHom.Build ComMonoids M (CM M) isoCM_inv isoCM_inv_monmorphism.
+  isIsom.Build ComMonoids (CM M) M isoCM_map
+    isoCM_inv_monmorphism isoCM_mapK isoCM_invK.
 
 End IsoCM.
 
@@ -717,22 +713,17 @@ Definition isoMC_map : MC M -> FId M :=
 Definition isoMC_inv : FId M -> MC M :=
   (@nmod_of_commonoid _) \o (@commonoid_of_nmod M).
 
-Lemma isoMC_mapK : cancel isoMC_map isoMC_inv.
+Fact isoMC_mapK : cancel isoMC_map isoMC_inv.
 Proof.
 rewrite /isoMC_map {}/isoMC_inv => x /=.
 by rewrite !(nmod_of_commonoid_invK, commonoid_of_nmod_invK).
 Qed.
-
-Lemma isoMC_invK : cancel isoMC_inv isoMC_map.
+Fact isoMC_invK : cancel isoMC_inv isoMC_map.
 Proof.
 rewrite /isoMC_map {}/isoMC_inv => x /=.
 by rewrite !(nmod_of_commonoidK, commonoid_of_nmodK).
 Qed.
-
-Lemma isoMC_map_bij : bijective isoMC_map.
-Proof. by exists isoMC_inv; [exact isoMC_mapK | exact isoMC_invK]. Qed.
-
-Lemma isoMC_additive : semi_additive isoMC_map.
+Fact isoMC_additive : semi_additive isoMC_map.
 Proof.
 split => [| x y].
   rewrite nmod_of_commonoid1 commonoid_of_nmod0 /isoMC_map /=.
@@ -746,14 +737,15 @@ Qed.
 HB.instance Definition _ :=
   isHom.Build NModules (MC M) M isoMC_map isoMC_additive.
 
-Lemma isoMC_inv_additive : semi_additive isoMC_inv.
+Fact isoMC_inv_additive : semi_additive isoMC_inv.
 Proof.
 rewrite /isoMC_inv; split => [| x y] /=.
   by rewrite nmod_of_commonoid1 commonoid_of_nmod0.
 by rewrite commonoid_of_nmodD nmod_of_commonoidM.
 Qed.
 HB.instance Definition _ :=
-  isHom.Build NModules M (MC M) isoMC_inv isoMC_inv_additive.
+  isIsom.Build NModules (MC M) M isoMC_map
+    isoMC_inv_additive isoMC_mapK isoMC_invK.
 
 End IsoMC.
 
@@ -772,3 +764,8 @@ HB.instance Definition _ :=
 Definition isoMC : MC ~> FId := isoMC_hom.
 
 End IsoMCTrans.
+
+
+Definition Equiv_ComMonoids_NModules :
+  equivalence_category NMod_of_ComMonoid ComMonoid_of_NMod :=
+  EquivalenceCategory natural_isoMC natural_isoCM.

@@ -68,6 +68,10 @@ Reserved Notation "'{' 'hom' U '->' V '}'"
   (at level 0, U at level 98, V at level 99, format "{ 'hom'  U  ->  V }").
 Reserved Notation "'{' 'hom' '[' C ']' U '->' V '}'"
   (at level 0, U at level 98, V at level 99, format "{ 'hom' [ C ]  U  ->  V }").
+Reserved Notation "'{' 'isom' U '->' V '}'"
+  (at level 0, U at level 98, V at level 99, format "{ 'isom'  U  ->  V }").
+Reserved Notation "'{' 'isom' '[' C ']' U '->' V '}'"
+  (at level 0, U at level 98, V at level 99, format "{ 'isom' [ C ]  U  ->  V }").
 
 Declare Scope category_scope.
 Delimit Scope category_scope with category.
@@ -79,6 +83,8 @@ Lemma compidf A B (f : A -> B) : id \o f = f. Proof. by []. Qed.
 (* Help to rewrite with compositions *)
 Lemma compapp A B C (f : A -> B) (g : B -> C) (a : A) :
   (g \o f) a = g (f a). Proof. by []. Qed.
+Lemma idfunK A : cancel (@idfun A) idfun. Proof. by []. Qed.
+
 
 (* opaque ssrfun.frefl blocks some proofs involving functor_ext *)
 #[global]
@@ -129,7 +135,7 @@ Implicit Types a b c : C.
 
 HB.instance Definition _ c := isHom.Build _ _ _ (@idfun (el c)) (idfun_inhom c).
 
-HB.instance Definition _ (a b c : C) (f : {hom b -> c}) (g : {hom[C] a -> b}):=
+HB.instance Definition _ (a b c : C) (f : {hom b -> c}) (g : {hom a -> b}):=
   isHom.Build _ _ _ (f \o g) (funcomp_inhom (isHom_inhom g) (isHom_inhom f)).
 End hom_interface.
 
@@ -226,6 +232,59 @@ Lemma transport_hom_trans (a a' a'' b b' b'' : C)
 Proof. by subst a a' b b'. Qed.
 
 End transport_lemmas.
+
+
+HB.mixin Record isIsom (C : category) (a b : C) (f : el a -> el b) := {
+    inv_hom : el b -> el a;
+    ishom_inv_hom : inhom b a inv_hom;
+    homK : cancel f inv_hom;
+    inv_homK : cancel inv_hom f;
+  }.
+HB.structure Definition Isom (C : category) (a b : C) :=
+  {f of isIsom C a b f & isHom C a b f}.
+Notation "{ 'isom' U -> V }" := (Isom.type U V) : category_scope.
+Notation "{ 'isom' '[' C ']' U '->' V }" := (@Isom.type C U V)
+  (only parsing) : category_scope.
+Arguments inv_hom [C a b].
+Arguments ishom_inv_hom [C a b].
+Arguments homK [C a b].
+Arguments inv_homK [C a b].
+
+
+Section isom_interface.
+Variable C : category.
+Implicit Types a b c : C.
+
+HB.instance Definition _ c :=
+  isIsom.Build _ _ _ (@idfun (el c))
+    (idfun_inhom c) (@idfunK (el c)) (@idfunK (el c)).
+
+HB.instance Definition _ (a b c : C) (f : {isom b -> c}) (g : {isom a -> b}):=
+  isIsom.Build _ _ _ (f \o g)
+    (funcomp_inhom (ishom_inv_hom f) (ishom_inv_hom g))
+    (can_comp (homK f) (homK g)) (can_comp (inv_homK g) (inv_homK f)).
+
+HB.instance Definition _ (a b : C) (f : {isom a -> b}) :=
+  isHom.Build _ _ _ (inv_hom f : el b -> el a) (ishom_inv_hom f).
+HB.instance Definition _ (a b : C) (f : {isom a -> b}) :=
+  isIsom.Build _ _ _ (inv_hom f : el b -> el a)
+    (isHom_inhom f) (inv_homK f) (homK f).
+
+End isom_interface.
+
+Section ismorphism_lemmas.
+Variable C : category.
+
+Lemma isom_bij (a b : C) (f : {isom a -> b}) : bijective f.
+Proof. by case: f => [f [[inv _ fK invK]] _] /=; exists inv. Qed.
+
+Lemma isomK (a b : C) (f : {isom a -> b}) : cancel f (inv_hom f).
+Proof. by case: f => [f [[inv ih fK invK]] ?] /=. Qed.
+
+Lemma isom_invK (a b : C) (f : {isom a -> b}) : cancel (inv_hom f) f.
+Proof. by case: f => [f [[inv ih fK invK]] ?] /=. Qed.
+
+End ismorphism_lemmas.
 
 
 Module FunctorLaws.
@@ -497,6 +556,28 @@ Export NEq.Exports.
 Notation "[ 'NEq' F , G ]" :=
   (NEq F G (fun a => erefl) (fun a b f x => erefl))
     (at level 0, format "[ 'NEq'  F ,  G ]") : category_scope.
+
+(* Category equivalence *)
+Record equivalence_category (C D : category)
+  (F : {functor C -> D}) (G : {functor D -> C}) := EquivalenceCategory {
+     FGid : forall a, {isom (F \O G) a -> FId a};
+     GFid : forall a, {isom (G \O F) a -> FId a};
+     natural_FGid : naturality (F \O G) FId FGid;
+     natural_GFid : naturality (G \O F) FId GFid;
+}.
+
+Section equiv_cat_interface.
+
+Variables (C D : category) (F : {functor C -> D}) (G : {functor D -> C}).
+Variable (eq : equivalence_category F G).
+Definition FGid_trans : (F \O G) ~~> FId := FGid eq.
+Definition GFid_trans : (G \O F) ~~> FId := GFid eq.
+HB.instance Definition _ :=
+      isNatural.Build D D (F \O G) FId FGid_trans (natural_FGid eq).
+HB.instance Definition _ :=
+      isNatural.Build C C (G \O F) FId GFid_trans (natural_GFid eq).
+
+End equiv_cat_interface.
 
 
 Section vertical_composition.
