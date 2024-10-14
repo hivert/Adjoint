@@ -231,6 +231,7 @@ End Projections.
 End MonMorphismTheory.
 
 
+(** Hack to avoid non forgetful inheritance problems *)
 Record multMon (R : semiRingType) := Mk { mval :> R; _ : true; }.
 HB.instance Definition _ R := [isSub of multMon R for @mval R].
 HB.instance Definition _ R := [Equality of multMon R by <:].
@@ -294,13 +295,13 @@ Section Functoriality.
 
 Variable (R S : semiRingType) (f : {rmorphism R -> S}).
 
-Definition multmor (r : multMon R) : multMon S := to_multMon (f (val r)).
-Fact multmor_monmorphism : monmorphism multmor.
+Definition multMon_mor (r : multMon R) : multMon S := to_multMon (f (val r)).
+Fact multMon_mor_monmorphism : monmorphism multMon_mor.
 Proof.
-split; last by rewrite /multmor !monE /= rmorph1.
-by move=> x y; rewrite /multmor !monME rmorphM.
+rewrite /multMon_mor; split; last by rewrite !monE /= rmorph1.
+by move=> x y; rewrite !monME rmorphM.
 Qed.
 HB.instance Definition _ :=
-  isMonMorphism.Build (multMon R) (multMon S) multmor multmor_monmorphism.
+  isMonMorphism.Build (multMon R) (multMon S) multMon_mor multMon_mor_monmorphism.
 
 End Functoriality.

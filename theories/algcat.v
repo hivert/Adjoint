@@ -594,7 +594,6 @@ Fact freeMonoid_id : FunctorLaws.id freeMonoid_mor.
 Proof. by move=> /= a x /=; rewrite /hom_freeMonoid /= map_id. Qed.
 Fact freeMonoid_comp  : FunctorLaws.comp freeMonoid_mor.
 Proof. by move=> /= a b c f g x; rewrite /hom_freeMonoid /= map_comp. Qed.
-
 Definition functor_freeMon T : Monoids := {freemon T}.
 HB.instance Definition _ :=
   @isFunctor.Build Sets Monoids
@@ -1320,4 +1319,29 @@ by rewrite fm1ZE [LHS]linearZ [RHS]linearZ eq univmap_freelmodP.
 Qed.
 
 End UniversalProperty.
+
+
+(* Monoid of SemiRing Forgetful functor *)
+Module ForgetSemiRings_to_Monoids.
+
+HB.instance Definition _ (R S : semiRingType) (f : {rmorphism R -> S}) :=
+  @isHom.Build Monoids (multMon R : Monoids) (multMon S : Monoids)
+    (multMon_mor f : (_ : Monoids) -> _) (multMon_mor_monmorphism f).
+Fact multMon_ext : FunctorLaws.ext multMon_mor.
+Proof. by  move=> /= a b f g eq y; rewrite /multMon_mor /= eq. Qed.
+Fact multMon_id : FunctorLaws.id multMon_mor.
+Proof. by move=> /= a x /=; rewrite /multMon_mor /=; exact: val_inj. Qed.
+Fact multMon_comp  : FunctorLaws.comp multMon_mor.
+Proof. by move=> /= a b c f g x; rewrite /multMon_mor /=. Qed.
+Definition functor_multMon (R : SemiRings) : Monoids := multMon R.
+HB.instance Definition _ :=
+  @isFunctor.Build SemiRings Monoids
+    functor_multMon multMon_mor multMon_ext multMon_id multMon_comp.
+Definition functor : {functor SemiRings -> Monoids} := functor_multMon.
+
+End ForgetSemiRings_to_Monoids.
+Definition forget_SemiRings_to_Monoids := ForgetSemiRings_to_Monoids.functor.
+Lemma forget_SemiRings_to_MonoidsE a b (f : {hom[SemiRings] a -> b}) :
+  forget_SemiRings_to_Monoids # f = multMon_mor f :> (_ -> _).
+Proof. by []. Qed.
 
