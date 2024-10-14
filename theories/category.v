@@ -24,7 +24,7 @@ From mathcomp Require Import ssralg.
 (*                  CT := [the category of Type]                              *)
 (*         FunctorLaws == module that defines the functor laws                *)
 (*                  \O == functor composition                                 *)
-(*             F ~~> G == forall a, {hom F a ,G a}, which corresponds to a    *)
+(*             F ~~> G == forall a, {hom F a, G a}, which corresponds to a    *)
 (*                        natural transformation when it satisfies the        *)
 (*                        predicate naturality                                *)
 (*                 NId == the identity natural transformation                 *)
@@ -116,19 +116,11 @@ Arguments isHom_inhom [C a b].
 Notation "{ 'hom' U -> V }" := (Hom.type U V) : category_scope.
 Notation "{ 'hom' '[' C ']' U '->' V }" := (@Hom.type C U V)
   (only parsing) : category_scope.
-
-(*
-(* TODO: use -> in the following notations *)
-Notation "{ 'hom' U , V }" := (Hom.type U V)
-  (at level 0, format "{ 'hom'  U ,  V }") : category_scope.
-Notation "{ 'hom' C ; U , V }" := (@Hom.type C U V)
-  (only parsing) : category_scope.
-(*(at level 0, format "{ 'hom'  C ;  U ,  V }", only parsing) : category_scope.*)
-*)
-Notation "[ 'hom' f ]" := [the {hom _ -> _} of (f : _ -> _)]
-  (at level 0, format "[ 'hom'  f ]") : category_scope.
 (* TODO: FIX: At some places, this [hom f] notation is not used for printing and
    [the {hom ...} of f] is undesirably printed instead. *)
+Notation "[ 'hom' f ]" := [the {hom _ -> _} of f]
+  (at level 0, format "[ 'hom'  f ]") : category_scope.
+
 
 
 Section hom_interface.
@@ -288,9 +280,9 @@ Lemma functor_o a b c (g : {hom b -> c}) (h : {hom a -> b}) :
   F # [hom g \o h] =1 F # g \o F # h :> (el (F a) -> el (F c)).
 Proof. by move=> fa; rewrite functor_comp_hom. Qed.
 
-Lemma functor_ext (G : {functor C -> D}) (pm : F =1 G) :
+Lemma functor_ext (G : {functor C -> D}) (eq : F =1 G) :
   (forall (A B : C) (f : {hom A -> B}),
-      transport_hom (pm A) (pm B) (F # f) =1 G # f) -> F =#= G.
+      transport_hom (eq A) (eq B) (F # f) =1 G # f) -> F =#= G.
 Proof. exact: EqFunctor. Qed.
 
 End functor_lemmas.
@@ -301,13 +293,13 @@ Section functor_equality.
 Variables (C D : category).
 
 Lemma eq_functor_refl (F : {functor C -> D}) : F =#= F.
-Proof. exact: (@functor_ext _ _ _ _ (fun=> _)). Qed.
+Proof. exact: (functor_ext (eq := (fun=> _))). Qed.
 
 Lemma eq_functor_trans (F G H : {functor C -> D}) :
   F =#= G -> G =#= H -> F =#= H.
 Proof.
 move=> [pmFG eqFG] [pmGH eqGH].
-apply: (@functor_ext _ _ _ _ (fun A => eq_trans (pmFG A) (pmGH A))) => A B f x.
+apply: (functor_ext (eq := fun A => eq_trans (pmFG A) (pmGH A))) => A B f x.
 rewrite -transport_hom_trans -eqGH /=.
 exact: transport_homE.
 Qed.
@@ -315,7 +307,7 @@ Qed.
 Lemma eq_functor_sym (F G : {functor C -> D}) : F =#= G -> G =#= F.
 Proof.
 move=> [pm eq].
-apply: (@functor_ext _ _ _ _ (fun A => esym (pm A))) => A B f.
+apply: (functor_ext (eq := fun A => esym (pm A))) => A B f.
 apply: (@transport_hom_inj _ _ _ _ _ (pm A) (pm B)) => x.
 rewrite {}eq; move: x; rewrite -/(_ =1 _).
 move: (G # f) => {f}.
@@ -399,15 +391,15 @@ Lemma FCompE (F : {functor C1 -> C2}) (G : {functor C0 -> C1}) a b (k : {hom a -
 Proof. by []. Qed.
 
 Lemma FCompId (F : {functor C0 -> C1}) : F \O FId =#= F.
-Proof. exact: (@functor_ext _ _ _ _ (fun=> _)). Qed.
+Proof. exact: (functor_ext (eq := fun=> _)). Qed.
 
 Lemma FIdComp (F : {functor C0 -> C1}) : FId \O F =#= F.
-Proof. exact: (@functor_ext _ _ _ _ (fun=> _)). Qed.
+Proof. exact: (functor_ext (eq := fun=> _)). Qed.
 
 Lemma FCompA
   (F : {functor C2 -> C3}) (G : {functor C1 -> C2}) (H : {functor C0 -> C1}) :
   (F \O G) \O H =#= F \O (G \O H).
-Proof. exact: (@functor_ext _ _ _ _ (fun=> _)). Qed.
+Proof. exact: (functor_ext (eq := fun=> _)). Qed.
 
 End functorcomposition_lemmas.
 

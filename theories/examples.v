@@ -423,7 +423,7 @@ Proof. by []. Qed.
 Lemma unicity_of_forgetful_functors (R : Rings) :
   forget_Rings_to_ZModules \O forget_LAlgebras_to_Rings R
     =#= forget_LModules_to_ZModules R \O forget_LAlgebras_to_LModules R.
-Proof. exact: (@functor_ext _ _ _ _ (fun=> _)). Qed.
+Proof. exact: (functor_ext (eq := fun=> _)). Qed.
 
 
 (* Algebras ************************************************************)
