@@ -1327,21 +1327,47 @@ Module ForgetSemiRings_to_Monoids.
 HB.instance Definition _ (R S : semiRingType) (f : {rmorphism R -> S}) :=
   @isHom.Build Monoids (multMon R : Monoids) (multMon S : Monoids)
     (multMon_mor f : (_ : Monoids) -> _) (multMon_mor_monmorphism f).
+Definition functor_multMon_fun (R : SemiRings) : Monoids := multMon R.
 Fact multMon_ext : FunctorLaws.ext multMon_mor.
-Proof. by  move=> /= a b f g eq y; rewrite /multMon_mor /= eq. Qed.
+Proof. by move=> /= a b f g eq y; rewrite /multMon_mor /= eq. Qed.
 Fact multMon_id : FunctorLaws.id multMon_mor.
 Proof. by move=> /= a x /=; rewrite /multMon_mor /=; exact: val_inj. Qed.
 Fact multMon_comp  : FunctorLaws.comp multMon_mor.
 Proof. by move=> /= a b c f g x; rewrite /multMon_mor /=. Qed.
-Definition functor_multMon (R : SemiRings) : Monoids := multMon R.
 HB.instance Definition _ :=
   @isFunctor.Build SemiRings Monoids
-    functor_multMon multMon_mor multMon_ext multMon_id multMon_comp.
-Definition functor : {functor SemiRings -> Monoids} := functor_multMon.
+    functor_multMon_fun multMon_mor multMon_ext multMon_id multMon_comp.
+Definition functor : {functor SemiRings -> Monoids} := functor_multMon_fun.
+
+Definition multComMon_mor (R S : comSemiRingType) (f : {hom[ComSemiRings] R -> S})
+  : (multMon R : ComMonoids) -> (multMon S : ComMonoids)
+  := multMon_mor (rmorph_of_ComSemiRing f).  (* Why the coercion does't work *)
+HB.instance Definition _ (R S : comSemiRingType) (f : {hom[ComSemiRings] R -> S}) :=
+  @isHom.Build ComMonoids (multMon R : ComMonoids) (multMon S : ComMonoids)
+    (multComMon_mor f)
+    (multMon_mor_monmorphism (rmorph_of_ComSemiRing f)).
+Definition functor_multComMon_fun (R : ComSemiRings) : ComMonoids := multMon R.
+Fact multComMon_ext : FunctorLaws.ext multComMon_mor.
+Proof. by move=> /= a b f g eq; exact: multMon_ext. Qed.
+Fact multComMon_id : FunctorLaws.id multComMon_mor.
+Proof. by move=> /= a; exact: multMon_id. Qed.
+Fact multComMon_comp  : FunctorLaws.comp multComMon_mor.
+Proof. by move=> /= a b c f g x; rewrite /multComMon_mor /multMon_mor. Qed.
+HB.instance Definition _ :=
+  @isFunctor.Build ComSemiRings ComMonoids
+    functor_multComMon_fun multComMon_mor
+    multComMon_ext multComMon_id multComMon_comp.
+Definition functorCom : {functor ComSemiRings -> ComMonoids} :=
+  functor_multComMon_fun.
 
 End ForgetSemiRings_to_Monoids.
 Definition forget_SemiRings_to_Monoids := ForgetSemiRings_to_Monoids.functor.
 Lemma forget_SemiRings_to_MonoidsE a b (f : {hom[SemiRings] a -> b}) :
   forget_SemiRings_to_Monoids # f = multMon_mor f :> (_ -> _).
 Proof. by []. Qed.
-
+Definition forget_ComSemiRings_to_ComMonoids :=
+  ForgetSemiRings_to_Monoids.functorCom.
+Lemma forget_ComSemiRings_to_ComMonoidsE a b (f : {hom[ComSemiRings] a -> b}) :
+  forget_ComSemiRings_to_ComMonoids # f =
+    multMon_mor (rmorph_of_ComSemiRing f) :> (_ -> _).
+Proof. by []. Qed.
