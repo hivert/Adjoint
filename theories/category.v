@@ -1153,10 +1153,9 @@ move=> a x; rewrite muE /M FCompE /=.
 rewrite -[LHS](@functor_o _ _ G) -[RHS](@functor_id _ _ G).
 apply: functor_ext_hom => {}x; exact: triL.
 Qed.
-
-(*TODO: make this go through
-HB.instance Definition _ :=
- Monad_of_munit_mu.Build _ _ mu_left_unit mu_right_unit mu_associativity.*)
+#[export]
+HB.instance Definition monad_of_adjoint_mixin_mu :=
+  Monad_of_munit_mu.Build C (G \o F) mu_left_unit mu_right_unit mu_associativity.
 
 Let bind (a b : C) (f : {hom a -> M b}) : {hom M a -> M b} :=
       [hom mu _ \o (M # f)].
@@ -1171,27 +1170,122 @@ Proof. by []. Qed.
 HB.instance Definition monad_of_adjoint_mixin :=
   isMonad.Build C (G \o F)
     bind_ext bindE mu_left_unit mu_right_unit mu_associativity.
+
 End def.
 
 Definition build (C D : category)
-           (F : {functor C -> D}) (G : {functor D -> C}) (A : F -| G) :=
+  (F : {functor C -> D}) (G : {functor D -> C}) (A : F -| G) :=
   Monad.Pack (Monad.Class (monad_of_adjoint_mixin A)).
 
 End _Monad_of_adjoint_functors.
-Notation Monad_of_adjoint_functors := _Monad_of_adjoint_functors.build.
-(* TODO: Can we turn this into a factory? *)
-
+(* Notation Monad_of_adjoint_functors := _Monad_of_adjoint_functors.build.
+ TODO: Can we turn this into a factory? *)
+(*
 Lemma Monad_of_adjoint_functorsE (C D : category)
   (F : {functor C -> D}) (G : {functor D -> C}) (A : F -| G) :
   Monad_of_adjoint_functors A = G \O F :> {functor C -> C}.
 Proof. by []. Qed.
-
+ *)
+(*
 Section Essai.
 
 Variable (C D : category)
-           (F : {functor C -> D}) (G : {functor D -> C}) (A : F -| G).
-
-Canonical MA := Monad_of_adjoint_functors A.
+  (F : {functor C -> D}) (G : {functor D -> C}) (A : F -| G).
+(HB.instance Definition _ := Monad.on 
+(* Canonical MA := Monad_of_adjoint_functors A. *)
 Let bla := G \O F : monad C.
 
 End Essai.
+*)
+
+
+HB.factory Record Monad_of_adjoint_functors
+  (C : category) (D : category) (F : {functor C -> D}) (G : {functor D -> C})
+     (Mf : C -> C) := { eq : G \o F = Mf; A : F -| G }.
+HB.builders Context C D F G Mf of Monad_of_adjoint_functors C D F G Mf.
+
+Definition eps := AdjointFunctors.eps A.
+Definition eta := AdjointFunctors.eta A.
+Definition M := G \O F.
+Definition mu : M \O M ~~> M := fun a => G # (eps (F a)).
+Definition munit : FId ~~> M := fun a => eta a.
+Definition triL := AdjointFunctors.triL A.
+Definition triR := AdjointFunctors.triR A.
+
+Lemma naturality_munit : naturality FId M munit.
+Proof. by move=> a b f x; rewrite (natural eta). Qed.
+HB.instance Definition _ := isNatural.Build C C FId M munit naturality_munit.
+Lemma naturality_mu : naturality (M \O M) M mu.
+Proof.
+rewrite /mu => a b h x.
+rewrite /M !FCompE -2!(@functor_o _ _ G) /=; apply: functor_ext_hom => {}x.
+exact: (natural eps).
+Qed.
+HB.instance Definition _ := isNatural.Build C C (M \O M) M mu naturality_mu.
+
+Lemma muE : mu = fun a => G # (@eps (F a)).
+Proof. by []. Qed.
+Lemma mu_associativity' a : mu a \o mu (M a) =1 mu a \o (M # mu a).
+Proof.
+move=> x; rewrite muE -2!(@functor_o _ _ G) /=; apply: functor_ext_hom => {}x /=.
+exact: (natural eps).
+Qed.
+Lemma mu_associativity : MonadLaws.associativity mu.
+Proof. by move=> a x; rewrite mu_associativity'. Qed.
+Lemma mu_left_unit : MonadLaws.left_unit munit mu.
+Proof. by move=> a x; rewrite muE triR. Qed.
+Lemma mu_right_unit : MonadLaws.right_unit munit mu.
+Proof.
+move=> a x; rewrite muE /M FCompE /=.
+rewrite -[LHS](@functor_o _ _ G) -[RHS](@functor_id _ _ G).
+apply: functor_ext_hom => {}x; exact: triL.
+Qed.
+
+Definition actMf (a b : C) (f : {hom a -> b}) :=
+  let: erefl in _ = Mf := eq return {hom Mf a -> Mf b} in (G \O F) # f.
+Lemma Mf_ext_hom : FunctorLaws.ext actMf.
+Proof.
+Admitted.
+Lemma Mf_id_hom : FunctorLaws.id actMf.
+Proof.
+Admitted.
+Lemma Mf_comp_hom : FunctorLaws.comp actMf.
+Proof.
+Admitted.
+
+HB.instance Definition _ :=
+  isFunctor.Build C C Mf Mf_ext_hom Mf_id_hom Mf_comp_hom.
+
+Definition muf := let: erefl in _ = Mf := eq return Mf \O Mf ~~> Mf in mu.
+Lemma naturality_muf : naturality (Mf \O Mf) Mf muf.
+Proof. by rewrite /muf => a /=; case: _/eq; exact: naturality_mu. Qed.
+HB.instance Definition _ := isNatural.Build C C (Mf \O Mf) Mf muf naturality_muf.
+
+Definition munitf := let: erefl in _ = Mf := eq return FId ~~> Mf in munit.
+Lemma naturality_munitf : naturality FId Mf munitf.
+Proof. by rewrite /munitf => a /=; case: _/eq; exact: naturality_munit. Qed.
+HB.instance Definition _ := isNatural.Build C C FId Mf munitf naturality_munitf.
+
+Lemma muf_associativity : MonadLaws.associativity muf.
+Proof. by rewrite /muf => a /=; case: _/eq; exact: mu_associativity. Qed.
+Lemma muf_left_unit : MonadLaws.left_unit munitf muf.
+Proof. by rewrite /muf /munitf => a /=; case: _/eq; exact: mu_left_unit. Qed.
+Lemma muf_right_unit : MonadLaws.right_unit munitf muf.
+Proof. by rewrite /muf /munitf => a /=; case: _/eq; exact: mu_right_unit. Qed.
+
+Let bla := 
+  Monad_of_munit_mu.Build C (Mf : C -> C) muf_left_unit muf_right_unit muf_associativity.
+
+#[export]
+HB.instance Definition monad_of_adjoint_mixin_mu :=
+  Monad_of_munit_mu.Build C Mf muf_left_unit muf_right_unit muf_associativity.
+
+
+HB.instance Definition _ :=
+  Monad_of_munit_mu.Build C Mf muf_left_unit muf_right_unit muf_associativity.
+
+HB.end.
+
+
+
+
