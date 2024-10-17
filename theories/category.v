@@ -471,7 +471,7 @@ HB.mixin Record isNatural
     (C D : category) (F G : {functor C -> D}) (f : F ~~> G) :=
   { natural : naturality F G f }.
 #[short(type=nattrans)]
-HB.structure Definition _ (C D : category) (F G : {functor C -> D}) :=
+HB.structure Definition Natural (C D : category) (F G : {functor C -> D}) :=
   { f of isNatural C D F G f }.
 Arguments natural [C D F G] phi : rename.
 Notation "F ~> G" := (nattrans F G) : category_scope.
@@ -557,25 +557,45 @@ Notation "[ 'NEq' F , G ]" :=
   (NEq F G (fun a => erefl) (fun a b f x => erefl))
     (at level 0, format "[ 'NEq'  F ,  G ]") : category_scope.
 
+(* Inverse of a natural isomorphism *)
+Lemma natural_inv (C D : category) (F G : {functor C -> D})
+  (T : forall a, {isom F a -> G a}) :
+  naturality F G T -> naturality G F (fun a => inv_hom (T a)).
+Proof.
+move=> T_nat A B f x; apply: (can_inj (homK (T B))).
+pose Tn := Natural.Pack (Natural.Class (isNatural.Build C D F G T T_nat)).
+have /= <- := natural_head Tn A B _ f (inv_hom (T A)) x.
+by rewrite !inv_homK.
+Qed.
+
+
 (* Category equivalence *)
 Record equivalence_category (C D : category)
   (F : {functor C -> D}) (G : {functor D -> C}) := EquivalenceCategory {
-     FGid : forall a, {isom (F \O G) a -> FId a};
-     GFid : forall a, {isom (G \O F) a -> FId a};
-     natural_FGid : naturality (F \O G) FId FGid;
-     natural_GFid : naturality (G \O F) FId GFid;
+     eqFGId : forall a, {isom (F \O G) a -> FId a};
+     eqGFId : forall a, {isom (G \O F) a -> FId a};
+     natural_eqFGId : naturality (F \O G) FId eqFGId;
+     natural_eqGFId : naturality (G \O F) FId eqGFId;
 }.
 
 Section equiv_cat_interface.
 
 Variables (C D : category) (F : {functor C -> D}) (G : {functor D -> C}).
 Variable (eq : equivalence_category F G).
-Definition FGid_trans : (F \O G) ~~> FId := FGid eq.
-Definition GFid_trans : (G \O F) ~~> FId := GFid eq.
+Definition eqFGId_trans : (F \O G) ~~> FId := eqFGId eq.
+Definition eqGFId_trans : (G \O F) ~~> FId := eqGFId eq.
+Definition eqIdFG_trans : FId ~~> (F \O G) := fun a => inv_hom (eqFGId eq a).
+Definition eqIdGF_trans : FId ~~> (G \O F) := fun a => inv_hom (eqGFId eq a).
 HB.instance Definition _ :=
-      isNatural.Build D D (F \O G) FId FGid_trans (natural_FGid eq).
+  isNatural.Build D D (F \O G) FId eqFGId_trans (natural_eqFGId eq).
 HB.instance Definition _ :=
-      isNatural.Build C C (G \O F) FId GFid_trans (natural_GFid eq).
+  isNatural.Build C C (G \O F) FId eqGFId_trans (natural_eqGFId eq).
+HB.instance Definition _ :=
+  isNatural.Build D D FId (F \O G) eqIdFG_trans
+    (natural_inv (natural_eqFGId eq)).
+HB.instance Definition _ :=
+  isNatural.Build C C FId (G \O F) eqIdGF_trans
+    (natural_inv (natural_eqGFId eq)).
 
 End equiv_cat_interface.
 
@@ -862,7 +882,7 @@ move=> c x.
 have := functor_ext_hom _ _ _ _ (EpsE_hom (a := c)) (Eta (G c) x).
 rewrite (hom_compE _ _ x) => ->; rewrite EtaE.
 rewrite (hom_compE _ _ x) (functor_o_head G).
-have /= <- := functor_o_head G0 (eta0 (G c)) x.
+rewrite /= 2!(hom_compE _ _ x) -(functor_o_head G0).
 rewrite !(hom_compE _ _ x).
 set X := (X in G0 # X).
 have /= -> : G0 # X =1 G0 # [\o eta1 (G1 c), FId # eps0 (G1 c)].
