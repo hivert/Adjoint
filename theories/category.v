@@ -1154,28 +1154,15 @@ rewrite -[LHS](@functor_o _ _ G) -[RHS](@functor_id _ _ G).
 apply: functor_ext_hom => {}x; exact: triL.
 Qed.
 
-(*TODO: make this go through
 HB.instance Definition _ :=
- Monad_of_munit_mu.Build _ _ mu_left_unit mu_right_unit mu_associativity.*)
+  Monad_of_munit_mu.Build C (G \o F) mu_left_unit mu_right_unit mu_associativity.
 
-Let bind (a b : C) (f : {hom a -> M b}) : {hom M a -> M b} :=
-      [hom mu _ \o (M # f)].
-Fact bind_ext (a b : C) (f g : {hom a -> M b}) :
-  f =1 g -> bind f =1 bind g.
-Proof.
-by rewrite /bind => eq x /=; rewrite (functor_ext_hom _ _ _ _ eq).
-Qed.
-Let bindE (a b : C) (f : {hom a -> M b}) (m : el (M a)) :
-  bind f m = mu b (([the {functor C -> C} of M] # f) m).
-Proof. by []. Qed.
-HB.instance Definition monad_of_adjoint_mixin :=
-  isMonad.Build C (G \o F)
-    bind_ext bindE mu_left_unit mu_right_unit mu_associativity.
 End def.
+
 
 Definition build (C D : category)
            (F : {functor C -> D}) (G : {functor D -> C}) (A : F -| G) :=
-  Monad.Pack (Monad.Class (monad_of_adjoint_mixin A)).
+  Monad.Pack (Monad.Class (category_Monad_of_munit_mu__to__category_isMonad A)).
 
 End _Monad_of_adjoint_functors.
 Notation Monad_of_adjoint_functors := _Monad_of_adjoint_functors.build.
