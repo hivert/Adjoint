@@ -222,17 +222,19 @@ HB.instance Definition _ :=
 Lemma finsupp_fm1 x : finsupp ([fm / x |-> 1] : {freemod R[T]}) = [fset x].
 Proof. exact/finsupp_fmZ/oner_neq0. Qed.
 
-Lemma fm1ZE x c : [fm / x |-> c] = c *: [fm / x |-> 1].
+Lemma fm1ZE x c : c *: [fm / x |-> 1] = [fm / x |-> c].
 Proof.
 apply/fsfunP => y; rewrite scalefmE !fm1E.
 by case: (y == x); rewrite ?mulr0 ?mulr1.
 Qed.
+Lemma fmcZE x c d : c *: [fm / x |-> d] = [fm / x |-> c * d].
+Proof. by rewrite -fm1ZE scalerA fm1ZE. Qed.
 
 Lemma linear_fmE (M : lmodType R) (f g : {linear {freemod R[T]} -> M}) :
   (forall x : T, f [fm / x |-> 1] = g [fm / x |-> 1]) -> f =1 g.
 Proof.
 move=> eqfg m; rewrite -(fmE m) !linear_sum; apply eq_bigr=> x _.
-by rewrite fm1ZE !linearZ /= eqfg.
+by rewrite -fm1ZE !linearZ /= eqfg.
 Qed.
 
 End OnRing.

@@ -313,6 +313,7 @@ Arguments functor_ext_hom {C D s}.
 
 Definition functor_phant (C D : category) of phant (C -> D) := Functor.type C D.
 Arguments actm [C D] F [a b] f: rename.
+Arguments functor_ext_hom [C D] F [a b] f: rename.
 Notation "F # f" := (actm F f) : category_scope.
 Notation "{ 'functor' fCD }" := (functor_phant (Phant fCD))
   (format "{ 'functor'  fCD }") : category_scope.
@@ -332,7 +333,7 @@ Variables (C D : category) (F : {functor C -> D}).
 Lemma functor_id a : F # [hom idfun] =1 idfun :> (el (F a) -> el (F a)).
 Proof.
 move=> x.
-by rewrite (functor_ext_hom _ _ _ _ (homfunK _)) functor_id_hom.
+by rewrite (functor_ext_hom _ _ _ (homfunK _)) functor_id_hom.
 Qed.
 
 Lemma functor_o a b c (g : {hom b -> c}) (h : {hom a -> b}) :
@@ -424,13 +425,13 @@ Qed.
 Fact functorcomposition_id : FunctorLaws.id functorcomposition.
 Proof.
 move=> A x; rewrite /functorcomposition [RHS]/=.
-rewrite (functor_ext_hom _ _ _ _ (functor_id (a := A))).
+rewrite (functor_ext_hom _ _ _ (functor_id (a := A))).
 exact: functor_id.
 Qed.
 Fact functorcomposition_comp : FunctorLaws.comp functorcomposition.
 Proof.
 move=> a b c g h x; rewrite /functorcomposition.
-rewrite (functor_ext_hom _ _ _ _ (functor_comp_hom _ _ _ _ _)).
+rewrite (functor_ext_hom _ _ _ (functor_comp_hom _ _ _ _ _)).
 exact: functor_comp_hom.
 Qed.
 HB.instance Definition _ :=
@@ -783,14 +784,14 @@ Lemma hom_iso_inj (c : C) (d : D) (f g : {hom F c -> d}) :
 Proof.
 move=> eq x.
 rewrite -[LHS]hom_isoK -[RHS]hom_isoK /=.
-by rewrite (functor_ext_hom (s := F) _ _ _ _ eq).
+by rewrite (functor_ext_hom F _ _ eq).
 Qed.
 Lemma hom_inv_inj (c : C) (d : D) (f g : {hom c -> G d}) :
   hom_inv f =1 hom_inv g -> f =1 g.
 Proof.
 move=> eq x.
 rewrite -[LHS]hom_invK -[RHS]hom_invK /=.
-by rewrite (functor_ext_hom (s := G) _ _ _ _ eq).
+by rewrite (functor_ext_hom G _ _ eq).
 Qed.
 
 Lemma eta_hom_iso (c : C) : eta A c =1 hom_iso [hom idfun].
@@ -862,7 +863,7 @@ Proof. by move=> x; rewrite EpsE. Qed.
 Lemma triL : TriangularLaws.left Eta Eps.
 Proof.
 move=> c x.
-rewrite [RHS]/= [LHS]EpsE (functor_ext_hom _ _ _ _ (@EtaE_hom c)).
+rewrite [RHS]/= [LHS]EpsE (functor_ext_hom _ _ _ (@EtaE_hom c)).
 rewrite (hom_compE _ _ x) hom_compA /= (functor_o (F := F)) /F /=.
 rewrite 2!(hom_compE _ _ x) -(functor_o_head F1).
 set X := [hom [\o _, _]].
@@ -879,7 +880,7 @@ Qed.
 Lemma triR : TriangularLaws.right Eta Eps.
 Proof.
 move=> c x.
-have := functor_ext_hom _ _ _ _ (EpsE_hom (a := c)) (Eta (G c) x).
+have := functor_ext_hom _ _ _ (EpsE_hom (a := c)) (Eta (G c) x).
 rewrite (hom_compE _ _ x) => ->; rewrite EtaE.
 rewrite (hom_compE _ _ x) (functor_o_head G).
 rewrite /= 2!(hom_compE _ _ x) -(functor_o_head G0).
@@ -1018,7 +1019,7 @@ Let F := [the {functor _ -> _} of M].
 Let bind (a b : C) (f : {hom a -> M b}) : {hom M a -> M b} := [hom mu _ \o (F # f)].
 Let bind_ext (a b : C) (f g : {hom a -> M b}) :
   f =1 g -> bind f =1 bind g.
-Proof. by rewrite /bind => eq x /=; rewrite (functor_ext_hom _ _ _ _ eq). Qed.
+Proof. by rewrite /bind => eq x /=; rewrite (functor_ext_hom _ _ _ eq). Qed.
 Let bindE (a b : C) (f : {hom a -> M b}) (m : el (M a)) :
     bind f m = mu b (([the {functor C -> C} of M] # f) m).
 Proof. by []. Qed.
