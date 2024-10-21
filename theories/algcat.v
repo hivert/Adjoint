@@ -35,7 +35,7 @@ HB.instance Definition _ :=
     semi_additive idfun_is_semi_additive comp_is_semi_additive.
 Notation NModules := [the category of nmodType].
 #[warning="-uniform-inheritance"]
-Coercion additive_of_Nmod a b (f : {hom[NModules] a -> b}) : {additive a -> b} :=
+Definition additive_of_Nmod a b (f : {hom[NModules] a -> b}) : {additive a -> b} :=
   HB.pack (Hom.sort f) (GRing.isSemiAdditive.Build _ _ _ (isHom_inhom f)).
 Lemma additive_of_NmodE a b (f : {hom[NModules] a -> b}) :
   @additive_of_Nmod a b f = f :> (_ -> _).
@@ -75,7 +75,7 @@ Notation ZModules := [the category of zmodType].
 Coercion additive_of_Zmod a b (f : {hom[ZModules] a -> b}) : {additive a -> b} :=
   HB.pack (Hom.sort f) (GRing.isSemiAdditive.Build _ _ f (isHom_inhom f)).
 Lemma additive_of_ZmodE a b (f : {hom[ZModules] a -> b}) :
-  @additive_of_Zmod a b f = f :> (_ -> _).
+  [the {additive _ -> _} of @additive_of_Zmod a b f] = f :> (_ -> _).
 Proof. by []. Qed.
 
 
@@ -129,7 +129,7 @@ Coercion rmorph_of_SRing a b (f : {hom[SemiRings] a -> b}) : {rmorphism a -> b} 
     (GRing.isSemiAdditive.Build _ _ _ (fst (isHom_inhom f)))
     (GRing.isMultiplicative.Build _ _ _ (snd (isHom_inhom f))).
 Lemma rmorph_of_SRingE a b (f : {hom[SemiRings] a -> b}) :
-  @rmorph_of_SRing a b f = f :> (_ -> _).
+  [the {rmorphism a -> b} of @rmorph_of_SRing a b f] = f :> (_ -> _).
 Proof. by []. Qed.
 
 Module ForgetSemiRings_to_NModules.
@@ -172,8 +172,31 @@ Coercion rmorph_of_Ring a b (f : {hom[Rings] a -> b}) : {rmorphism a -> b} :=
     (GRing.isSemiAdditive.Build _ _ _ (fst (isHom_inhom f)))
     (GRing.isMultiplicative.Build _ _ _ (snd (isHom_inhom f))).
 Lemma rmorph_of_RingE a b (f : {hom[Rings] a -> b}) :
-  @rmorph_of_Ring a b f = f :> (_ -> _).
+  [the {rmorphism a -> b} of @rmorph_of_Ring a b f] = f :> (_ -> _).
 Proof. by []. Qed.
+
+
+Module ForgetRings_to_SemiRings.
+
+Section Morphism.
+Variable (a b : Rings) (f : {hom[Rings] a -> b}).
+Definition forget (T : Rings) : SemiRings := T.
+Definition forget_mor : (a : SemiRings) -> (b : SemiRings) := f.
+HB.instance Definition _ :=
+  @isHom.Build SemiRings a b forget_mor (isHom_inhom f).
+End Morphism.
+HB.instance Definition _ :=
+  @isFunctor.Build Rings SemiRings forget forget_mor
+    (fun _ _ _ _ => id) (fun _ => frefl _) (fun _ _ _ _ _ => frefl _).
+Definition functor : {functor Rings -> SemiRings} := forget.
+
+End ForgetRings_to_SemiRings.
+
+Definition forget_Rings_to_SemiRings := ForgetRings_to_SemiRings.functor.
+Lemma forget_Rings_to_SemiRingsE a b (f : {hom[Rings] a -> b}) :
+  forget_Rings_to_SemiRings # f = f :> (_ -> _).
+Proof. by []. Qed.
+
 
 Module ForgetRings_to_ZModules.
 
@@ -235,7 +258,7 @@ Proof. by []. Qed.
 Coercion rmorph_of_ComSemiRing a b (f : {hom[ComSemiRings] a -> b}) :
   {rmorphism a -> b} := forget_ComSemiRings_to_SemiRings # f.
 Lemma rmorph_of_ComSemiRingE a b (f : {hom[ComSemiRings] a -> b}) :
-  rmorph_of_ComSemiRing f = f :> (_ -> _).
+  [the {rmorphism a -> b} of rmorph_of_ComSemiRing f] = f :> (_ -> _).
 Proof. by []. Qed.
 
 (* Q : Should there be a coercion
@@ -270,8 +293,11 @@ Lemma forget_ComRings_to_RingsE a b (f : {hom[ComRings] a -> b}) :
   forget_ComRings_to_Rings # f = f :> (_ -> _).
 Proof. by []. Qed.
 #[warning="-uniform-inheritance"]
-Coercion rmorph_of_comRing a b (f : {hom[ComRings] a -> b}) :
+Coercion rmorph_of_ComRing a b (f : {hom[ComRings] a -> b}) :
   {rmorphism a -> b} := rmorph_of_Ring (forget_ComRings_to_Rings # f).
+Lemma rmorph_of_ConRingE a b (f : {hom[ComRings] a -> b}) :
+  [the {rmorphism a -> b} of @rmorph_of_ComRing a b f] = f :> (_ -> _).
+Proof. by []. Qed.
 
 
 (* L-Modules **********************************************************)
@@ -293,8 +319,9 @@ Notation LModules R := [the category of lmodType R].
 Coercion linear_of_Lmod R a b (f : {hom[LModules R] a -> b}) : {linear a -> b} :=
   HB.pack (Hom.sort f) (GRing.isLinear.Build _ _ _ _ _ (isHom_inhom f)).
 Lemma linear_of_LmodE R a b (f : {hom[LModules R] a -> b}) :
-  @linear_of_Lmod R a b f = f :> (_ -> _).
+  [the {linear a -> b} of @linear_of_Lmod R a b f] = f :> (_ -> _).
 Proof. by []. Qed.
+
 Fact LModules_mor_semi_additive R a b (f : {hom[LModules R] a -> b}) :
   semi_additive f.
 Proof.
@@ -360,7 +387,7 @@ Coercion lrmorphism_of_LAlgebras R a b (f : {hom[LAlgebras R] a -> b}) :
      (GRing.isLinear.Build _ _ _ _ _ (fst (isHom_inhom f)))
      (GRing.isMultiplicative.Build _ _ _ (snd (isHom_inhom f))).
 Lemma lrmorphism_of_LAlgebrasE R a b (f : {hom[LAlgebras R] a -> b}) :
-  @lrmorphism_of_LAlgebras R a b f = f :> (_ -> _).
+  [the {lrmorphism a -> b} of @lrmorphism_of_LAlgebras R a b f] = f :> (_ -> _).
 Proof. by []. Qed.
 Fact LAlgebras_mor_rmorphism R a b (f : {hom[LAlgebras R] a -> b}) :
   semiring_morph f.
@@ -463,7 +490,7 @@ Proof. by []. Qed.
 Coercion lrmorphism_of_Algebras R a b (f : {hom[Algebras R] a -> b}) :
   {lrmorphism a -> b} := forget_Algebras_to_LAlgebras R # f.
 Lemma lrmorphism_of_AlgebrasE R a b (f : {hom[Algebras R] a -> b}) :
-  lrmorphism_of_Algebras f = f :> (_ -> _).
+  [the {lrmorphism a -> b} of lrmorphism_of_Algebras f] = f :> (_ -> _).
 Proof. by []. Qed.
 
 
@@ -504,7 +531,7 @@ Coercion lrmorphism_of_ComAlgebras R a b (f : {hom[ComAlgebras R] a -> b}) :
   {lrmorphism a -> b} :=
   lrmorphism_of_Algebras (forget_ComAlgebras_to_Algebras R # f).
 Lemma lrmorphism_of_ComAlgebrasE R a b (f : {hom[ComAlgebras R] a -> b}) :
-  lrmorphism_of_ComAlgebras f = f :> (_ -> _).
+  [the {lrmorphism a -> b} of lrmorphism_of_ComAlgebras f] = f :> (_ -> _).
 Proof. by []. Qed.
 
 
@@ -522,7 +549,7 @@ Notation Monoids := [the category of monoidType].
 Coercion mmorphism_of_Monoids a b (f : {hom[Monoids] a -> b}) : {mmorphism a -> b} :=
   HB.pack (Hom.sort f) (isMonMorphism.Build _ _ _ (isHom_inhom f)).
 Lemma mmorphism_of_MonoidsE a b (f : {hom[Monoids] a -> b}) :
-  @mmorphism_of_Monoids a b f = f :> (_ -> _).
+  [the {mmorphism a -> b} of @mmorphism_of_Monoids a b f] = f :> (_ -> _).
 Proof. by []. Qed.
 
 Module ForgetMonoids_to_Sets.
@@ -685,7 +712,7 @@ Coercion mmorphism_of_ComMonoids a b (f : {hom[ComMonoids] a -> b}) :
   {mmorphism a -> b} :=
   HB.pack (Hom.sort f) (isMonMorphism.Build _ _ _ (isHom_inhom f)).
 Lemma mmorphism_of_ComMonoidsE a b (f : {hom[ComMonoids] a -> b}) :
-  @mmorphism_of_ComMonoids a b f = f :> (_ -> _).
+  [the {mmorphism a -> b} of @mmorphism_of_ComMonoids a b f] = f :> (_ -> _).
 Proof. by []. Qed.
 
 
@@ -1312,7 +1339,7 @@ Definition univmap_freelmod : {hom[LModules R] {freemod R[A]} -> M} :=
 
 Lemma univmap_freelmodP a : univmap_freelmod [fm / a |-> 1] = f a.
 Proof.
-rewrite /univmap -[[fm / a |-> 1]]/(eta A a) /= !hom_flm1.
+rewrite /= !hom_flm1.
 exact: (AdjointFunctors.triR (adjoint_freeLMod_forget R)).
 Qed.
 
@@ -1385,13 +1412,14 @@ Notation "{ 'monalg' R [ T ] }" := (monalg R T)
 
 
 (* Adjonction Algebra -> monoids / L-module *)
-Section MonoidsAlgebra.
+Module MonoidAlgebra.
+Section MonoidAlgebra.
 
 Variable (R : Rings) (A : Monoids).
-Implicit Types (a b c : A) (x y z : {monalg R[A]}).
+Implicit Types (r s : R) (a b c : A) (x y z : {monalg R[A]}).
 
 Definition one_ma : {monalg R[A]} := [fm / 1 |-> 1].
-Definition mul_mma (a : A) : {hom[LModules R] {monalg R[A]} -> {monalg R[A]}} :=
+Definition mul_mma a : {hom[LModules R] {monalg R[A]} -> {monalg R[A]}} :=
   (@functor_freeLmod R) # [the {hom[Sets] A -> A} of *%M a].
 Lemma mul_mma_comp a b : mul_mma b \o mul_mma a =1 mul_mma (b * a).
 Proof.
@@ -1459,17 +1487,334 @@ rewrite !fsfunE inE eqxx.
 have /[swap] -> := oner_eq0 R.
 by rewrite eqxx.
 Qed.
+#[export]
 HB.instance Definition _ :=
   GRing.Zmodule_isRing.Build {freemod R[A]}
              mul_maA mul_1ma mul_ma1 mul_maDl mul_maDr one_ma_neq0.
 
-Fact scaler_maAl (r : R) x y : (r *: (x * y) = (r *: x) * y)%R.
+Fact scaler_maAl r x y : (r *: (x * y) = (r *: x) * y)%R.
 Proof.
 rewrite -(fmE y) !mulr_sumr scaler_sumr; apply eq_bigr => a _.
 rewrite -(fmE x) !mulr_suml !scaler_sumr mulr_suml; apply eq_bigr => b _.
 by rewrite /GRing.mul /= fmcZE !mul_maccE [LHS]fmcZE mulrA.
 Qed.
+#[export]
 HB.instance Definition _ :=
   GRing.Lmodule_isLalgebra.Build R {freemod R[A]} scaler_maAl.
 
-End MonoidsAlgebra.
+End MonoidAlgebra.
+
+Module Exports.
+HB.reexport MonoidAlgebra.
+
+Section Theory.
+
+Variable (R : Rings) (A : Monoids).
+Implicit Types (r s : R) (a b c : A) (x y z : {monalg R[A]}).
+
+Lemma onemaE : 1%R = [fm / 1 |-> 1%R] :> {monalg R[A]}.
+Proof. by []. Qed.
+
+Lemma mulmaccE a b r s :
+  ([fm / a |-> r] * [fm / b |-> s])%R = [fm / a * b |-> r * s].
+Proof. by rewrite [LHS]/GRing.mul /= !mul_maccE. Qed.
+
+Lemma mulmaccC a b :
+  a * b = b * a -> @GRing.comm {monalg R[A]} [fm / a |-> 1] [fm / b |-> 1].
+Proof. by rewrite /GRing.comm => comm; rewrite !mulmaccE comm. Qed.
+
+End Theory.
+End Exports.
+End MonoidAlgebra.
+HB.export MonoidAlgebra.Exports.
+
+
+Section FunctorMonoidLAlgebra.
+Variable R : Rings.
+
+Section Morphisms.
+Variables (A B : Monoids) (f : {hom[Monoids] A -> B}).
+
+Definition hom_fun (a : A) : {monalg R[B]} := [fm / f a |-> 1].
+Definition hom_MonoidLAlgebra : {monalg R[A]} -> {monalg R[B]} :=
+  univmap_freelmod hom_fun.
+
+Fact hom_MonoidLAlgebra_lalg_morph : lalg_morph hom_MonoidLAlgebra.
+Proof.
+rewrite /hom_MonoidLAlgebra; repeat split; first 2 last.
+- rewrite !onemaE univmap_freelmodP /hom_fun /=.
+  by rewrite -(mmorphism_of_MonoidsE f) mmorph1.
+- exact: isHom_inhom (univmap_freelmod hom_fun).
+move=> x y; rewrite -(fmE x) mulr_suml -!linear_of_LmodE !raddf_sum mulr_suml.
+apply eq_bigr => a _.
+rewrite -(fmE y) mulr_sumr !raddf_sum mulr_sumr; apply eq_bigr => b _.
+rewrite mulmaccE -(fm1ZE _ (x a)) -(fm1ZE _ (y b)) -(fm1ZE _ (_ * _)).
+rewrite [LHS]linearZ [X in _ = (X * _)%R]linearZ [X in _ = (_ * X)%R]linearZ.
+rewrite !linear_of_LmodE !univmap_freelmodP /=.
+rewrite /hom_fun !fm1ZE mulmaccE.
+by have /= -> := mmorphM f a b.
+Qed.
+HB.instance Definition _ :=
+  @isHom.Build (LAlgebras R) {monalg R[A]} {monalg R[B]}
+    (hom_MonoidLAlgebra : [the LAlgebras R of {monalg R[A]}] -> _)
+    hom_MonoidLAlgebra_lalg_morph.
+Definition MonoidLAlgebra_mor
+  : {hom[LAlgebras R] {monalg R[A]} -> {monalg R[B]}} := hom_MonoidLAlgebra.
+
+End Morphisms.
+
+
+Fact MonoidLAlgebra_ext : FunctorLaws.ext MonoidLAlgebra_mor.
+Proof.
+rewrite /MonoidLAlgebra_mor => A B f g eq.
+apply univmap_freelmod_uniq => a.
+by rewrite univmap_freelmodP /hom_fun /= eq.
+Qed.
+Fact MonoidLAlgebra_id : FunctorLaws.id MonoidLAlgebra_mor.
+Proof.
+rewrite /MonoidLAlgebra_mor /= => A; apply fsym => x /=.
+by have <- := univmap_freelmod_uniq (f := hom_fun idfun) (g := idfun) _ x.
+Qed.
+Fact MonoidLAlgebra_comp  : FunctorLaws.comp MonoidLAlgebra_mor.
+Proof.
+rewrite /MonoidLAlgebra_mor => A B C f g; apply fsym => x.
+set gf := (X in X x = _).
+have <- // := univmap_freelmod_uniq (f := hom_fun (f \o g)) (g := gf) _ x.
+by move=> {x} a; rewrite [LHS]compapp !univmap_freelmodP.
+Qed.
+Definition MonoidLAlgebra (T : Monoids) : LAlgebras R := {monalg R[T]}.
+HB.instance Definition _ :=
+  @isFunctor.Build Monoids (LAlgebras R)
+    MonoidLAlgebra MonoidLAlgebra_mor
+    MonoidLAlgebra_ext MonoidLAlgebra_id MonoidLAlgebra_comp.
+Definition functor_MonoidLAlgebra : {functor Monoids -> LAlgebras R}
+  := MonoidLAlgebra.
+
+End FunctorMonoidLAlgebra.
+
+
+Section FunctorMonoidAlgebra.
+
+Variable (R : ComRings).
+
+Fact scaler_maAr (A : Monoids) r (x y : {freemod R[A]}) :
+  (r *: (x * y) = x * (r *: y))%R.
+Proof.
+rewrite -(fmE y) [in RHS]scaler_sumr !mulr_sumr scaler_sumr; apply eq_bigr => a _.
+rewrite -(fmE x) !mulr_suml !scaler_sumr; apply eq_bigr => b _.
+by rewrite !(mulmaccE, fmcZE) mulrCA.
+Qed.
+HB.instance Definition _ (A : Monoids) :=
+  GRing.Lalgebra_isAlgebra.Build R {freemod R[A]} (@scaler_maAr A).
+
+Lemma monalgE (A : Monoids) (T : Algebras R)
+  (f g : {hom[Algebras R] {monalg R[A]} -> T}) :
+  (forall a : A, f [fm / a |-> 1] = g [fm / a |-> 1]) -> f =1 g.
+Proof.
+move=> eq x; rewrite -(lrmorphism_of_AlgebrasE f) -(lrmorphism_of_AlgebrasE g).
+exact: linear_fmE.
+Qed.
+
+Section Homs.
+Variables (A B : Monoids) (f : {hom[Monoids] A -> B}).
+
+Definition hom_MonoidAlgebra :=
+  (@hom_MonoidLAlgebra R A B f: [the Algebras R of {monalg R[A]}] -> _).
+
+HB.instance Definition _  :=
+  @isHom.Build (Algebras R) {monalg R[A]} {monalg R[B]}
+    hom_MonoidAlgebra (@hom_MonoidLAlgebra_lalg_morph R A B f).
+Definition MonoidAlgebra_mor
+  : {hom[Algebras R] {monalg R[A]} -> {monalg R[B]}} := hom_MonoidAlgebra.
+
+End Homs.
+
+Fact MonoidAlgebra_ext : FunctorLaws.ext MonoidAlgebra_mor.
+Proof. exact: MonoidLAlgebra_ext. Qed.
+Fact MonoidAlgebra_id : FunctorLaws.id MonoidAlgebra_mor.
+Proof. exact: MonoidLAlgebra_id. Qed.
+Fact MonoidAlgebra_comp  : FunctorLaws.comp MonoidAlgebra_mor.
+Proof. exact: MonoidLAlgebra_comp. Qed.
+Definition MonoidAlgebra (T : Monoids) : Algebras R := {monalg R[T]}.
+HB.instance Definition _ :=
+  @isFunctor.Build Monoids (Algebras R)
+    MonoidAlgebra MonoidAlgebra_mor
+    MonoidAlgebra_ext MonoidAlgebra_id MonoidAlgebra_comp.
+Definition functor_MonoidAlgebra : {functor Monoids -> Algebras R}
+  := MonoidAlgebra.
+
+End FunctorMonoidAlgebra.
+
+Definition forget_Algebras_to_Monoids R : {functor Algebras R -> Monoids} :=
+  forget_SemiRings_to_Monoids
+    \O forget_Rings_to_SemiRings
+    \O (@forget_LAlgebras_to_Rings R) \O (@forget_Algebras_to_LAlgebras R).
+
+Module MonoidAlgebraAdjoint.
+Section Adjoint.
+Variable R : ComRings.
+Implicit Types (A : Monoids) (T : Algebras R).
+
+Local Notation forgetf := (forget_Algebras_to_Monoids R).
+Local Notation fMA := (MonoidAlgebra R).
+
+Section def_ETA.
+Variable A : Monoids.
+
+Definition eta_fun (a : A) : (forgetf \o fMA) A := @to_multMon _ [fm / a |-> 1].
+Fact eta_fun_monmorphism : monmorphism eta_fun.
+Proof.
+split => //; rewrite /eta_fun => a b.
+by rewrite monME mulmaccE mulr1.
+Qed.
+HB.instance Definition _ :=
+  isHom.Build Monoids A ((forgetf \o fMA) A) eta_fun eta_fun_monmorphism.
+
+End def_ETA.
+
+Definition eta : FId ~~> forgetf \o fMA := eta_fun.
+Fact eta_natural : naturality FId (forgetf \o fMA) eta.
+Proof.
+move=> /= A B h x /=; rewrite FIdf /eta_fun /=.
+by rewrite /multMon_mor /= /hom_MonoidAlgebra univmap_freelmodP.
+Qed.
+HB.instance Definition _ :=
+  @isNatural.Build Monoids Monoids FId (forgetf \o fMA) eta eta_natural.
+
+Section def_EPS.
+Variable T : Algebras R.
+
+Definition eps_fun (m : (fMA \o forgetf) T) : T :=
+  (\sum_(i <- finsupp (m : {freemod R[_]})) (m i *: \val i)).
+
+Lemma eps_fun1E t r : eps_fun [fm / t |-> r] = r *: \val t.
+Proof.
+rewrite /eps_fun.
+case : (altP (r =P 0)) => [-> | /finsupp_fmZ ->].
+  by rewrite /= fm0eq0 scale0r finsupp0 big_nil.
+by rewrite big_seq_fset1 fm1E eqxx.
+Qed.
+
+Fact eps_fun_linear : linear eps_fun.
+Proof.
+(* TODO : copypaste from eps_fun_linear / problem with \val due to not forgetful *)
+rewrite /eps_fun => r x y; rewrite scaler_sumr /=.
+rewrite -!(finsupp_widen _ (S := finsupp x `|` finsupp y)%fset) /=.
+rewrite -big_split /=; apply: eq_bigr => a _.
+  by rewrite addfmE scalefmE scalerDl scalerA.
+- by move=> i /[!memNfinsupp] /eqP ->; rewrite scale0r.
+- by move=> a; rewrite inE orbC => ->.
+- by move=> i /[!memNfinsupp] /eqP ->; rewrite scale0r scaler0.
+- by move=> a; rewrite inE => ->.
+- by move=> i /[!memNfinsupp] /eqP ->; rewrite scale0r.
+- move=> a; rewrite inE; apply contraLR.
+  rewrite negb_or !memNfinsupp addfmE scalefmE => /andP [/eqP -> /eqP ->].
+  by rewrite mulr0 addr0.
+Qed.
+HB.instance Definition _ :=
+  GRing.isLinear.Build R ((fMA \o forgetf) T) T _ eps_fun eps_fun_linear.
+
+Fact eps_fun_lalg_morph : lalg_morph eps_fun.
+Proof.
+repeat split; first 2 last.
+- by rewrite /eps_fun finsupp_fm1 big_seq_fset1 fsfunE inE eqxx scale1r.
+- exact: eps_fun_linear.
+move=> x y; rewrite -(fmE y) mulr_sumr !linear_sum mulr_sumr.
+apply eq_bigr => b _; rewrite /= eps_fun1E /=.
+rewrite -(fmE x) mulr_suml !linear_sum /= mulr_suml; apply eq_bigr => a _.
+rewrite mulmaccE !eps_fun1E /=.
+by rewrite -!scalerAr -!scalerAl scalerA mulrC.
+Qed.
+HB.instance Definition _ :=
+  isHom.Build (Algebras R) ((fMA \o forgetf) T) T eps_fun eps_fun_lalg_morph.
+
+End def_EPS.
+
+Definition eps : fMA \o forgetf ~~> FId := eps_fun.
+Fact eps_natural : naturality (fMA \o forgetf) FId eps.
+Proof.
+move=> /= A B h x /=; rewrite FIdf -(fmE x); move: (finsupp x) => S.
+rewrite [eps_fun _]linear_sum /= -lrmorphism_of_AlgebrasE [LHS]linear_sum.
+rewrite -(lrmorphism_of_AlgebrasE (hom_MonoidAlgebra _)).
+rewrite [X in _ = eps_fun X]linear_sum [eps_fun _]linear_sum.
+apply eq_bigr => {S} a _ /=.
+rewrite eps_fun1E -[X in eps_fun (_ _ X)](fm1ZE _ (x _)).
+rewrite -!lrmorphism_of_AlgebrasE linearZ /= [eps_fun _]linearZ /=.
+rewrite univmap_freelmodP eps_fun1E scale1r /=.
+have /= -> := forget_Algebras_to_LAlgebrasE h.
+by rewrite -!lrmorphism_of_AlgebrasE linearZ.
+Qed.
+HB.instance Definition _ :=
+  @isNatural.Build (Algebras R) (Algebras R) (fMA \o forgetf) FId eps eps_natural.
+
+Fact triL : TriangularLaws.left eta eps.
+Proof.
+move=> /= a.
+rewrite -linear_of_LmodE; apply: linear_fmE => x /=.
+rewrite -[X in eps_fun X]/(univmap_freelmod _ _) univmap_freelmodP /=.
+by rewrite /eta_fun /= eps_fun1E scale1r /=.
+Qed.
+Fact triR : TriangularLaws.right eta eps.
+Proof.
+move=> /= M m; rewrite /eta_fun /= /multMon_mor /= eps_fun1E scale1r /=.
+exact: val_inj.
+Qed.
+
+Let F : {functor Monoids -> Algebras R} := fMA.
+Let G : {functor Algebras R -> Monoids} := forgetf.
+
+Definition adjoint : F -| G := AdjointFunctors.mk triL triR.
+
+End Adjoint.
+End MonoidAlgebraAdjoint.
+Definition adjoint_MonoidAlgebra_forget := MonoidAlgebraAdjoint.adjoint.
+
+Section UniversalProperty.
+
+Variable (R : ComRings).
+
+Variables (A : Monoids) (M : Algebras R)
+  (f : {hom[Monoids] A -> forget_Algebras_to_Monoids R M}).
+
+Local Notation eps := (AdjointFunctors.eps (adjoint_MonoidAlgebra_forget R)).
+Local Notation eta := (AdjointFunctors.eta (adjoint_MonoidAlgebra_forget R)).
+
+Definition univmap_monalg : {hom[Algebras R] {monalg R[A]} -> M} :=
+  eps M \o (functor_MonoidAlgebra R) # f.
+
+Lemma univmap_monalgP a : univmap_monalg [fm / a |-> 1] = \val (f a).
+Proof.
+(* Todo use MonoidAlgebraAdjoint.triR instead of reproving it *)
+rewrite /univmap_monalg /= /hom_MonoidAlgebra /hom_MonoidLAlgebra.
+rewrite univmap_freelmodP /hom_fun /=.
+by rewrite MonoidAlgebraAdjoint.eps_fun1E scale1r.
+Qed.
+
+Lemma univmap_monalg_uniq (g : {hom[Algebras R] {monalg R[A]} -> M}) :
+  (forall a : A, g [fm / a |-> 1] = \val (f a)) -> g =1 univmap_monalg.
+Proof.
+by move=> eq m; apply monalgE => x; rewrite eq univmap_monalgP.
+Qed.
+
+End UniversalProperty.
+
+
+
+Section ComMonoidAlgebra.
+
+Variable (R : ComRings) (A : ComMonoids).
+Implicit Types (r s : R) (a b c : A) (x y z : {monalg R[A]}).
+
+Fact mulma_comm : commutative (@GRing.mul {monalg R[A]}).
+Proof.
+move=> x y; rewrite -(fmE y) mulr_suml mulr_sumr; apply eq_bigr => b _.
+rewrite -(fmE x) mulr_suml mulr_sumr; apply eq_bigr => a _.
+by rewrite !mulmaccE mulrC mulmC.
+Qed.
+HB.instance Definition _ := GRing.Lalgebra.on {monalg R[A]}.
+HB.instance Definition _ :=
+  GRing.SemiRing_hasCommutativeMul.Build {monalg R[A]} mulma_comm.
+HB.instance Definition _ :=
+  GRing.Lalgebra_isComAlgebra.Build R {monalg R[A]}.
+
+End ComMonoidAlgebra.
