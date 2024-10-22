@@ -218,11 +218,16 @@ Definition forget_Rings_to_ZModules := ForgetRings_to_ZModules.functor.
 Lemma forget_Rings_to_ZModulesE a b (f : {hom[Rings] a -> b}) :
   forget_Rings_to_ZModules # f = f :> (_ -> _).
 Proof. by []. Qed.
+
 Definition forget_Rings_to_Sets :=
   forget_ZModules_to_Sets \O forget_Rings_to_ZModules.
 Lemma forget_Rings_to_SetsE a b (f : {hom[Rings] a -> b}) :
   forget_Rings_to_Sets # f = f :> (_ -> _).
 Proof. by []. Qed.
+Lemma unicity_forget_Rings_to_Sets :
+  forget_SemiRings_to_Sets \O forget_Rings_to_SemiRings =#=
+    forget_Rings_to_Sets.
+Proof. exact: (functor_ext (eq := fun=> _)). Qed.
 
 
 (* ComSemiRings **********************************************************)
@@ -254,6 +259,12 @@ Definition forget_ComSemiRings_to_SemiRings :=
 Lemma forget_ComSemiRings_to_SemiRingsE a b (f : {hom[ComSemiRings] a -> b}) :
   forget_ComSemiRings_to_SemiRings # f = f :> (_ -> _).
 Proof. by []. Qed.
+Definition forget_ComSemiRings_to_Sets :=
+  forget_SemiRings_to_Sets \O forget_ComSemiRings_to_SemiRings.
+Lemma forget_ComSemiRings_to_SetsE a b (f : {hom[ComSemiRings] a -> b}) :
+  forget_ComSemiRings_to_Sets # f = f :> (_ -> _).
+Proof. by []. Qed.
+
 #[warning="-uniform-inheritance"]
 Coercion rmorph_of_ComSemiRing a b (f : {hom[ComSemiRings] a -> b}) :
   {rmorphism a -> b} := forget_ComSemiRings_to_SemiRings # f.
@@ -292,12 +303,44 @@ Definition forget_ComRings_to_Rings := ForgetComRings_to_Rings.functor.
 Lemma forget_ComRings_to_RingsE a b (f : {hom[ComRings] a -> b}) :
   forget_ComRings_to_Rings # f = f :> (_ -> _).
 Proof. by []. Qed.
+Definition forget_ComRings_to_Sets :=
+  forget_Rings_to_Sets \O forget_ComRings_to_Rings.
+Lemma forget_ComRings_to_SetsE a b (f : {hom[ComRings] a -> b}) :
+  forget_ComRings_to_Sets # f = f :> (_ -> _).
+Proof. by []. Qed.
+
 #[warning="-uniform-inheritance"]
 Coercion rmorph_of_ComRing a b (f : {hom[ComRings] a -> b}) :
   {rmorphism a -> b} := rmorph_of_Ring (forget_ComRings_to_Rings # f).
-Lemma rmorph_of_ConRingE a b (f : {hom[ComRings] a -> b}) :
+Lemma rmorph_of_ComRingE a b (f : {hom[ComRings] a -> b}) :
   [the {rmorphism a -> b} of @rmorph_of_ComRing a b f] = f :> (_ -> _).
 Proof. by []. Qed.
+
+Module ForgetComRings_to_ComSemiRings.
+
+Section Morphism.
+Variable (a b : ComRings) (f : {hom[ComRings] a -> b}).
+Definition forget (T : ComRings) : ComSemiRings := T.
+Definition forget_mor : (a : ComSemiRings) -> (b : ComSemiRings) := f.
+HB.instance Definition _ :=
+  @isHom.Build ComSemiRings a b forget_mor (isHom_inhom f).
+End Morphism.
+HB.instance Definition _ :=
+  @isFunctor.Build ComRings ComSemiRings forget forget_mor
+    (fun _ _ _ _ => id) (fun _ => frefl _) (fun _ _ _ _ _ => frefl _).
+Definition functor : {functor ComRings -> ComSemiRings} := forget.
+
+End ForgetComRings_to_ComSemiRings.
+Definition forget_ComRings_to_ComSemiRings :=
+  ForgetComRings_to_ComSemiRings.functor.
+Lemma forget_ComRings_to_ComSemiRingsE a b (f : {hom[ComRings] a -> b}) :
+  forget_ComRings_to_ComSemiRings # f = f :> (_ -> _).
+Proof. by []. Qed.
+
+Lemma unicity_ForgetComRings_to_Sets :
+  forget_ComSemiRings_to_Sets \O forget_ComRings_to_ComSemiRings
+    =#= forget_ComRings_to_Sets.
+Proof. exact: (functor_ext (eq := fun=> _)). Qed.
 
 
 (* L-Modules **********************************************************)
@@ -421,6 +464,11 @@ Definition forget_LAlgebras_to_LModules := ForgetLAlgebras_to_LModules.functor.
 Lemma forget_LAlgebras_to_LModulesE R a b (f : {hom[LAlgebras R] a -> b}) :
   forget_LAlgebras_to_LModules R # f = f :> (_ -> _).
 Proof. by []. Qed.
+Definition forget_LAlgebras_to_Sets R :=
+  (forget_LModules_to_Sets R) \O (forget_LAlgebras_to_LModules R).
+Lemma forget_LAlgebras_to_SetsE R a b (f : {hom[LAlgebras R] a -> b}) :
+  forget_LAlgebras_to_Sets R # f = f :> (_ -> _).
+Proof. by []. Qed.
 
 Module ForgetLAlgebras_to_Rings.
 
@@ -447,9 +495,14 @@ Lemma forget_LAlgebras_to_RingsE R a b (f : {hom[LAlgebras R] a -> b}) :
   forget_LAlgebras_to_Rings R # f = f :> (_ -> _).
 Proof. by []. Qed.
 
-Lemma unicity_of_forgetful_functors (R : Rings) :
+Lemma unicity_forget_LAlgebras_to_ZModules (R : Rings) :
   forget_Rings_to_ZModules \O forget_LAlgebras_to_Rings R
     =#= forget_LModules_to_ZModules R \O forget_LAlgebras_to_LModules R.
+Proof. exact: (functor_ext (eq := fun=> _)). Qed.
+
+Lemma unicity_forget_LAlgebras_to_Sets (R : Rings) :
+  forget_Rings_to_Sets \O (forget_LAlgebras_to_Rings R) =#=
+    (forget_LAlgebras_to_Sets R).
 Proof. exact: (functor_ext (eq := fun=> _)). Qed.
 
 
@@ -491,6 +544,11 @@ Coercion lrmorphism_of_Algebras R a b (f : {hom[Algebras R] a -> b}) :
   {lrmorphism a -> b} := forget_Algebras_to_LAlgebras R # f.
 Lemma lrmorphism_of_AlgebrasE R a b (f : {hom[Algebras R] a -> b}) :
   [the {lrmorphism a -> b} of lrmorphism_of_Algebras f] = f :> (_ -> _).
+Proof. by []. Qed.
+Definition forget_Algebras_to_Sets R :=
+  forget_LAlgebras_to_Sets R \O forget_Algebras_to_LAlgebras R.
+Lemma forget_Algebras_to_SetsE R a b (f : {hom[Algebras R] a -> b}) :
+  forget_Algebras_to_Sets R # f = f :> (_ -> _).
 Proof. by []. Qed.
 
 
@@ -534,6 +592,11 @@ Lemma lrmorphism_of_ComAlgebrasE R a b (f : {hom[ComAlgebras R] a -> b}) :
   [the {lrmorphism a -> b} of lrmorphism_of_ComAlgebras f] = f :> (_ -> _).
 Proof. by []. Qed.
 
+Definition forget_ComAlgebras_to_Sets R :=
+  forget_Algebras_to_Sets R \O forget_ComAlgebras_to_Algebras R.
+Lemma forget_ComAlgebras_to_SetsE R a b (f : {hom[ComAlgebras R] a -> b}) :
+  forget_ComAlgebras_to_Sets R # f = f :> (_ -> _).
+Proof. by []. Qed.
 
 
 (* Monoid ************************************************************)
@@ -575,6 +638,7 @@ Proof. by []. Qed.
 
 Local Open Scope monoid_scope.
 
+
 Definition freeMonoid (a : Sets) := seq a.
 HB.instance Definition _ (a : Sets) := Choice.on (freeMonoid a).
 HB.instance Definition _ (a : Sets) :=
@@ -587,9 +651,8 @@ Notation "[fmon x ]" := ([:: x] : {freemon _})
 
 Lemma freeMonoidE (a : Sets) (x : freeMonoid a) : x = \prod_(i <- x) [fmon i].
 Proof.
-by elim: x => [| s s0 {1}->]; rewrite ?big_nil // big_cons [RHS]cat1s.
+by elim: x => [|s s0 {1}->]; rewrite ?big_nil // big_cons [RHS]cat1s.
 Qed.
-
 
 Section FreeMonoid.
 
@@ -672,23 +735,21 @@ Definition adjoint : F -| G := AdjointFunctors.mk triL triR.
 
 End Adjoint.
 End FreeMonAdjoint.
-Definition adjoint_freeMon_forget := FreeMonAdjoint.adjoint.
+Definition adjoint_freeMonoid_forget_to_Sets := FreeMonAdjoint.adjoint.
 
 Section UniversalProperty.
 
 Variables (A : Sets) (M : Monoids) (f : {hom[Sets] A -> M}).
 
-Local Notation eps := (AdjointFunctors.eps adjoint_freeMon_forget).
-Local Notation eta := (AdjointFunctors.eta adjoint_freeMon_forget).
+Local Notation eps := (AdjointFunctors.eps adjoint_freeMonoid_forget_to_Sets).
+Local Notation eta := (AdjointFunctors.eta adjoint_freeMonoid_forget_to_Sets).
+Local Notation triR := (AdjointFunctors.triR adjoint_freeMonoid_forget_to_Sets).
 
 Definition univmap_freemon : {hom[Monoids] {freemon A} -> M} :=
   eps M \o functor_freeMon # f : {hom _ -> M}.
 
 Lemma univmap_freemonP a : univmap_freemon [fmon a] = f a.
-Proof.
-rewrite /univmap_freemon -[[fmon a]]/(eta A a) /=.
-exact: (AdjointFunctors.triR adjoint_freeMon_forget).
-Qed.
+Proof. by rewrite /univmap_freemon -[[fmon a]]/(eta A a) /=; exact: triR. Qed.
 
 Lemma univmap_freemon_uniq (g : {hom[Monoids] {freemon A} -> M}) :
   (forall a : A, g [fmon a] = f a) -> g =1 univmap_freemon.
@@ -713,6 +774,31 @@ Coercion mmorphism_of_ComMonoids a b (f : {hom[ComMonoids] a -> b}) :
   HB.pack (Hom.sort f) (isMonMorphism.Build _ _ _ (isHom_inhom f)).
 Lemma mmorphism_of_ComMonoidsE a b (f : {hom[ComMonoids] a -> b}) :
   [the {mmorphism a -> b} of @mmorphism_of_ComMonoids a b f] = f :> (_ -> _).
+Proof. by []. Qed.
+
+Module ForgetComMonoids_to_Monoids.
+
+Section Morphism.
+Variable (a b : ComMonoids) (f : {hom[ComMonoids] a -> b}).
+Definition forget (T : ComMonoids) : Monoids := T.
+Definition forget_mor : (a : Monoids) -> (b : Monoids) := f.
+HB.instance Definition _ :=  @isHom.Build Monoids a b forget_mor (isHom_inhom f).
+End Morphism.
+HB.instance Definition _ :=
+  @isFunctor.Build ComMonoids Monoids forget forget_mor
+    (fun _ _ _ _ => id) (fun _ => frefl _) (fun _ _ _ _ _ => frefl _).
+Definition functor : {functor ComMonoids -> Monoids} := forget.
+
+End ForgetComMonoids_to_Monoids.
+
+Definition forget_ComMonoids_to_Monoids := ForgetComMonoids_to_Monoids.functor.
+Lemma forget_ComMonoids_to_MonoidsE a b (f : {hom[ComMonoids] a -> b}) :
+  forget_ComMonoids_to_Monoids # f = f :> (_ -> _).
+Proof. by []. Qed.
+Definition forget_ComMonoids_to_Sets :=
+  forget_Monoids_to_Sets \O forget_ComMonoids_to_Monoids.
+Lemma forget_ComMonoids_to_SetsE a b (f : {hom[ComMonoids] a -> b}) :
+  forget_ComMonoids_to_Sets # f = f :> (_ -> _).
 Proof. by []. Qed.
 
 
@@ -995,8 +1081,7 @@ Definition isoMC : MC ~> FId := isoMC_hom.
 
 End IsoMCTrans.
 
-
-Definition Equiv_ComMonoids_NModules :
+Definition equivalence_ComMonoids_NModules :
   equivalence_category NMod_of_ComMonoid ComMonoid_of_NMod :=
   EquivalenceCategory natural_isoMC natural_isoCM.
 
@@ -1026,12 +1111,10 @@ Notation ComUnitAlgebras R := [the category of comUnitAlgType R].
 *)
 
 
-
-(** Adjonction between forget : NModules -> Sets and free N-Modules *)
-
 Local Open Scope ring_scope.
 Local Open Scope mset_scope.
 
+(** Adjonction between forget : NModules -> Sets and free N-Modules *)
 Section Set_to_FreeNmodule.
 
 Variable (a b : Sets) (f : {hom[Sets] a -> b}).
@@ -1055,7 +1138,6 @@ by rewrite msuppE -mset_eq0 => /eqP -> /[!mul0n].
 Qed.
 
 End Set_to_FreeNmodule.
-
 
 Definition FreeNmod (T : Sets) : NModules := {mset T}.
 (* TODO Cyril : The following declaration was
@@ -1139,37 +1221,34 @@ Qed.
 Fact triR : TriangularLaws.right eta eps.
 Proof. by move=> /= M m; rewrite /eta_fun /= /eps_fun !big_msetn /=. Qed.
 
-Let F : {functor Sets -> NModules} := FreeNmod.
-Let G : {functor NModules -> Sets} := forget_NModules_to_Sets.
-
 Definition adjoint : FreeNmod -| forget_NModules_to_Sets :=
   AdjointFunctors.mk triL triR.
 
 End Adjoint.
 End FreeNModAdjoint.
-Definition adjoint_freeNMod_forget := FreeNModAdjoint.adjoint.
+Definition adjoint_freeNModule_forget_to_Sets := FreeNModAdjoint.adjoint.
 
 
 Section UniversalProperty.
 
 Variables (A : Sets) (M : NModules) (f : {hom[Sets] A -> M}).
 
-Local Notation eps := (AdjointFunctors.eps adjoint_freeNMod_forget).
-Local Notation eta := (AdjointFunctors.eta adjoint_freeNMod_forget).
+Local Notation eps := (AdjointFunctors.eps adjoint_freeNModule_forget_to_Sets).
+Local Notation eta := (AdjointFunctors.eta adjoint_freeNModule_forget_to_Sets).
+Local Notation triR := (AdjointFunctors.triR adjoint_freeNModule_forget_to_Sets).
 
 Definition univmap : {hom[NModules] {mset A} -> M} := eps M \o FreeNmod # f.
 
-Lemma univmapP a : univmap [mset a] = f a.
+Lemma univmap_FreeNmodP a : univmap [mset a] = f a.
 Proof.
-rewrite /univmap -[[mset a]]/(eta A a) /= hom_mset1.
-exact: (AdjointFunctors.triR adjoint_freeNMod_forget).
+by rewrite -[[mset a]]/(eta A a) /= hom_mset1; exact: triR.
 Qed.
 
-Lemma univmap_uniq (g : {hom[NModules] {mset A} -> M}) :
+Lemma univmap_FreeNmod_uniq (g : {hom[NModules] {mset A} -> M}) :
   (forall a : A, g [mset a] = f a) -> g =1 univmap.
 Proof.
 move=> eq m; rewrite -(msetE m) -!additive_of_NmodE !raddf_sum; apply eq_bigr => x _.
-by rewrite [LHS]eq [RHS]univmapP.
+by rewrite [LHS]eq [RHS]univmap_FreeNmodP.
 Qed.
 
 End UniversalProperty.
@@ -1178,9 +1257,8 @@ Local Close Scope monoid_scope.
 
 
 Local Open Scope ring_scope.
-(** Adjonction between forget : L-Modules -> Sets and free L-Modules *)
 
-
+(** Adjonction free L-Modules -| forget L-Modules to Sets and *)
 Section Set_to_FreeLmodule.
 
 Variable R : ringType.
@@ -1323,7 +1401,7 @@ Definition adjoint : F -| G := AdjointFunctors.mk triL triR.
 
 End Adjoint.
 End FreeLModAdjoint.
-Definition adjoint_freeLMod_forget := FreeLModAdjoint.adjoint.
+Definition adjoint_freeLMod_forget_to_Sets := FreeLModAdjoint.adjoint.
 
 Section UniversalProperty.
 
@@ -1331,17 +1409,15 @@ Variable (R : Rings).
 
 Variables (A : Sets) (M : LModules R) (f : {hom[Sets] A -> M}).
 
-Local Notation eps := (AdjointFunctors.eps (adjoint_freeLMod_forget R)).
-Local Notation eta := (AdjointFunctors.eta (adjoint_freeLMod_forget R)).
+Local Notation eps := (AdjointFunctors.eps (adjoint_freeLMod_forget_to_Sets R)).
+Local Notation eta := (AdjointFunctors.eta (adjoint_freeLMod_forget_to_Sets R)).
+Local Notation triR := (AdjointFunctors.triR (adjoint_freeLMod_forget_to_Sets R)).
 
 Definition univmap_freelmod : {hom[LModules R] {freemod R[A]} -> M} :=
   eps M \o (functor_freeLmod R) # f.
 
 Lemma univmap_freelmodP a : univmap_freelmod [fm / a |-> 1] = f a.
-Proof.
-rewrite /= !hom_flm1.
-exact: (AdjointFunctors.triR (adjoint_freeLMod_forget R)).
-Qed.
+Proof. by rewrite /= !hom_flm1; exact: triR. Qed.
 
 Lemma univmap_freelmod_uniq (g : {hom[LModules R] {freemod R[A]} -> M}) :
   (forall a : A, g [fm / a |-> 1] = f a) -> g =1 univmap_freelmod.
@@ -1352,7 +1428,7 @@ Qed.
 End UniversalProperty.
 
 
-(* Monoid of SemiRing Forgetful functor *)
+(** HB incompatible Forgetful functor SemiRings -> Monoids *)
 Module ForgetSemiRings_to_Monoids.
 
 HB.instance Definition _ (R S : semiRingType) (f : {rmorphism R -> S}) :=
@@ -1406,12 +1482,11 @@ Proof. by []. Qed.
 
 Local Open Scope monoid_scope.
 
+(* Adjonction Free L-modules -| forget Algebras -> Monoids *)
 Definition monalg (R : Rings) (A : Monoids) := {freemod R[A]}.
 Notation "{ 'monalg' R [ T ] }" := (monalg R T)
   (at level 0, format "{ 'monalg'  R [ T ] }").
 
-
-(* Adjonction Algebra -> monoids / L-module *)
 Module MonoidAlgebra.
 Section MonoidAlgebra.
 
@@ -1615,6 +1690,7 @@ move=> eq x; rewrite -(lrmorphism_of_AlgebrasE f) -(lrmorphism_of_AlgebrasE g).
 exact: linear_fmE.
 Qed.
 
+
 Section Homs.
 Variables (A B : Monoids) (f : {hom[Monoids] A -> B}).
 
@@ -1645,6 +1721,8 @@ Definition functor_MonoidAlgebra : {functor Monoids -> Algebras R}
 
 End FunctorMonoidAlgebra.
 
+
+(** Adjonction Monoid Algebras |- forget Algebras to Monoids *)
 Definition forget_Algebras_to_Monoids R : {functor Algebras R -> Monoids} :=
   forget_SemiRings_to_Monoids
     \O forget_Rings_to_SemiRings
@@ -1697,7 +1775,7 @@ Qed.
 
 Fact eps_fun_linear : linear eps_fun.
 Proof.
-(* TODO : copypaste from eps_fun_linear / problem with \val due to not forgetful *)
+(* TODO : copypasted from eps_fun_linear / problem with \val due to not forgetful *)
 rewrite /eps_fun => r x y; rewrite scaler_sumr /=.
 rewrite -!(finsupp_widen _ (S := finsupp x `|` finsupp y)%fset) /=.
 rewrite -big_split /=; apply: eq_bigr => a _.
@@ -1767,7 +1845,7 @@ Definition adjoint : F -| G := AdjointFunctors.mk triL triR.
 
 End Adjoint.
 End MonoidAlgebraAdjoint.
-Definition adjoint_MonoidAlgebra_forget := MonoidAlgebraAdjoint.adjoint.
+Definition adjoint_MonoidAlgebra_forget_to_Monoids := MonoidAlgebraAdjoint.adjoint.
 
 Section UniversalProperty.
 
@@ -1776,8 +1854,10 @@ Variable (R : ComRings).
 Variables (A : Monoids) (M : Algebras R)
   (f : {hom[Monoids] A -> forget_Algebras_to_Monoids R M}).
 
-Local Notation eps := (AdjointFunctors.eps (adjoint_MonoidAlgebra_forget R)).
-Local Notation eta := (AdjointFunctors.eta (adjoint_MonoidAlgebra_forget R)).
+Local Notation eps :=
+  (AdjointFunctors.eps (adjoint_MonoidAlgebra_forget_to_Monoids R)).
+Local Notation eta :=
+  (AdjointFunctors.eta (adjoint_MonoidAlgebra_forget_to_Monoids R)).
 
 Definition univmap_monalg : {hom[Algebras R] {monalg R[A]} -> M} :=
   eps M \o (functor_MonoidAlgebra R) # f.
