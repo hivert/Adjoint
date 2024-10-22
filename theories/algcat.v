@@ -1481,6 +1481,53 @@ Lemma forget_ComSemiRings_to_ComMonoidsE a b (f : {hom[ComSemiRings] a -> b}) :
 Proof. by []. Qed.
 
 
+(** Fix the non HB forgetful inheritance SemiRings -> Monoids *)
+Local Notation multSet :=  (* Multiplicative forgetful Sets of a SemiRings *)
+  (forget_Monoids_to_Sets \o forget_SemiRings_to_Monoids).
+
+Section FixForgetMultMon.
+Variable (R : SemiRings).
+
+Definition transf_to_multmon_fun :
+  forget_SemiRings_to_Sets R -> multSet R := fun (r : R) => to_multMon r.
+Definition transf_from_multmon_fun :
+  multSet R -> forget_SemiRings_to_Sets R := fun (r : multSet R) => \val r.
+Lemma transf_to_multmonK : cancel transf_to_multmon_fun transf_from_multmon_fun.
+Proof. by []. Qed.
+Lemma transf_from_multmonK : cancel transf_from_multmon_fun transf_to_multmon_fun.
+Proof. by move=> x; apply val_inj. Qed.
+
+HB.instance Definition _ :=
+  isHom.Build Sets (forget_SemiRings_to_Sets R) (multSet R)
+    transf_to_multmon_fun I.
+HB.instance Definition _ :=
+  isIsom.Build Sets (forget_SemiRings_to_Sets R) (multSet R)
+    transf_to_multmon_fun I transf_to_multmonK transf_from_multmonK.
+
+Lemma transf_to_multmon_invE :
+  inv_hom transf_to_multmon_fun = transf_from_multmon_fun.
+Proof. by []. Qed.
+
+End FixForgetMultMon.
+
+Definition transf_to_multmon :
+  forget_SemiRings_to_Sets ~~> multSet := transf_to_multmon_fun.
+Definition transf_from_multmon :
+  multSet ~~> forget_SemiRings_to_Sets := transf_from_multmon_fun.
+Fact transf_to_multmon_natural :
+  naturality forget_SemiRings_to_Sets multSet transf_to_multmon.
+Proof. by []. Qed.
+HB.instance Definition _ :=
+  @isNatural.Build SemiRings Sets forget_SemiRings_to_Sets multSet
+    transf_to_multmon transf_to_multmon_natural.
+Fact transf_from_multmon_natural :
+  naturality multSet forget_SemiRings_to_Sets transf_from_multmon.
+Proof. by []. Qed.
+HB.instance Definition _ :=
+  @isNatural.Build SemiRings Sets multSet forget_SemiRings_to_Sets
+    transf_from_multmon transf_from_multmon_natural.
+
+
 Local Open Scope monoid_scope.
 
 (* Adjonction Free L-modules -| forget Algebras -> Monoids *)
@@ -1729,6 +1776,7 @@ Definition forget_Algebras_to_Monoids R : {functor Algebras R -> Monoids} :=
     \O forget_Rings_to_SemiRings
     \O (@forget_LAlgebras_to_Rings R) \O (@forget_Algebras_to_LAlgebras R).
 
+
 Module MonoidAlgebraAdjoint.
 Section Adjoint.
 Variable R : ComRings.
@@ -1879,6 +1927,59 @@ Qed.
 
 End UniversalProperty.
 
+
+Definition FreeAlg R := MonoidAlgebra R \O functor_freeMon.
+
+Module FreeAlgebraAdjoint.
+Section FixAdjonctionFreeAlgebra.
+Variable (R : ComRings).
+
+Definition forgetMult := forget_Monoids_to_Sets \O forget_Algebras_to_Monoids R.
+
+Definition forget_Algebra_to_Semirings :=
+  forget_Rings_to_SemiRings \O forget_LAlgebras_to_Rings R
+    \O forget_Algebras_to_LAlgebras R.
+
+Definition transf_Algebra_to_multmon : forget_Algebras_to_Sets R ~> forgetMult
+  :=
+  [NEq forget_Monoids_to_Sets \O forget_SemiRings_to_Monoids \O
+         forget_Algebra_to_Semirings,
+       forgetMult]
+    \v (transf_to_multmon \h NId forget_Algebra_to_Semirings)
+    \v [NEq forget_Algebras_to_Sets R,
+            forget_SemiRings_to_Sets \O forget_Algebra_to_Semirings].
+
+Definition transf_multmon_to_Algebra : forgetMult ~> forget_Algebras_to_Sets R
+  :=
+  [NEq forget_SemiRings_to_Sets \O forget_Algebra_to_Semirings,
+       forget_Algebras_to_Sets R]
+    \v (transf_from_multmon \h NId forget_Algebra_to_Semirings)
+    \v [NEq forgetMult,
+            forget_Monoids_to_Sets \O forget_SemiRings_to_Monoids \O
+              forget_Algebra_to_Semirings].
+
+Lemma transf_Algebra_to_multmonE A :
+  transf_Algebra_to_multmon A =1 transf_to_multmon A.
+Proof. Proof. by move=> a; rewrite /= !HCompId. Qed.
+Lemma transf_multmon_to_AlgebraE A :
+  transf_multmon_to_Algebra A =1 transf_from_multmon A.
+Proof. Proof. by move=> a; rewrite /= !HCompId. Qed.
+Lemma transf_Algebra_to_multmonK A :
+  cancel (transf_Algebra_to_multmon A) (transf_multmon_to_Algebra A).
+Proof. by move=> a; rewrite /= !HCompId /= transf_to_multmonK. Qed.
+Lemma transf_multmon_to_AlgebraK A :
+  cancel (transf_multmon_to_Algebra A) (transf_Algebra_to_multmon A).
+Proof. by move=> a; rewrite /= !HCompId /= transf_from_multmonK. Qed.
+
+Definition adjoint  : FreeAlg R -| forget_Algebras_to_Sets R :=
+  adj_natisomR transf_multmon_to_AlgebraK transf_Algebra_to_multmonK
+    (adj_comp
+       (adjoint_freeMonoid_forget_to_Sets)
+       (adjoint_MonoidAlgebra_forget_to_Monoids R)).
+
+End FixAdjonctionFreeAlgebra.
+End FreeAlgebraAdjoint.
+Definition adjoint_FreeAlgebra_forget_to_Sets := FreeAlgebraAdjoint.adjoint.
 
 
 Section ComMonoidAlgebra.

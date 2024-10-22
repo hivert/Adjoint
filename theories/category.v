@@ -84,6 +84,7 @@ Lemma compidf A B (f : A -> B) : id \o f = f. Proof. by []. Qed.
 Lemma compapp A B C (f : A -> B) (g : B -> C) (a : A) :
   (g \o f) a = g (f a). Proof. by []. Qed.
 Lemma idfunK A : cancel (@idfun A) idfun. Proof. by []. Qed.
+Lemma idfunE A a : (@idfun A a) = a. Proof. by []. Qed.
 
 
 (* opaque ssrfun.frefl blocks some proofs involving functor_ext *)
@@ -911,6 +912,69 @@ End adj_comp.
 End Exports.
 End AdjComp.
 Export AdjComp.Exports.
+
+
+(** Adjonction through a natural isomorhism *)
+Module Adjoint_NatIsom.
+Section adjNatIsom.
+
+Variables (C D : category) (F : {functor C -> D}) (G G' : {functor D -> C}).
+Variables (GG' : G ~> G') (G'G : G' ~> G).
+Hypothesis GG'K : forall d, cancel (GG' d) (G'G d).
+Hypothesis G'GK : forall d, cancel (G'G d) (GG' d).
+Hypothesis adj : F -| G.
+
+Definition eps := (AdjointFunctors.eps adj) \v (NId F \h G'G).
+Definition eta := (GG'\h NId F) \v (AdjointFunctors.eta adj).
+
+Fact triL : TriangularLaws.left eta eps.
+Proof.
+rewrite /eps /eta => A a.
+have:= AdjointFunctors.triL adj a.
+move: (AdjointFunctors.eps adj) => eps.
+move: (AdjointFunctors.eta adj) => eta <-.
+rewrite !VCompE !compapp; congr (eps (F A) _).
+rewrite HIdComp -[LHS]compapp -functor_o.
+move: a; apply: functor_ext_hom => a /=.
+by rewrite !HCompId /= GG'K.
+Qed.
+
+Fact triR : TriangularLaws.right eta eps.
+Proof.
+rewrite /eps /eta => A a.
+rewrite !(HIdComp, HCompId, VCompE, compapp).
+have:= AdjointFunctors.triR adj (G'G A a).
+move: (AdjointFunctors.eps adj) => eps.
+move: (AdjointFunctors.eta adj) => eta /(congr1 (GG' A)).
+rewrite !idfunE G'GK => {2}<-.
+rewrite !(HIdComp, HCompId, VCompE, compapp).
+have := natural eta _ (G A) (G'G A) a.
+rewrite FIdf !compapp => <-; move: (eta (G' A) a) => {}a.
+rewrite -[RHS]compapp -(natural GG' _ A (eps A)).
+rewrite VCompE_nat functor_o !compapp /=; congr ((G' # eps A) _).
+rewrite -[LHS]compapp (natural GG') /= ; congr (GG' _ _).
+rewrite FCompE HCompE_def /HComp /= /hcomp /=.
+by rewrite functor_o /= NIdE functor_id_hom.
+Qed.
+
+End adjNatIsom.
+
+Module Exports.
+Section adj_nat.
+
+Variables (C D : category) (F : {functor C -> D}) (G G' : {functor D -> C}).
+Variables (GG' : G ~> G') (G'G : G' ~> G).
+Hypothesis GG'K : forall d, cancel (GG' d) (G'G d).
+Hypothesis G'GK : forall d, cancel (G'G d) (GG' d).
+Hypothesis adj : F -| G.
+
+Definition adj_natisomR : F -| G' :=
+  AdjointFunctors.mk (triL GG'K adj) (triR G'GK adj).
+
+End adj_nat.
+End Exports.
+End Adjoint_NatIsom.
+Export Adjoint_NatIsom.Exports.
 
 
 Module MonadLaws.
