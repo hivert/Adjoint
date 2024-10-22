@@ -21,7 +21,7 @@ HB.instance Definition _ :=
     (fun _ _ _ => True) (fun => I) (fun _ _ _ _ _ _ _ => I).
 HB.instance Definition _ (a b : choiceType) (f : a -> b)
   := isHom.Build choiceType a b (f : el a -> el b) I.
-Notation Sets := [the category of choiceType].
+Definition Sets : category := choiceType.
 
 
 (* N-Modules ************************************************************)
@@ -33,7 +33,7 @@ Proof. by move=> fM gM; split => [|x y]; rewrite /= fM gM. Qed.
 HB.instance Definition _ :=
   isCategory.Build nmodType (fun T : nmodType => T)
     semi_additive idfun_is_semi_additive comp_is_semi_additive.
-Notation NModules := [the category of nmodType].
+Definition NModules : category := nmodType.
 #[warning="-uniform-inheritance"]
 Definition additive_of_Nmod a b (f : {hom[NModules] a -> b}) : {additive a -> b} :=
   HB.pack (Hom.sort f) (GRing.isSemiAdditive.Build _ _ _ (isHom_inhom f)).
@@ -69,7 +69,7 @@ Proof. by []. Qed.
 HB.instance Definition _ :=
   isCategory.Build zmodType (fun T : zmodType => T)
     (@inhom NModules) (@idfun_inhom NModules) (@funcomp_inhom NModules).
-Notation ZModules := [the category of zmodType].
+Definition ZModules : category := zmodType.
 
 #[warning="-uniform-inheritance"]
 Coercion additive_of_Zmod a b (f : {hom[ZModules] a -> b}) : {additive a -> b} :=
@@ -121,7 +121,7 @@ Qed.
 HB.instance Definition _ :=
   isCategory.Build semiRingType (fun T : semiRingType => T)
     semiring_morph idfun_is_semiring_morph comp_is_semiring_morph.
-Notation SemiRings := [the category of semiRingType].
+Definition SemiRings : category := semiRingType.
 
 #[warning="-uniform-inheritance"]
 Coercion rmorph_of_SRing a b (f : {hom[SemiRings] a -> b}) : {rmorphism a -> b} :=
@@ -165,7 +165,7 @@ Proof. by []. Qed.
 HB.instance Definition _ :=
   isCategory.Build ringType (fun T : ringType => T)
     (@inhom SemiRings) (@idfun_inhom SemiRings) (@funcomp_inhom SemiRings).
-Notation Rings := [the category of ringType].
+Definition Rings : category := ringType.
 #[warning="-uniform-inheritance"]
 Coercion rmorph_of_Ring a b (f : {hom[Rings] a -> b}) : {rmorphism a -> b} :=
   HB.pack (Hom.sort f)
@@ -236,7 +236,7 @@ Proof. exact: (functor_ext (eq := fun=> _)). Qed.
 HB.instance Definition _ :=
   isCategory.Build comSemiRingType (fun T : comSemiRingType => T)
     (@inhom SemiRings) (@idfun_inhom SemiRings) (@funcomp_inhom SemiRings).
-Notation ComSemiRings := [the category of comSemiRingType].
+Definition ComSemiRings : category := comSemiRingType.
 
 Module ForgetComSemiRings_to_SemiRings.
 
@@ -282,7 +282,7 @@ Proof. by []. Qed.
 HB.instance Definition _ :=
   isCategory.Build comRingType (fun T : comRingType => T)
     (@inhom Rings) (@idfun_inhom Rings) (@funcomp_inhom Rings).
-Notation ComRings := [the category of comRingType].
+Definition ComRings : category := comRingType.
 
 Module ForgetComRings_to_Rings.
 
@@ -357,7 +357,7 @@ HB.instance Definition _ :=
   isCategory.Build (lmodType R) (fun T : lmodType R => T)
     (fun a b (f : a -> b) => linear f) idfun_is_linear comp_is_linear.
 End LModules.
-Notation LModules R := [the category of lmodType R].
+Definition LModules R : category := lmodType R.
 #[warning="-uniform-inheritance"]
 Coercion linear_of_Lmod R a b (f : {hom[LModules R] a -> b}) : {linear a -> b} :=
   HB.pack (Hom.sort f) (GRing.isLinear.Build _ _ _ _ _ (isHom_inhom f)).
@@ -423,7 +423,7 @@ HB.instance Definition _ :=
     (fun a b (f : a -> b) => lalg_morph f)
     idfun_is_lalg_morph comp_is_lalg_morph.
 End LAlgebras.
-Notation LAlgebras R := [the category of lalgType R].
+Definition LAlgebras R : category := lalgType R.
 #[warning="-uniform-inheritance"]
 Coercion lrmorphism_of_LAlgebras R a b (f : {hom[LAlgebras R] a -> b}) :
   {lrmorphism a -> b} := HB.pack (Hom.sort f)
@@ -513,7 +513,7 @@ HB.instance Definition _ R :=
   isCategory.Build (algType R) (fun T : algType R => T)
     (@inhom (LAlgebras R)) (@idfun_inhom (LAlgebras R))
     (@funcomp_inhom (LAlgebras R)).
-Notation Algebras R := [the category of algType R].
+Definition Algebras R : category := algType R.
 
 Module ForgetAlgebras_to_LAlgebras.
 
@@ -558,7 +558,7 @@ HB.instance Definition _ R :=
   isCategory.Build (comAlgType R) (fun T : comAlgType R => T)
     (@inhom (Algebras R)) (@idfun_inhom (Algebras R))
     (@funcomp_inhom (Algebras R)).
-Notation ComAlgebras R := [the category of comAlgType R].
+Definition ComAlgebras R : category := comAlgType R.
 
 Module ForgetComAlgebras_to_Algebras.
 
@@ -607,7 +607,7 @@ Proof. by move=> fM gM; split => [x y|]; rewrite /= fM gM. Qed.
 HB.instance Definition _ :=
   isCategory.Build monoidType (fun T : monoidType => T)
     monmorphism idfun_is_monmorphism comp_is_monmorphism_fun.
-Notation Monoids := [the category of monoidType].
+Definition Monoids : category := monoidType.
 #[warning="-uniform-inheritance"]
 Coercion mmorphism_of_Monoids a b (f : {hom[Monoids] a -> b}) : {mmorphism a -> b} :=
   HB.pack (Hom.sort f) (isMonMorphism.Build _ _ _ (isHom_inhom f)).
@@ -767,7 +767,7 @@ End UniversalProperty.
 HB.instance Definition _ :=
   isCategory.Build comMonoidType (fun T : comMonoidType => T)
     (@inhom Monoids) (@idfun_inhom Monoids) (@funcomp_inhom Monoids).
-Notation ComMonoids := [the category of comMonoidType].
+Definition ComMonoids : category := comMonoidType.
 #[warning="-uniform-inheritance"]
 Coercion mmorphism_of_ComMonoids a b (f : {hom[ComMonoids] a -> b}) :
   {mmorphism a -> b} :=
@@ -1086,29 +1086,30 @@ Definition equivalence_ComMonoids_NModules :
   EquivalenceCategory natural_isoMC natural_isoCM.
 
 
-(* TODO Those are full subcategories. Devise some infrastructure.
+(* TODO: Those are full subcategories, devise some infrastructure to
+   - handle trivial forgetful functors
+   - morphisms coercions. *)
 HB.instance Definition _ :=
   isCategory.Build unitRingType (fun T : unitRingType => T)
     semiring_morph idfun_is_semiring_morph comp_is_semiring_morph.
-Notation UnitRings := [the category of unitRingType].
+Definition UnitRings : category := unitRingType.
 
 HB.instance Definition _ :=
   isCategory.Build comUnitRingType (fun T : comUnitRingType => T)
     semiring_morph idfun_is_semiring_morph comp_is_semiring_morph.
-Notation ComUnitRings := [the category of comUnitRingType].
+Definition ComUnitRings : category := comUnitRingType.
 
 HB.instance Definition _ R :=
   isCategory.Build (unitAlgType R) (fun T : unitAlgType R => T)
     (fun a b (f : a -> b) => lalg_morph f)
     (@idfun_is_lalg_morph R) (@comp_is_lalg_morph R).
-Notation UnitAlgebras R := [the category of unitAlgType R].
+Definition UnitAlgebras R : category := unitAlgType R.
 
 HB.instance Definition _ R :=
   isCategory.Build (comUnitAlgType R) (fun T : comUnitAlgType R => T)
     (fun a b (f : a -> b) => lalg_morph f)
     (@idfun_is_lalg_morph R) (@comp_is_lalg_morph R).
-Notation ComUnitAlgebras R := [the category of comUnitAlgType R].
-*)
+Definition ComUnitAlgebras R : category := comUnitAlgType R.
 
 
 Local Open Scope ring_scope.
