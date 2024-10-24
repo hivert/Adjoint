@@ -2109,3 +2109,151 @@ Definition forget_ComAlgebras_to_ComMonoids R
   : {functor ComAlgebras R -> ComMonoids}
   := forget_ComSemiRings_to_ComMonoids
     \O forget_ComRings_to_ComSemiRings \O forget_ComAlgebras_to_ComRings R.
+
+Module ComMonoidAlgebraAdjoint.
+Section Adjoint.
+Variable R : ComRings.
+Implicit Types (A : ComMonoids) (T : ComAlgebras R).
+
+Local Notation forgetf := (forget_ComAlgebras_to_ComMonoids R).
+Local Notation fMA := (ComMonoidAlgebra R).
+
+Section def_ETA.
+Variable A : ComMonoids.
+
+Definition eta_fun (a : A) : (forgetf \o fMA) A := @to_multMon _ [fm / a |-> 1].
+Fact eta_fun_monmorphism : monmorphism eta_fun.
+Proof.
+split => //; rewrite /eta_fun => a b.
+by rewrite monME mulmaccE mulr1.
+Qed.
+HB.instance Definition _ :=
+  isHom.Build ComMonoids A ((forgetf \o fMA) A) eta_fun eta_fun_monmorphism.
+
+End def_ETA.
+
+Definition eta : FId ~~> forgetf \o fMA := eta_fun.
+Fact eta_natural : naturality FId (forgetf \o fMA) eta.
+Proof.
+move=> /= A B h x /=; rewrite FIdf /eta_fun /=.
+rewrite /ForgetSemiRings_to_Monoids.multComMon_mor /multMon_mor.
+by rewrite /= /hom_MonoidAlgebra univmap_FreeLModuleP.
+Qed.
+HB.instance Definition _ :=
+  @isNatural.Build ComMonoids ComMonoids FId (forgetf \o fMA) eta eta_natural.
+
+Section def_EPS.
+Variable T : ComAlgebras R.
+
+Definition eps_fun (m : (fMA \o forgetf) T) : T :=
+  (\sum_(i <- finsupp (m : {freemod R[_]})) (m i *: \val i)).
+
+Lemma eps_fun1E t r : eps_fun [fm / t |-> r] = r *: \val t.
+Proof.
+rewrite /eps_fun.
+case : (altP (r =P 0)) => [-> | /finsupp_fmZ ->].
+  by rewrite /= fm0eq0 scale0r finsupp0 big_nil.
+by rewrite big_seq_fset1 fm1E eqxx.
+Qed.
+
+Fact eps_fun_linear : linear eps_fun.
+Proof.
+(* TODO : copypasted from eps_fun_linear / problem with \val due to not forgetful *)
+rewrite /eps_fun => r x y; rewrite scaler_sumr /=.
+rewrite -!(finsupp_widen _ (S := finsupp x `|` finsupp y)%fset) /=.
+rewrite -big_split /=; apply: eq_bigr => a _.
+  by rewrite addfmE scalefmE scalerDl scalerA.
+- by move=> i /[!memNfinsupp] /eqP ->; rewrite scale0r.
+- by move=> a; rewrite inE orbC => ->.
+- by move=> i /[!memNfinsupp] /eqP ->; rewrite scale0r scaler0.
+- by move=> a; rewrite inE => ->.
+- by move=> i /[!memNfinsupp] /eqP ->; rewrite scale0r.
+- move=> a; rewrite inE; apply contraLR.
+  rewrite negb_or !memNfinsupp addfmE scalefmE => /andP [/eqP -> /eqP ->].
+  by rewrite mulr0 addr0.
+Qed.
+HB.instance Definition _ :=
+  GRing.isLinear.Build R ((fMA \o forgetf) T) T _ eps_fun eps_fun_linear.
+
+Fact eps_fun_lalg_morph : lalg_morph eps_fun.
+Proof.
+repeat split; first 2 last.
+- by rewrite /eps_fun finsupp_fm1 big_seq_fset1 fsfunE inE eqxx scale1r.
+- exact: eps_fun_linear.
+move=> x y; rewrite -(fmE y) mulr_sumr !linear_sum mulr_sumr.
+apply eq_bigr => b _; rewrite /= eps_fun1E /=.
+rewrite -(fmE x) mulr_suml !linear_sum /= mulr_suml; apply eq_bigr => a _.
+rewrite mulmaccE !eps_fun1E /=.
+by rewrite -!scalerAr -!scalerAl scalerA mulrC.
+Qed.
+HB.instance Definition _ :=
+  isHom.Build (ComAlgebras R) ((fMA \o forgetf) T) T eps_fun eps_fun_lalg_morph.
+
+End def_EPS.
+
+Definition eps : fMA \o forgetf ~~> FId := eps_fun.
+Fact eps_natural : naturality (fMA \o forgetf) FId eps.
+Proof.
+move=> /= A B h x /=; rewrite FIdf -(fmE x); move: (finsupp x) => S.
+rewrite [eps_fun _]linear_sum /= -lrmorphism_of_ComAlgebrasE [LHS]linear_sum.
+rewrite -(lrmorphism_of_ComAlgebrasE (ComMonoidAlgebra_fun _)).
+rewrite [X in _ = eps_fun X]linear_sum [eps_fun _]linear_sum.
+apply eq_bigr => {S} a _ /=.
+rewrite eps_fun1E -[X in eps_fun (_ _ X)](fm1ZE _ (x _)).
+rewrite -!lrmorphism_of_AlgebrasE linearZ /= [eps_fun _]linearZ /=.
+rewrite univmap_FreeLModuleP eps_fun1E scale1r /=.
+have /= -> := forget_ComAlgebras_to_AlgebrasE h.
+by rewrite -!lrmorphism_of_ComAlgebrasE linearZ.
+Qed.
+HB.instance Definition _ :=
+  @isNatural.Build (ComAlgebras R) (ComAlgebras R) (fMA \o forgetf) FId
+    eps eps_natural.
+
+Fact triL : TriangularLaws.left eta eps.
+Proof.
+move=> /= a.
+rewrite -linear_of_LmodE; apply: linear_fmE => x /=.
+rewrite -[X in eps_fun X]/(univmap_FreeLModule _ _) univmap_FreeLModuleP /=.
+by rewrite /eta_fun /= eps_fun1E scale1r /=.
+Qed.
+Fact triR : TriangularLaws.right eta eps.
+Proof.
+move=> /= M m; rewrite /eta_fun /= /ForgetSemiRings_to_Monoids.multComMon_mor.
+rewrite /multMon_mor /= eps_fun1E scale1r /=.
+exact: val_inj.
+Qed.
+
+Definition adjoint : fMA -| forgetf := AdjointFunctors.mk triL triR.
+
+End Adjoint.
+End ComMonoidAlgebraAdjoint.
+Definition adjoint_ComMonoidAlgebra_forget_to_ComMonoids :=
+  ComMonoidAlgebraAdjoint.adjoint.
+
+
+Section UniversalProperty.
+
+Variable (R : ComRings).
+
+Variables (A : ComMonoids) (M : ComAlgebras R)
+  (f : {hom[ComMonoids] A -> forget_ComAlgebras_to_ComMonoids R M}).
+
+Let Adj := adjoint_ComMonoidAlgebra_forget_to_ComMonoids R.
+
+Definition univmap_ComMonoidAlgebra := AdjointFunctors.hom_inv Adj f.
+
+Lemma univmap_ComMonoidAlgebraP a :
+  univmap_ComMonoidAlgebra [fm / a |-> 1] = \val (f a).
+Proof. by rewrite -[in RHS](AdjointFunctors.hom_invK Adj). Qed.
+
+Lemma univmap_ComMonoidAlgebra_uniq (g : {hom[ComAlgebras R] {monalg R[A]} -> M}) :
+  (forall a : A, g [fm / a |-> 1] = \val (f a)) -> g =1 univmap_ComMonoidAlgebra.
+Proof.
+move=> eq; apply: (AdjointFunctors.hom_iso_inj Adj).
+move=> a; rewrite AdjointFunctors.hom_invK.
+by apply val_inj; rewrite -eq.
+Qed.
+
+End UniversalProperty.
+
+
