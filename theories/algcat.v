@@ -599,6 +599,45 @@ Lemma forget_ComAlgebras_to_SetsE R a b (f : {hom[ComAlgebras R] a -> b}) :
 Proof. by []. Qed.
 
 
+Module ForgetComAlgebras_to_ComRings.
+
+Section BaseRing.
+Variable R : ringType.
+
+Fact ComAlgebras_mor_rmorphism a b (f : {hom[ComAlgebras R] a -> b}) :
+  semiring_morph f.
+Proof.
+rewrite -lrmorphism_of_ComAlgebrasE.
+repeat split; [exact: raddf0 | exact: raddfD | exact: rmorphM | exact: rmorph1].
+Qed.
+
+Section Morphism.
+Variables (a b : ComAlgebras R) (f : {hom[ComAlgebras R] a -> b}).
+Definition forget (T : ComAlgebras R) : ComRings := T.
+Definition forget_mor : (a : ComRings) -> (b : ComRings) := f.
+HB.instance Definition _ :=
+  @isHom.Build ComRings a b forget_mor (ComAlgebras_mor_rmorphism f).
+End Morphism.
+HB.instance Definition _ :=
+  @isFunctor.Build (ComAlgebras R) ComRings forget forget_mor
+    (fun _ _ _ _ => id) (fun _ => frefl _) (fun _ _ _ _ _ => frefl _).
+End BaseRing.
+Definition functor R : {functor ComAlgebras R -> ComRings} := @forget R.
+
+End ForgetComAlgebras_to_ComRings.
+
+Definition forget_ComAlgebras_to_ComRings := ForgetComAlgebras_to_ComRings.functor.
+Lemma forget_ComAlgebras_to_ComRingsE R a b (f : {hom[ComAlgebras R] a -> b}) :
+  forget_ComAlgebras_to_ComRings R # f = f :> (_ -> _).
+Proof. by []. Qed.
+
+Lemma unicity_forget_ComAlgebras_to_Rings (R : Rings) :
+  forget_ComRings_to_Rings \O forget_ComAlgebras_to_ComRings R
+    =#= forget_LAlgebras_to_Rings R
+    \O forget_Algebras_to_LAlgebras R \O forget_ComAlgebras_to_Algebras R.
+Proof. exact: (functor_ext (eq := fun=> _)). Qed.
+
+
 (* Monoid ************************************************************)
 
 Fact comp_is_monmorphism_fun (a b c : monoidType) (f : a -> b) (g : b -> c) :
@@ -1722,7 +1761,7 @@ exact: linear_fmE.
 Qed.
 
 
-Section Homs.
+Section MonoidAlgebraHoms.
 Variables (A B : Monoids) (f : {hom[Monoids] A -> B}).
 
 Definition hom_MonoidAlgebra :=
@@ -1734,7 +1773,7 @@ HB.instance Definition _  :=
 Definition MonoidAlgebra_mor
   : {hom[Algebras R] {monalg R[A]} -> {monalg R[B]}} := hom_MonoidAlgebra.
 
-End Homs.
+End MonoidAlgebraHoms.
 
 Fact MonoidAlgebra_ext : FunctorLaws.ext MonoidAlgebra_mor.
 Proof. exact: MonoidLAlgebra_ext. Qed.
@@ -2008,3 +2047,65 @@ HB.instance Definition _ :=
   GRing.Lalgebra_isComAlgebra.Build R {monalg R[A]}.
 
 End ComMonoidAlgebra.
+
+
+Section ComMonoidAlgebraHoms.
+
+Variables (R : ComRings) (A B : ComMonoids) (f : A -> B).
+Hypothesis f_homcm : @inhom ComMonoids A B f.
+
+Let fm : (A : Monoids) -> (B : Monoids) := f.
+Lemma fm_homm : @inhom Monoids A B fm.
+Proof. exact: f_homcm. Qed.
+HB.instance Definition _  :=
+  isHom.Build Monoids (A : Monoids) (B : Monoids) fm fm_homm.
+Definition fm_tmp : {hom[Monoids] A -> B} := fm.
+Definition ComMonoidAlgebra_fun : ({monalg R[A]} : ComAlgebras R)
+             -> ({monalg R[B]} : ComAlgebras R) := MonoidAlgebra R # fm_tmp.
+HB.instance Definition _  :=
+  @isHom.Build (ComAlgebras R) {monalg R[A]} {monalg R[B]}
+    ComMonoidAlgebra_fun (@hom_MonoidLAlgebra_lalg_morph R A B fm).
+Definition ComMonoidAlgebra_mor_tmp :
+  {hom[ComAlgebras R] {monalg R[A]} -> {monalg R[B]}} := ComMonoidAlgebra_fun.
+
+End ComMonoidAlgebraHoms.
+
+
+Section FunctorComMonoidAlgebra.
+
+Variable R : ComRings.
+
+Definition forget_Hom_ComMonoid_to_Monoid A B (f : {hom[ComMonoids] A -> B}) := 
+  fm_tmp (isHom_inhom f).
+Definition ComMonoidAlgebra_mor A B (f : {hom[ComMonoids] A -> B}) :=
+  ComMonoidAlgebra_mor_tmp R (isHom_inhom f).
+
+Lemma ComMonoidAlgebra_morE A B (f : {hom[ComMonoids] A -> B}) :
+  ComMonoidAlgebra_mor f =1 MonoidAlgebra R # (forget_Hom_ComMonoid_to_Monoid f).
+Proof. by []. Qed.
+
+Fact ComMonoidAlgebra_ext : FunctorLaws.ext ComMonoidAlgebra_mor.
+Proof. by move=> M N f g eq; apply: MonoidAlgebra_ext. Qed.
+Fact ComMonoidAlgebra_id : FunctorLaws.id ComMonoidAlgebra_mor.
+Proof. exact: MonoidLAlgebra_id. Qed.
+Fact ComMonoidAlgebra_comp  : FunctorLaws.comp ComMonoidAlgebra_mor.
+Proof.
+move=> M N O f g /=.
+exact: (MonoidLAlgebra_comp
+    (forget_Hom_ComMonoid_to_Monoid f) (forget_Hom_ComMonoid_to_Monoid g)).
+Qed.
+
+Definition ComMonoidAlgebra (T : ComMonoids) : ComAlgebras R := {monalg R[T]}.
+HB.instance Definition _ :=
+  @isFunctor.Build ComMonoids (ComAlgebras R)
+    ComMonoidAlgebra ComMonoidAlgebra_mor
+    ComMonoidAlgebra_ext ComMonoidAlgebra_id ComMonoidAlgebra_comp.
+
+End FunctorComMonoidAlgebra.
+
+
+(** Adjonction ComMonoid Algebras |- forget ComAlgebras to ComMonoids *)
+Definition forget_ComAlgebras_to_ComMonoids R
+  : {functor ComAlgebras R -> ComMonoids}
+  := forget_ComSemiRings_to_ComMonoids
+    \O forget_ComRings_to_ComSemiRings \O forget_ComAlgebras_to_ComRings R.
