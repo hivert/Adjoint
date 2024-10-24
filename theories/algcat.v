@@ -1148,7 +1148,7 @@ Definition ComUnitAlgebras R : category := comUnitAlgType R.
 Local Open Scope ring_scope.
 Local Open Scope mset_scope.
 
-(** Adjonction between forget : NModules -> Sets and free N-Modules *)
+(** Adjunction between forget : NModules -> Sets and free N-Modules *)
 Section Set_to_FreeNmodule.
 
 Variable (a b : Sets) (f : {hom[Sets] a -> b}).
@@ -1287,7 +1287,7 @@ Local Close Scope monoid_scope.
 
 Local Open Scope ring_scope.
 
-(** Adjonction free L-Modules -| forget L-Modules to Sets and *)
+(** Adjunction free L-Modules -| forget L-Modules to Sets and *)
 Section Set_to_FreeLmodule.
 
 Variable R : ringType.
@@ -1554,7 +1554,7 @@ HB.instance Definition _ :=
 
 Local Open Scope monoid_scope.
 
-(* Adjonction Free L-modules -| forget Algebras -> Monoids *)
+(* Adjunction Free L-modules -| forget Algebras -> Monoids *)
 Definition monalg (R : Rings) (A : Monoids) := {freemod R[A]}.
 Notation "{ 'monalg' R [ T ] }" := (monalg R T)
   (at level 0, format "{ 'monalg'  R [ T ] }").
@@ -1790,7 +1790,7 @@ HB.instance Definition _ :=
 End FunctorMonoidAlgebra.
 
 
-(** Adjonction Monoid Algebras |- forget Algebras to Monoids *)
+(** Adjunction Monoid Algebras |- forget Algebras to Monoids *)
 Definition forget_Algebras_to_Monoids R : {functor Algebras R -> Monoids} :=
   forget_SemiRings_to_Monoids
     \O forget_Rings_to_SemiRings
@@ -1944,7 +1944,7 @@ Notation "{ 'freealg' R [ T ] }" := (FreeAlgebra R T)
   (at level 0, format "{ 'freealg'  R [ T ] }").
 
 Module FreeAlgebraAdjoint.
-Section FixAdjonctionFreeAlgebra.
+Section FixAdjunctionFreeAlgebra.
 Variable (R : ComRings).
 
 Definition forgetMult := forget_Monoids_to_Sets \O forget_Algebras_to_Monoids R.
@@ -1990,7 +1990,7 @@ Definition adjoint  : FreeAlgebra R -| forget_Algebras_to_Sets R :=
        (adjoint_FreeMonoid_forget_to_Sets)
        (adjoint_MonoidAlgebra_forget_to_Monoids R)).
 
-End FixAdjonctionFreeAlgebra.
+End FixAdjunctionFreeAlgebra.
 End FreeAlgebraAdjoint.
 Definition adjoint_FreeAlgebra_forget_to_Sets := FreeAlgebraAdjoint.adjoint.
 
@@ -2104,7 +2104,7 @@ HB.instance Definition _ :=
 End FunctorComMonoidAlgebra.
 
 
-(** Adjonction ComMonoid Algebras |- forget ComAlgebras to ComMonoids *)
+(** Adjunction ComMonoid Algebras |- forget ComAlgebras to ComMonoids *)
 Definition forget_ComAlgebras_to_ComMonoids R
   : {functor ComAlgebras R -> ComMonoids}
   := forget_ComSemiRings_to_ComMonoids
