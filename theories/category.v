@@ -571,37 +571,6 @@ by rewrite !inv_homK.
 Qed.
 
 
-(* Category equivalence *)
-Record equivalence_category (C D : category)
-  (F : {functor C -> D}) (G : {functor D -> C}) := EquivalenceCategory {
-     eqFGId : forall a, {isom (F \O G) a -> FId a};
-     eqGFId : forall a, {isom (G \O F) a -> FId a};
-     natural_eqFGId : naturality (F \O G) FId eqFGId;
-     natural_eqGFId : naturality (G \O F) FId eqGFId;
-}.
-
-Section equiv_cat_interface.
-
-Variables (C D : category) (F : {functor C -> D}) (G : {functor D -> C}).
-Variable (eq : equivalence_category F G).
-Definition eqFGId_trans : (F \O G) ~~> FId := eqFGId eq.
-Definition eqGFId_trans : (G \O F) ~~> FId := eqGFId eq.
-Definition eqIdFG_trans : FId ~~> (F \O G) := fun a => inv_hom (eqFGId eq a).
-Definition eqIdGF_trans : FId ~~> (G \O F) := fun a => inv_hom (eqGFId eq a).
-HB.instance Definition _ :=
-  isNatural.Build D D (F \O G) FId eqFGId_trans (natural_eqFGId eq).
-HB.instance Definition _ :=
-  isNatural.Build C C (G \O F) FId eqGFId_trans (natural_eqGFId eq).
-HB.instance Definition _ :=
-  isNatural.Build D D FId (F \O G) eqIdFG_trans
-    (natural_inv (natural_eqFGId eq)).
-HB.instance Definition _ :=
-  isNatural.Build C C FId (G \O F) eqIdGF_trans
-    (natural_inv (natural_eqGFId eq)).
-
-End equiv_cat_interface.
-
-
 Section vertical_composition.
 
 Variables (C D : category) (F G H : {functor C -> D}).
@@ -730,6 +699,154 @@ by rewrite (hom_compE _ _ x) -functor_o.
 Qed.
 
 End hcomp_lemmas.
+
+
+(* Category equivalence *)
+Record equivalence_category (C D : category)
+  (F : {functor C -> D}) (G : {functor D -> C}) := EquivalenceCategory {
+     eqFGId : forall a, {isom (F \O G) a -> FId a};
+     eqGFId : forall a, {isom (G \O F) a -> FId a};
+     natural_eqFGId : naturality (F \O G) FId eqFGId;
+     natural_eqGFId : naturality (G \O F) FId eqGFId;
+}.
+
+Section equiv_cat_interface.
+
+Variables (C D : category) (F : {functor C -> D}) (G : {functor D -> C}).
+Variable (eq : equivalence_category F G).
+Definition eqFGId_map : (F \O G) ~~> FId := eqFGId eq.
+Definition eqGFId_map : (G \O F) ~~> FId := eqGFId eq.
+Definition eqIdFG_map : FId ~~> (F \O G) := fun a => inv_hom (eqFGId eq a).
+Definition eqIdGF_map : FId ~~> (G \O F) := fun a => inv_hom (eqGFId eq a).
+HB.instance Definition _ :=
+  isNatural.Build D D (F \O G) FId eqFGId_map (natural_eqFGId eq).
+HB.instance Definition _ :=
+  isNatural.Build C C (G \O F) FId eqGFId_map (natural_eqGFId eq).
+HB.instance Definition _ :=
+  isNatural.Build D D FId (F \O G) eqIdFG_map
+    (natural_inv (natural_eqFGId eq)).
+HB.instance Definition _ :=
+  isNatural.Build C C FId (G \O F) eqIdGF_map
+    (natural_inv (natural_eqGFId eq)).
+
+Definition eqFGId_trans : (F \O G) ~> FId := eqFGId_map.
+Definition eqGFId_trans : (G \O F) ~> FId := eqGFId_map.
+Definition eqIdFG_trans : FId ~> (F \O G) := eqIdFG_map.
+Definition eqIdGF_trans : FId ~> (G \O F) := eqIdGF_map.
+
+End equiv_cat_interface.
+
+
+Definition EquivRefl (C : category) :=
+  @EquivalenceCategory C C (@FId C) (@FId C) (fun _ => idfun) (fun _ => idfun)
+    (@natural_id _ _ _) (@natural_id _ _ _).
+Definition EquivSym
+  (C D : category) (F : {functor C -> D}) (G : {functor D -> C})
+  (eq : equivalence_category F G)
+  := @EquivalenceCategory D C G F (eqGFId eq) (eqFGId eq)
+                         (natural_eqGFId eq) (natural_eqFGId eq).
+
+
+Module EquivCatTrans.
+
+Section Defs.
+
+Variables (C D E : category).
+Variables (F : {functor C -> D}) (G : {functor D -> C})
+          (H : {functor D -> E}) (I : {functor E -> D}).
+Variable (eq : equivalence_category F G) (eq' : equivalence_category H I).
+
+Definition trans_eqFGId : (H \O F) \O (G \O I) ~~> @FId E :=
+  fun e : E => (eqFGId_trans eq' e) \o (H # eqFGId_trans eq (I e)).
+Definition fun_eqFGId (e : E) : el (((H \O F) \O (G \O I)) e) -> el (FId e)
+  := trans_eqFGId e.
+Definition trans_eqIdFG : @FId E ~~> (H \O F) \O (G \O I) :=
+  fun e : E =>  (H # eqIdFG_trans eq (I e)) \o (eqIdFG_trans eq' e).
+Definition fun_eqIdFG (e : E) : el (FId e) -> el (((H \O F) \O (G \O I)) e)
+  := trans_eqIdFG e.
+
+Fact fun_eqFGIdK (e : E) : cancel (@fun_eqFGId e) (@fun_eqIdFG e).
+Proof.
+move=> x; rewrite /fun_eqFGId /fun_eqIdFG /= homK (hom_compE _ _ x) -functor_o.
+have FGIdK : eqIdFG_map eq (I e) \o eqFGId_map eq (I e) =1 idfun by exact: homK.
+by rewrite (functor_ext_hom H _ _ FGIdK) functor_id.
+Qed.
+Fact fun_eqIdFGK (e : E) : cancel (trans_eqIdFG e) (trans_eqFGId e).
+Proof.
+move=> x; rewrite /fun_eqFGId /fun_eqIdFG /= ![(H # _) _]hom_compE -functor_o.
+have IdFGK : eqFGId_map eq (I e) \o eqIdFG_map eq (I e) =1 idfun by exact: inv_homK.
+by rewrite (functor_ext_hom H _ _ IdFGK) functor_id /= inv_homK.
+Qed.
+HB.instance Definition _ (e : E) := Hom.on (@fun_eqFGId e).
+HB.instance Definition _ (e : E) :=
+  isIsom.Build _ _ _ (@fun_eqFGId e) (isHom_inhom (@fun_eqIdFG e))
+               (@fun_eqFGIdK e) (@fun_eqIdFGK e).
+
+
+Definition trans_eqGFId : (G \O I) \O (H \O F) ~~> @FId C :=
+  fun c : C => (eqGFId_trans eq c) \o (G # eqGFId_trans eq' (F c)).
+Definition fun_eqGFId (c : C) : el (((G \O I) \O (H \O F)) c) -> el (FId c)
+  := (trans_eqGFId c).
+Definition trans_eqIdGF : @FId C ~~> (G \O I) \O (H \O F) :=
+  fun c : C => (G # eqIdGF_trans eq' (F c)) \o (eqIdGF_trans eq c).
+Definition fun_eqIdGF (c : C) : el (FId c) -> el(((G \O I) \O (H \O F)) c)
+  := (trans_eqIdGF c).
+
+Fact fun_eqGFIdK (c : C) : cancel (@fun_eqGFId c) (@fun_eqIdGF c).
+Proof.
+move=> x; rewrite /fun_eqGFId /fun_eqIdGF /= homK (hom_compE _ _ x) -functor_o.
+have GFIdK : eqIdGF_map eq' (F c) \o eqGFId_map eq' (F c) =1 idfun by exact: homK.
+by rewrite (functor_ext_hom G _ _ GFIdK) functor_id.
+Qed.
+Fact fun_eqIdGFK (c : C) : cancel (trans_eqIdGF c) (trans_eqGFId c).
+Proof.
+move=> x; rewrite /fun_eqGFId /fun_eqIdGF /= ![(G # _) _]hom_compE -functor_o.
+have IdGFK : eqGFId_map eq' (F c) \o eqIdGF_map eq' (F c) =1 idfun by exact: inv_homK.
+by rewrite (functor_ext_hom G _ _ IdGFK) functor_id /= inv_homK.
+Qed.
+HB.instance Definition _ (c : C) := Hom.on (@fun_eqGFId c).
+HB.instance Definition _ (c : C) :=
+  isIsom.Build _ _ _ (@fun_eqGFId c) (isHom_inhom (@fun_eqIdGF c))
+               (@fun_eqGFIdK c) (@fun_eqIdGFK c).
+
+Fact trans_eqFGId_natural : naturality _ _ trans_eqFGId.
+Proof.
+move=> a b h x /=.
+rewrite /eqFGId_map.
+have /= -> := natural (eqFGId_trans eq') a _ h _; congr (eqFGId _ _ _).
+rewrite !FCompE -[LHS]compapp -[RHS]compapp -!functor_o.
+apply: (functor_ext_hom H) => {}x /=.
+by have /= -> := natural (eqFGId_trans eq) (I a) (I b) (I # h) x.
+Qed.
+Fact trans_eqGFId_natural : naturality _ _ trans_eqGFId.
+Proof.
+move=> a b h x /=.
+rewrite /eqGFId_map.
+have /= -> := natural (eqGFId_trans eq) a _ h _; congr (eqGFId _ _ _).
+rewrite !FCompE -[LHS]compapp -[RHS]compapp -!functor_o.
+apply: (functor_ext_hom G) => {}x /=.
+by have /= -> := natural (eqGFId_trans eq') (F a) (F b) (F # h) x.
+Qed.
+Definition equiv : equivalence_category (H \O F) (G \O I) :=
+  @EquivalenceCategory C E (H \O F) (G \O I)
+    fun_eqFGId fun_eqGFId trans_eqFGId_natural trans_eqGFId_natural.
+
+End Defs.
+
+End EquivCatTrans.
+Definition EquivTrans := EquivCatTrans.equiv.
+
+
+Section EquivLemmas.
+
+Variables (C D : category) (F : {functor C -> D}) (G : {functor D -> C}).
+Variable (eq : equivalence_category F G).
+
+Lemma EquivSymK : EquivSym (EquivSym eq) = eq.
+Proof. by case: eq. Qed.
+
+End EquivLemmas.
+
 
 
 (* adjoint functor *)
