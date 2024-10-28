@@ -424,7 +424,7 @@ Section functorcomposition.
 Variables C0 C1 C2 : category.
 Variables (F : {functor C1 -> C2}) (G : {functor C0 -> C1}).
 Definition functorcomposition a b :=
-  fun h : {hom[C0] a -> b} => F # (G # h) : {hom[C2] F (G a) -> F (G b)}.
+  fun h : {hom[C0] a -> b} => nosimpl (F # (G # h) : {hom[C2] F (G a) -> F (G b)}).
 
 Fact functorcomposition_ext : FunctorLaws.ext functorcomposition.
 Proof.
@@ -450,8 +450,6 @@ End functorcomposition.
 Notation "F \O G" := ([the {functor _ -> _} of F \o G]) : category_scope.
 
 
-
-
 Section functorcomposition_lemmas.
 Variables (C0 C1 C2 C3 : category).
 
@@ -473,9 +471,37 @@ Proof. exact: (functor_ext (eq := fun=> _)). Qed.
 End functorcomposition_lemmas.
 
 
+Section functor_inv_hom.
+
+Variables (C D : category) (a b : C) (h : {isom a -> b}) (F : {functor C -> D}).
+
+Let hom := F # h : _ -> _.
+HB.instance Definition _ := Hom.on hom.
+Let inv := F # inv_hom h.
+Fact functor_homK : cancel hom inv.
+Proof.
+move=> x; rewrite -[LHS]compapp -functor_o.
+have hK : inv_hom h \o h =1 idfun by apply: homK.
+by rewrite (functor_ext_hom F _ _ hK) functor_id.
+Qed.
+Fact functor_inv_homK : cancel inv hom.
+Proof.
+move=> x; rewrite -[LHS]compapp -functor_o.
+have hK : h \o inv_hom h =1 idfun by apply: inv_homK.
+by rewrite (functor_ext_hom F _ _ hK) functor_id.
+Qed.
+HB.instance Definition _ :=
+  isIsom.Build _ _ _ hom (isHom_inhom inv) functor_homK functor_inv_homK.
+
+Lemma functor_inv_homE : inv_hom hom = F # (inv_hom h).
+Proof. by []. Qed.
+
+End functor_inv_hom.
+
+
 Notation "F ~~> G" := (forall a, {hom F a -> G a}) : category_scope.
 Definition naturality (C D : category) (F G : {functor C -> D}) (f : F ~~> G) :=
-  forall a b (h : {hom a -> b}), (G # h) \o (f a) =1 (f b) \o (F # h).
+  forall (a b : C) (h : {hom a -> b}), (G # h) \o (f a) =1 (f b) \o (F # h).
 Arguments naturality [C D].
 HB.mixin Record isNatural
     (C D : category) (F G : {functor C -> D}) (f : F ~~> G) :=
@@ -764,26 +790,28 @@ Variables (F : {functor C -> D}) (G : {functor D -> C})
           (H : {functor D -> E}) (I : {functor E -> D}).
 Variable (eq : equivalence_category F G) (eq' : equivalence_category H I).
 
-Definition trans_eqFGId : (H \O F) \O (G \O I) ~~> @FId E :=
-  fun e : E => (eqFGId_trans eq' e) \o (H # eqFGId_trans eq (I e)).
-Definition fun_eqFGId (e : E) : el (((H \O F) \O (G \O I)) e) -> el (FId e)
-  := trans_eqFGId e.
-Definition trans_eqIdFG : @FId E ~~> (H \O F) \O (G \O I) :=
-  fun e : E =>  (H # eqIdFG_trans eq (I e)) \o (eqIdFG_trans eq' e).
-Definition fun_eqIdFG (e : E) : el (FId e) -> el (((H \O F) \O (G \O I)) e)
-  := trans_eqIdFG e.
+Definition trans_eqFGId : (H \O F) \O (G \O I) ~> FId :=
+  eqFGId_trans eq'
+    \v [NEq H \O FId \O I, H \O I]
+    \v (NId H \h eqFGId_trans eq \h NId I)
+    \v [NEq (H \O F) \O (G \O I), H \O (F \O G) \O I].
+Definition fun_eqFGId (e : E) : _ -> _ := trans_eqFGId e.
+Definition trans_eqIdFG : FId ~> (H \O F) \O (G \O I):=
+  [NEq H \O (F \O G) \O I, (H \O F) \O (G \O I)]
+  \v (NId H \h eqIdFG_trans eq \h NId I)
+  \v [NEq H \O I, H \O FId \O I]
+  \v (eqIdFG_trans eq').
+Definition fun_eqIdFG (e : E) : _ -> _ := trans_eqIdFG e.
 
 Fact fun_eqFGIdK (e : E) : cancel (@fun_eqFGId e) (@fun_eqIdFG e).
 Proof.
-move=> x; rewrite /fun_eqFGId /fun_eqIdFG /= homK (hom_compE _ _ x) -functor_o.
-have FGIdK : eqIdFG_map eq (I e) \o eqFGId_map eq (I e) =1 idfun by exact: homK.
-by rewrite (functor_ext_hom H _ _ FGIdK) functor_id.
+move=> x; rewrite /fun_eqFGId /fun_eqIdFG /= homK !HCompId !HIdComp.
+by rewrite -functor_inv_homE homK.
 Qed.
 Fact fun_eqIdFGK (e : E) : cancel (trans_eqIdFG e) (trans_eqFGId e).
 Proof.
-move=> x; rewrite /fun_eqFGId /fun_eqIdFG /= ![(H # _) _]hom_compE -functor_o.
-have IdFGK : eqFGId_map eq (I e) \o eqIdFG_map eq (I e) =1 idfun by exact: inv_homK.
-by rewrite (functor_ext_hom H _ _ IdFGK) functor_id /= inv_homK.
+move=> x; rewrite /fun_eqFGId /fun_eqIdFG /= !HCompId !HIdComp /=.
+by rewrite -functor_inv_homE !inv_homK.
 Qed.
 HB.instance Definition _ (e : E) := Hom.on (@fun_eqFGId e).
 HB.instance Definition _ (e : E) :=
@@ -791,53 +819,37 @@ HB.instance Definition _ (e : E) :=
                (@fun_eqFGIdK e) (@fun_eqIdFGK e).
 
 
-Definition trans_eqGFId : (G \O I) \O (H \O F) ~~> @FId C :=
-  fun c : C => (eqGFId_trans eq c) \o (G # eqGFId_trans eq' (F c)).
-Definition fun_eqGFId (c : C) : el (((G \O I) \O (H \O F)) c) -> el (FId c)
-  := (trans_eqGFId c).
-Definition trans_eqIdGF : @FId C ~~> (G \O I) \O (H \O F) :=
-  fun c : C => (G # eqIdGF_trans eq' (F c)) \o (eqIdGF_trans eq c).
-Definition fun_eqIdGF (c : C) : el (FId c) -> el(((G \O I) \O (H \O F)) c)
-  := (trans_eqIdGF c).
+Definition trans_eqGFId : (G \O I) \O (H \O F) ~> FId :=
+  eqGFId_trans eq
+    \v [NEq G \O FId \O F, G \O F]
+    \v (NId G \h eqGFId_trans eq' \h NId F)
+    \v [NEq (G \O I) \O (H \O F), G \O (I \O H) \O F].
+Definition fun_eqGFId (c : C) : _ -> _ := (trans_eqGFId c).
+Definition trans_eqIdGF : FId ~> (G \O I) \O (H \O F) :=
+  [NEq G \O (I \O H) \O F, (G \O I) \O (H \O F)]
+  \v (NId G \h eqIdGF_trans eq' \h NId F)
+  \v [NEq G \O F, G \O FId \O F]
+  \v (eqIdGF_trans eq).
+Definition fun_eqIdGF (c : C) : _ -> _ := trans_eqIdGF c.
 
 Fact fun_eqGFIdK (c : C) : cancel (@fun_eqGFId c) (@fun_eqIdGF c).
 Proof.
-move=> x; rewrite /fun_eqGFId /fun_eqIdGF /= homK (hom_compE _ _ x) -functor_o.
-have GFIdK : eqIdGF_map eq' (F c) \o eqGFId_map eq' (F c) =1 idfun by exact: homK.
-by rewrite (functor_ext_hom G _ _ GFIdK) functor_id.
+move=> x; rewrite /fun_eqGFId /fun_eqIdGF /= homK !HCompId !HIdComp.
+by rewrite -functor_inv_homE homK.
 Qed.
 Fact fun_eqIdGFK (c : C) : cancel (trans_eqIdGF c) (trans_eqGFId c).
 Proof.
-move=> x; rewrite /fun_eqGFId /fun_eqIdGF /= ![(G # _) _]hom_compE -functor_o.
-have IdGFK : eqGFId_map eq' (F c) \o eqIdGF_map eq' (F c) =1 idfun by exact: inv_homK.
-by rewrite (functor_ext_hom G _ _ IdGFK) functor_id /= inv_homK.
+move=> x; rewrite /fun_eqGFId /fun_eqIdGF /= !HCompId !HIdComp.
+by rewrite -functor_inv_homE !inv_homK.
 Qed.
 HB.instance Definition _ (c : C) := Hom.on (@fun_eqGFId c).
 HB.instance Definition _ (c : C) :=
   isIsom.Build _ _ _ (@fun_eqGFId c) (isHom_inhom (@fun_eqIdGF c))
                (@fun_eqGFIdK c) (@fun_eqIdGFK c).
 
-Fact trans_eqFGId_natural : naturality _ _ trans_eqFGId.
-Proof.
-move=> a b h x /=.
-rewrite /eqFGId_map.
-have /= -> := natural (eqFGId_trans eq') a _ h _; congr (eqFGId _ _ _).
-rewrite !FCompE -[LHS]compapp -[RHS]compapp -!functor_o.
-apply: (functor_ext_hom H) => {}x /=.
-by have /= -> := natural (eqFGId_trans eq) (I a) (I b) (I # h) x.
-Qed.
-Fact trans_eqGFId_natural : naturality _ _ trans_eqGFId.
-Proof.
-move=> a b h x /=.
-rewrite /eqGFId_map.
-have /= -> := natural (eqGFId_trans eq) a _ h _; congr (eqGFId _ _ _).
-rewrite !FCompE -[LHS]compapp -[RHS]compapp -!functor_o.
-apply: (functor_ext_hom G) => {}x /=.
-by have /= -> := natural (eqGFId_trans eq') (F a) (F b) (F # h) x.
-Qed.
 Definition equiv : equivalence_category (H \O F) (G \O I) :=
   @EquivalenceCategory C E (H \O F) (G \O I)
-    fun_eqFGId fun_eqGFId trans_eqFGId_natural trans_eqGFId_natural.
+    fun_eqFGId fun_eqGFId (natural trans_eqFGId) (natural trans_eqGFId).
 
 End Defs.
 
