@@ -369,7 +369,7 @@ Lemma eq_functor_sym (F G : {functor C -> D}) : F =#= G -> G =#= F.
 Proof.
 move=> [pm eq].
 apply: (functor_ext (eq := fun A => esym (pm A))) => A B f.
-apply: (@transport_hom_inj _ _ _ _ _ (pm A) (pm B)) => x.
+apply (transport_hom_inj (pa := pm A) (pb := pm B)) => x.
 rewrite {}eq; move: x; rewrite -/(_ =1 _).
 move: (G # f) => {f}.
 by case:_/(pm B); case:_/(pm A).
