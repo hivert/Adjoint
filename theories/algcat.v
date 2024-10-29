@@ -11,20 +11,6 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 
-Section Cast.
-
-Definition type_cast (A B : Type) (eqAB : A = B) x := ecast T T eqAB x.
-
-Lemma type_castK A B (eqAB : A = B) :
-  cancel (type_cast eqAB) (type_cast (esym eqAB)).
-Proof. by move=> x; case:_/(eqAB). Qed.
-Lemma type_castKV A B (eqAB : A = B) :
-  cancel (type_cast (esym eqAB)) (type_cast eqAB).
-Proof. by rewrite -{2}(esymK eqAB); apply: type_castK. Qed.
-
-End Cast.
-
-
 Import GRing.Theory.
 
 Local Open Scope category_scope.
@@ -852,23 +838,17 @@ Proof. by []. Qed.
 
 
 (** Equivalence ComMonoid NModule ***********************************)
-Definition LockType := Type.
-HB.lock Definition NMod_of_ComMonoidT (M : ComMonoids) : LockType := M.
-Canonical NMod_of_ComMonoidT_unlock := Unlockable NMod_of_ComMonoidT.unlock.
-Lemma NMod_of_ComMonoidTE M : NMod_of_ComMonoidT M = M :> Type.
-Proof. by rewrite unlock. Qed.
-Definition nmod_of_commonoid (M : ComMonoids) (x : M) :=
-  type_cast (esym (NMod_of_ComMonoidTE M)) x.
-Definition nmod_of_commonoid_inv M (x : NMod_of_ComMonoidT M) : M :=
-  type_cast (NMod_of_ComMonoidTE M) x.
 
+Record NMod_of_ComMonoidT (M : ComMonoids) :=
+  NModOfCommonoid { nmod_of_commonoid_val : M }.
+Definition nmod_of_commonoid M x := @NModOfCommonoid M x.
+Definition nmod_of_commonoid_inv M x := @nmod_of_commonoid_val M x.
 Lemma nmod_of_commonoidK M :
   cancel (@nmod_of_commonoid M) (@nmod_of_commonoid_inv M).
-Proof. exact: type_castKV. Qed.
+Proof. by []. Qed.
 Lemma nmod_of_commonoid_invK M :
   cancel (@nmod_of_commonoid_inv M) (@nmod_of_commonoid M).
-Proof. exact: type_castK. Qed.
-
+Proof. by case. Qed.
 
 Section Defs.
 
@@ -909,11 +889,8 @@ Let nmod_of_commonoid_mor : (NMod_of_ComMonoid M) -> (NMod_of_ComMonoid N) :=
 Fact nmod_of_commonoid_mor_is_additive : semi_additive nmod_of_commonoid_mor.
 Proof.
 rewrite /nmod_of_commonoid_mor; split => /= [|x y /=].
-  rewrite nmod_of_commonoid1 nmod_of_commonoidK.
-  by rewrite -(mmorphism_of_ComMonoidsE f) mmorph1.
-rewrite -nmod_of_commonoidM -(mmorphism_of_ComMonoidsE f) -mmorphM; congr (_ (f _)).
-apply (can_inj (@nmod_of_commonoidK _)).
-by rewrite nmod_of_commonoidM !nmod_of_commonoid_invK.
+  by rewrite nmod_of_commonoid1 -(mmorphism_of_ComMonoidsE f) mmorph1.
+by rewrite -nmod_of_commonoidM -(mmorphism_of_ComMonoidsE f) -mmorphM.
 Qed.
 HB.instance Definition _ :=
   isHom.Build NModules (NMod_of_ComMonoid M) (NMod_of_ComMonoid N)
@@ -929,27 +906,22 @@ Proof. by move=> /= a b f g eq y; rewrite /= eq. Qed.
 Fact NMod_of_ComMonoid_id : FunctorLaws.id NMod_of_ComMonoid_mor.
 Proof. by move=> /= a x /=; rewrite /= nmod_of_commonoid_invK. Qed.
 Fact NMod_of_ComMonoid_comp  : FunctorLaws.comp NMod_of_ComMonoid_mor.
-Proof. by move=> /= a b c f g x /=; rewrite nmod_of_commonoidK. Qed.
+Proof. by []. Qed.
 HB.instance Definition _ :=
   @isFunctor.Build ComMonoids NModules NMod_of_ComMonoid NMod_of_ComMonoid_mor
     NMod_of_ComMonoid_ext NMod_of_ComMonoid_id NMod_of_ComMonoid_comp.
 
 
-HB.lock Definition ComMonoid_of_NModT (M : NModules) : LockType := M.
-Canonical ComMonoid_of_NModT_unlock := Unlockable ComMonoid_of_NModT.unlock.
-Lemma ComMonoid_of_NModTE M : ComMonoid_of_NModT M = M :> Type.
-Proof. by rewrite unlock. Qed.
-Definition commonoid_of_nmod (M : NModules) (x : M) :=
-  type_cast (esym (ComMonoid_of_NModTE M)) x.
-Definition commonoid_of_nmod_inv M (x : ComMonoid_of_NModT M) : M :=
-  type_cast (ComMonoid_of_NModTE M) x.
-
+Record ComMonoid_of_NModT (M : NModules) :=
+  CommonoidOfNMod { commonoid_of_nmod_val : M }.
+Definition commonoid_of_nmod M x := @CommonoidOfNMod M x.
+Definition commonoid_of_nmod_inv M x := @commonoid_of_nmod_val M x.
 Lemma commonoid_of_nmodK M :
   cancel (@commonoid_of_nmod M) (@commonoid_of_nmod_inv M).
-Proof. exact: type_castKV. Qed.
+Proof. by []. Qed.
 Lemma commonoid_of_nmod_invK M :
   cancel (@commonoid_of_nmod_inv M) (@commonoid_of_nmod M).
-Proof. exact: type_castK. Qed.
+Proof. by case. Qed.
 
 
 Section Defs.
@@ -991,11 +963,8 @@ Let commonoid_of_nmod_mor : (ComMonoid_of_NMod M) -> (ComMonoid_of_NMod N) :=
 Fact commonoid_of_nmod_mor_monmorphism : monmorphism commonoid_of_nmod_mor.
 Proof.
 rewrite /commonoid_of_nmod_mor; split => /= [x y /=|].
-  rewrite -commonoid_of_nmodD -(additive_of_NmodE f) -raddfD; congr (_ (f _)).
-  apply (can_inj (@commonoid_of_nmodK _)).
-  by rewrite commonoid_of_nmodD !commonoid_of_nmod_invK.
-rewrite commonoid_of_nmod0 commonoid_of_nmodK.
-by rewrite -(additive_of_NmodE f) raddf0.
+  by rewrite -commonoid_of_nmodD -(additive_of_NmodE f) -raddfD.
+by rewrite commonoid_of_nmod0 -(additive_of_NmodE f) raddf0.
 Qed.
 HB.instance Definition _ :=
   isHom.Build ComMonoids (ComMonoid_of_NMod M) (ComMonoid_of_NMod N)
@@ -1011,7 +980,7 @@ Proof. by move=> /= a b f g eq y; rewrite /= eq. Qed.
 Fact ComMonoid_of_NMod_id : FunctorLaws.id ComMonoid_of_NMod_mor.
 Proof. by move=> /= a x /=; rewrite /= commonoid_of_nmod_invK. Qed.
 Fact ComMonoid_of_NMod_comp  : FunctorLaws.comp ComMonoid_of_NMod_mor.
-Proof. by move=> /= a b c f g x /=; rewrite commonoid_of_nmodK. Qed.
+Proof. by []. Qed.
 HB.instance Definition _ :=
   @isFunctor.Build NModules ComMonoids ComMonoid_of_NMod ComMonoid_of_NMod_mor
     ComMonoid_of_NMod_ext ComMonoid_of_NMod_id ComMonoid_of_NMod_comp.
@@ -1038,20 +1007,12 @@ rewrite /isoCM_map {}/isoCM_inv => x /=.
 by rewrite !(nmod_of_commonoid_invK, commonoid_of_nmod_invK).
 Qed.
 Fact isoCM_invK : cancel isoCM_inv isoCM_map.
-Proof.
-rewrite /isoCM_map {}/isoCM_inv => x /=.
-by rewrite !(nmod_of_commonoidK, commonoid_of_nmodK).
-Qed.
+Proof. by []. Qed.
 Fact isoCM_monmorphism : monmorphism isoCM_map.
 Proof.
 split => [x y |].
-  rewrite -{1}(isoCM_mapK x) -{1}(isoCM_mapK y).
-  move: (isoCM_map x) (isoCM_map y) => {}x {}y.
-  rewrite /isoCM_map /= {1}/mul /= {1}/GRing.add /=.
-  rewrite nmod_of_commonoidM commonoid_of_nmodD.
-  by rewrite !(nmod_of_commonoidK, commonoid_of_nmodK).
-rewrite commonoid_of_nmod0 nmod_of_commonoid1 /isoCM_map /=.
-by rewrite !(nmod_of_commonoidK, commonoid_of_nmodK).
+  by rewrite -{1}(isoCM_mapK x) -{1}(isoCM_mapK y).
+by rewrite commonoid_of_nmod0 nmod_of_commonoid1.
 Qed.
 HB.instance Definition _ :=
   isHom.Build ComMonoids (CM M) M isoCM_map isoCM_monmorphism.
@@ -1075,8 +1036,7 @@ Fact natural_isoCM : naturality CM FId isoCM_hom.
 Proof.
 move=> a b h x.
 rewrite -(isoCM_mapK x); move: (isoCM_map x) => /= {}x.
-rewrite /isoCM_inv /isoCM_map /=.
-by rewrite !(nmod_of_commonoidK, commonoid_of_nmodK) FIdf.
+by rewrite /isoCM_inv /isoCM_map FIdf.
 Qed.
 HB.instance Definition _ :=
   isNatural.Build ComMonoids ComMonoids CM FId isoCM_hom natural_isoCM.
@@ -1099,20 +1059,12 @@ rewrite /isoMC_map {}/isoMC_inv => x /=.
 by rewrite !(nmod_of_commonoid_invK, commonoid_of_nmod_invK).
 Qed.
 Fact isoMC_invK : cancel isoMC_inv isoMC_map.
-Proof.
-rewrite /isoMC_map {}/isoMC_inv => x /=.
-by rewrite !(nmod_of_commonoidK, commonoid_of_nmodK).
-Qed.
+Proof. by []. Qed.
 Fact isoMC_additive : semi_additive isoMC_map.
 Proof.
 split => [| x y].
-  rewrite nmod_of_commonoid1 commonoid_of_nmod0 /isoMC_map /=.
-  by rewrite !(nmod_of_commonoidK, commonoid_of_nmodK).
-rewrite -{1}(isoMC_mapK x) -{1}(isoMC_mapK y).
-move: (isoMC_map x) (isoMC_map y) => {}x {}y.
-rewrite /isoMC_map /= {1}/GRing.add /= {1}/mul /=.
-rewrite commonoid_of_nmodD nmod_of_commonoidM.
-by rewrite !(nmod_of_commonoidK, commonoid_of_nmodK).
+  by rewrite nmod_of_commonoid1 commonoid_of_nmod0.
+by rewrite -{1}(isoMC_mapK x) -{1}(isoMC_mapK y).
 Qed.
 HB.instance Definition _ :=
   isHom.Build NModules (MC M) M isoMC_map isoMC_additive.
@@ -1136,8 +1088,7 @@ Fact natural_isoMC : naturality MC FId isoMC_hom.
 Proof.
 move=> a b h x.
 rewrite -(isoMC_mapK x); move: (isoMC_map x) => /= {}x.
-rewrite /isoMC_inv /isoMC_map /=.
-by rewrite !(nmod_of_commonoidK, commonoid_of_nmodK) FIdf.
+by rewrite /isoMC_inv /isoMC_map FIdf.
 Qed.
 HB.instance Definition _ :=
   isNatural.Build NModules NModules MC FId isoMC_hom natural_isoMC.
@@ -1161,15 +1112,10 @@ Let etaMC : FId ~> ComMonoid_of_NMod \O NMod_of_ComMonoid
 Fact triRMC : TriangularLaws.right etaMC epsMC.
 Proof.
 move=> /= a x /=.
-rewrite /isoMC_map /= commonoid_of_nmod_invK.
-by rewrite /inv_hom /= /isoCM_inv /= commonoid_of_nmodK nmod_of_commonoidK.
+by rewrite /isoMC_map /= commonoid_of_nmod_invK.
 Qed.
 Fact triLMC : TriangularLaws.left etaMC epsMC.
-Proof.
-move=> /= a x /=.
-rewrite /isoMC_map /= nmod_of_commonoidK.
-by rewrite /inv_hom /= /isoCM_inv /= commonoid_of_nmodK nmod_of_commonoid_invK.
-Qed.
+Proof. by move=> a x /=; rewrite /isoMC_map /= nmod_of_commonoid_invK. Qed.
 
 Definition compMC : NMod_of_ComMonoid -| ComMonoid_of_NMod
   := AdjointFunctors.mk triLMC triRMC.
@@ -1183,14 +1129,12 @@ Let etaCM : FId ~> NMod_of_ComMonoid \O ComMonoid_of_NMod
 Fact triRCM : TriangularLaws.right etaCM epsCM.
 Proof.
 move=> /= a x /=.
-rewrite /isoCM_map /= nmod_of_commonoid_invK.
-by rewrite /inv_hom /= /isoCM_inv /= nmod_of_commonoidK commonoid_of_nmodK.
+by rewrite /isoCM_map /= nmod_of_commonoid_invK.
 Qed.
 Fact triLCM : TriangularLaws.left etaCM epsCM.
 Proof.
 move=> /= a x /=.
-rewrite /isoCM_map /= commonoid_of_nmodK.
-by rewrite /inv_hom /= /isoCM_inv /= nmod_of_commonoidK commonoid_of_nmod_invK.
+by rewrite /isoCM_map /= commonoid_of_nmod_invK.
 Qed.
 
 Definition compCM : ComMonoid_of_NMod -| NMod_of_ComMonoid
@@ -1411,21 +1355,13 @@ Definition transf_from_nmodset :
   nmodSet ~~> forget_ComMonoids_to_Sets := transf_from_nmodset_fun.
 Fact transf_to_nmodset_natural :
   naturality forget_ComMonoids_to_Sets nmodSet transf_to_nmodset.
-Proof.
-move=> a b h /= x /=.
-rewrite /ForgetComMonoids_to_Monoids.forget_mor /= /transf_to_nmodset_fun.
-by rewrite nmod_of_commonoidK.
-Qed.
+Proof. by []. Qed.
 HB.instance Definition _ :=
   @isNatural.Build ComMonoids Sets forget_ComMonoids_to_Sets nmodSet
     transf_to_nmodset transf_to_nmodset_natural.
 Fact transf_from_nmodset_natural :
   naturality nmodSet forget_ComMonoids_to_Sets transf_from_nmodset.
-Proof.
-move=> a b h /= x /=.
-rewrite /ForgetComMonoids_to_Monoids.forget_mor /= /transf_from_nmodset_fun.
-by rewrite nmod_of_commonoidK.
-Qed.
+Proof. by []. Qed.
 HB.instance Definition _ :=
   @isNatural.Build ComMonoids Sets nmodSet forget_ComMonoids_to_Sets
     transf_from_nmodset transf_from_nmodset_natural.
@@ -1459,9 +1395,7 @@ Lemma univmap_FreeComMonoidP a :
 Proof.
 rewrite -[RHS](AdjointFunctors.hom_invK Adj) /=; repeat congr (_ _).
 (* TODO: I'm reproving some cancellation here *)
-rewrite !HCompId /= !HIdComp /=.
-rewrite /FreeComMonoidAdjoint.transf_from_nmodset_fun /inv_hom /= /isoMC_inv /=.
-by rewrite nmod_of_commonoidK.
+by rewrite !HCompId /= !HIdComp.
 Qed.
 
 Lemma univmap_FreeComMonoid_uniq (g : {hom[ComMonoids] {freecmon A} -> M}) :
@@ -1470,10 +1404,7 @@ Proof.
 move=> eq; apply: (AdjointFunctors.hom_iso_inj Adj).
 move=> a; rewrite AdjointFunctors.hom_invK -{}eq.
 (* TODO: I'm reproving some cancellation here *)
-rewrite /AdjointFunctors.hom_iso /= !HCompId /= !HIdComp /=.
-rewrite /inv_hom /= /ForgetComMonoids_to_Monoids.forget_mor /=.
-rewrite /FreeComMonoidAdjoint.transf_from_nmodset_fun.
-by rewrite nmod_of_commonoidK.
+by rewrite /AdjointFunctors.hom_iso /= !HCompId /= !HIdComp /=.
 Qed.
 
 End UniversalProperty.
@@ -2575,10 +2506,7 @@ Definition calg_gen i : {freecalg R[S]} := [fm / cmon_gen i |-> 1].
 Lemma eta_FreeComAlgebraE i : AdjointFunctors.eta Adj S i = calg_gen i.
 Proof.
 rewrite /= !HCompId /transf_from_multcmon /transf_from_multcmon_fun /=.
-rewrite !HIdComp /=.
-rewrite /transf_from_multcmon_fun /=.
-rewrite /FreeComMonoidAdjoint.transf_from_nmodset_fun /inv_hom /= /isoMC_inv /=.
-by rewrite nmod_of_commonoidK.
+by rewrite !HIdComp /=.
 Qed.
 
 Lemma univmap_FreeComAlgebraP i : univmap_FreeComAlgebra (calg_gen i) = f i.
