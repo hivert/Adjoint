@@ -57,7 +57,7 @@ Definition functor : {functor NModules -> Sets} := forget.
 
 End ForgetNModules_to_Sets.
 
-Definition forget_NModules_to_Sets := ForgetNModules_to_Sets.functor.
+Notation forget_NModules_to_Sets := ForgetNModules_to_Sets.functor.
 Lemma forget_NModules_to_SetsE a b (f : {hom[NModules] a -> b}) :
   forget_NModules_to_Sets # f = f :> (_ -> _).
 Proof. by []. Qed.
@@ -94,7 +94,7 @@ Definition functor : {functor ZModules -> NModules} := forget.
 
 End ForgetZModules_to_NModules.
 
-Definition forget_ZModules_to_NModules := ForgetZModules_to_NModules.functor.
+Notation forget_ZModules_to_NModules := ForgetZModules_to_NModules.functor.
 Lemma forget_ZModules_to_NModulesE a b (f : {hom[ZModules] a -> b}) :
   forget_ZModules_to_NModules # f = f :> (_ -> _).
 Proof. by []. Qed.
@@ -148,7 +148,7 @@ Definition functor : {functor SemiRings -> NModules} := forget.
 
 End ForgetSemiRings_to_NModules.
 
-Definition forget_SemiRings_to_NModules := ForgetSemiRings_to_NModules.functor.
+Notation forget_SemiRings_to_NModules := ForgetSemiRings_to_NModules.functor.
 Lemma forget_SemiRings_to_NModulesE a b (f : {hom[SemiRings] a -> b}) :
   forget_SemiRings_to_NModules # f = f :> (_ -> _).
 Proof. by []. Qed.
@@ -192,7 +192,7 @@ Definition functor : {functor Rings -> SemiRings} := forget.
 
 End ForgetRings_to_SemiRings.
 
-Definition forget_Rings_to_SemiRings := ForgetRings_to_SemiRings.functor.
+Notation forget_Rings_to_SemiRings := ForgetRings_to_SemiRings.functor.
 Lemma forget_Rings_to_SemiRingsE a b (f : {hom[Rings] a -> b}) :
   forget_Rings_to_SemiRings # f = f :> (_ -> _).
 Proof. by []. Qed.
@@ -214,7 +214,7 @@ Definition functor : {functor Rings -> ZModules} := forget.
 
 End ForgetRings_to_ZModules.
 
-Definition forget_Rings_to_ZModules := ForgetRings_to_ZModules.functor.
+Notation forget_Rings_to_ZModules := ForgetRings_to_ZModules.functor.
 Lemma forget_Rings_to_ZModulesE a b (f : {hom[Rings] a -> b}) :
   forget_Rings_to_ZModules # f = f :> (_ -> _).
 Proof. by []. Qed.
@@ -254,7 +254,7 @@ Definition functor : {functor ComSemiRings -> SemiRings} := forget.
 
 End ForgetComSemiRings_to_SemiRings.
 
-Definition forget_ComSemiRings_to_SemiRings :=
+Notation forget_ComSemiRings_to_SemiRings :=
   ForgetComSemiRings_to_SemiRings.functor.
 Lemma forget_ComSemiRings_to_SemiRingsE a b (f : {hom[ComSemiRings] a -> b}) :
   forget_ComSemiRings_to_SemiRings # f = f :> (_ -> _).
@@ -299,7 +299,7 @@ Definition functor : {functor ComRings -> Rings} := forget.
 
 End ForgetComRings_to_Rings.
 
-Definition forget_ComRings_to_Rings := ForgetComRings_to_Rings.functor.
+Notation forget_ComRings_to_Rings := ForgetComRings_to_Rings.functor.
 Lemma forget_ComRings_to_RingsE a b (f : {hom[ComRings] a -> b}) :
   forget_ComRings_to_Rings # f = f :> (_ -> _).
 Proof. by []. Qed.
@@ -331,7 +331,8 @@ HB.instance Definition _ :=
 Definition functor : {functor ComRings -> ComSemiRings} := forget.
 
 End ForgetComRings_to_ComSemiRings.
-Definition forget_ComRings_to_ComSemiRings :=
+
+Notation forget_ComRings_to_ComSemiRings :=
   ForgetComRings_to_ComSemiRings.functor.
 Lemma forget_ComRings_to_ComSemiRingsE a b (f : {hom[ComRings] a -> b}) :
   forget_ComRings_to_ComSemiRings # f = f :> (_ -> _).
@@ -392,7 +393,7 @@ Definition functor R : {functor LModules R -> ZModules} := @forget R.
 
 End ForgetLModules_to_ZModules.
 
-Definition forget_LModules_to_ZModules := ForgetLModules_to_ZModules.functor.
+Notation forget_LModules_to_ZModules := ForgetLModules_to_ZModules.functor.
 Lemma forget_LModules_to_ZModulesE R a b (f : {hom[LModules R] a -> b}) :
   forget_LModules_to_ZModules R # f = f :> (_ -> _).
 Proof. by []. Qed.
@@ -460,7 +461,7 @@ Definition functor R : {functor LAlgebras R -> LModules R} := @forget R.
 
 End ForgetLAlgebras_to_LModules.
 
-Definition forget_LAlgebras_to_LModules := ForgetLAlgebras_to_LModules.functor.
+Notation forget_LAlgebras_to_LModules := ForgetLAlgebras_to_LModules.functor.
 Lemma forget_LAlgebras_to_LModulesE R a b (f : {hom[LAlgebras R] a -> b}) :
   forget_LAlgebras_to_LModules R # f = f :> (_ -> _).
 Proof. by []. Qed.
@@ -490,7 +491,7 @@ Definition functor R : {functor LAlgebras R -> Rings} := @forget R.
 
 End ForgetLAlgebras_to_Rings.
 
-Definition forget_LAlgebras_to_Rings := ForgetLAlgebras_to_Rings.functor.
+Notation forget_LAlgebras_to_Rings := ForgetLAlgebras_to_Rings.functor.
 Lemma forget_LAlgebras_to_RingsE R a b (f : {hom[LAlgebras R] a -> b}) :
   forget_LAlgebras_to_Rings R # f = f :> (_ -> _).
 Proof. by []. Qed.
@@ -535,7 +536,7 @@ Definition functor R : {functor Algebras R -> LAlgebras R} := @forget R.
 
 End ForgetAlgebras_to_LAlgebras.
 
-Definition forget_Algebras_to_LAlgebras := ForgetAlgebras_to_LAlgebras.functor.
+Notation forget_Algebras_to_LAlgebras := ForgetAlgebras_to_LAlgebras.functor.
 Lemma forget_Algebras_to_LAlgebrasE R a b (f : {hom[Algebras R] a -> b}) :
   forget_Algebras_to_LAlgebras R # f = f :> (_ -> _).
 Proof. by []. Qed.
@@ -580,7 +581,7 @@ Definition functor R : {functor ComAlgebras R -> Algebras R} := @forget R.
 
 End ForgetComAlgebras_to_Algebras.
 
-Definition forget_ComAlgebras_to_Algebras := ForgetComAlgebras_to_Algebras.functor.
+Notation forget_ComAlgebras_to_Algebras := ForgetComAlgebras_to_Algebras.functor.
 Lemma forget_ComAlgebras_to_AlgebrasE R a b (f : {hom[ComAlgebras R] a -> b}) :
   forget_ComAlgebras_to_Algebras R # f = f :> (_ -> _).
 Proof. by []. Qed.
@@ -670,7 +671,7 @@ Definition functor : {functor Monoids -> Sets} := forget.
 
 End ForgetMonoids_to_Sets.
 
-Definition forget_Monoids_to_Sets := ForgetMonoids_to_Sets.functor.
+Notation forget_Monoids_to_Sets := ForgetMonoids_to_Sets.functor.
 Lemma forget_Monoids_to_SetsE a b (f : {hom[Monoids] a -> b}) :
   forget_Monoids_to_Sets # f = f :> (_ -> _).
 Proof. by []. Qed.
@@ -772,7 +773,7 @@ Definition adjoint : FreeMonoid -| forget_Monoids_to_Sets
 
 End Adjoint.
 End FreeMonoidAdjoint.
-Definition adjoint_FreeMonoid_forget_to_Sets := FreeMonoidAdjoint.adjoint.
+Notation adjoint_FreeMonoid_forget_to_Sets := FreeMonoidAdjoint.adjoint.
 
 Section UniversalProperty.
 
@@ -824,7 +825,7 @@ Definition functor : {functor ComMonoids -> Monoids} := forget.
 
 End ForgetComMonoids_to_Monoids.
 
-Definition forget_ComMonoids_to_Monoids := ForgetComMonoids_to_Monoids.functor.
+Notation forget_ComMonoids_to_Monoids := ForgetComMonoids_to_Monoids.functor.
 Lemma forget_ComMonoids_to_MonoidsE a b (f : {hom[ComMonoids] a -> b}) :
   forget_ComMonoids_to_Monoids # f = f :> (_ -> _).
 Proof. by []. Qed.
@@ -1119,6 +1120,59 @@ Definition equivalence_ComMonoids_NModules :
   EquivalenceCategory natural_isoMC natural_isoCM.
 
 
+Module ComMonoids_NModules_Adjoints.
+Section Defs.
+
+Let epsMC : NMod_of_ComMonoid \O ComMonoid_of_NMod ~> FId
+    := eqFGId_trans equivalence_ComMonoids_NModules.
+Let etaMC : FId ~> ComMonoid_of_NMod \O NMod_of_ComMonoid
+    := eqIdGF_trans equivalence_ComMonoids_NModules.
+
+Fact triRMC : TriangularLaws.right etaMC epsMC.
+Proof.
+move=> /= a x /=.
+rewrite /isoMC_map /= commonoid_of_nmod_invK.
+by rewrite /inv_hom /= /isoCM_inv /= commonoid_of_nmodK nmod_of_commonoidK.
+Qed.
+Fact triLMC : TriangularLaws.left etaMC epsMC.
+Proof.
+move=> /= a x /=.
+rewrite /isoMC_map /= nmod_of_commonoidK.
+by rewrite /inv_hom /= /isoCM_inv /= commonoid_of_nmodK nmod_of_commonoid_invK.
+Qed.
+
+Definition compMC : NMod_of_ComMonoid -| ComMonoid_of_NMod
+  := AdjointFunctors.mk triLMC triRMC.
+
+
+Let epsCM : ComMonoid_of_NMod \O NMod_of_ComMonoid~> FId
+    := eqGFId_trans equivalence_ComMonoids_NModules.
+Let etaCM : FId ~> NMod_of_ComMonoid \O ComMonoid_of_NMod
+    := eqIdFG_trans equivalence_ComMonoids_NModules.
+
+Fact triRCM : TriangularLaws.right etaCM epsCM.
+Proof.
+move=> /= a x /=.
+rewrite /isoCM_map /= nmod_of_commonoid_invK.
+by rewrite /inv_hom /= /isoCM_inv /= nmod_of_commonoidK commonoid_of_nmodK.
+Qed.
+Fact triLCM : TriangularLaws.left etaCM epsCM.
+Proof.
+move=> /= a x /=.
+rewrite /isoCM_map /= commonoid_of_nmodK.
+by rewrite /inv_hom /= /isoCM_inv /= nmod_of_commonoidK commonoid_of_nmod_invK.
+Qed.
+
+Definition compCM : ComMonoid_of_NMod -| NMod_of_ComMonoid
+  := AdjointFunctors.mk triLCM triRCM.
+
+End Defs.
+End ComMonoids_NModules_Adjoints.
+
+Notation adjoint_ComMonoid_NModule := ComMonoids_NModules_Adjoints.compCM.
+Notation adjoint_NModule_ComMonoid := ComMonoids_NModules_Adjoints.compMC.
+
+
 (* TODO: Those are full subcategories, devise some infrastructure to
    - handle trivial forgetful functors
    - morphisms coercions. *)
@@ -1259,7 +1313,7 @@ Definition adjoint : FreeNModule -| forget_NModules_to_Sets :=
 
 End Adjoint.
 End FreeNModuleAdjoint.
-Definition adjoint_FreeNModule_forget_to_Sets := FreeNModuleAdjoint.adjoint.
+Notation adjoint_FreeNModule_forget_to_Sets := FreeNModuleAdjoint.adjoint.
 
 
 Section UniversalProperty.
@@ -1278,6 +1332,118 @@ Lemma univmap_FreeNModule_uniq (g : {hom[NModules] {mset A} -> M}) :
 Proof.
 move=> eq; apply: (AdjointFunctors.hom_iso_inj Adj).
 by move=> a; rewrite AdjointFunctors.hom_invK -{}eq.
+Qed.
+
+End UniversalProperty.
+
+
+
+Definition FreeComMonoid := ComMonoid_of_NMod \O FreeNModule.
+Notation "{ 'freecmon' T }" := (FreeComMonoid T)
+  (at level 0, format "{ 'freecmon'  T }").
+
+
+Local Notation nmodSet := (forget_NModules_to_Sets \O NMod_of_ComMonoid).
+
+Module FreeComMonoidAdjoint.
+Section FixForgetNmodSet.
+Variable (M : ComMonoids).
+
+Definition transf_to_nmodset_fun :
+  forget_ComMonoids_to_Sets M -> nmodSet M := fun (r : M) => nmod_of_commonoid r.
+Definition transf_from_nmodset_fun :
+  nmodSet M -> forget_ComMonoids_to_Sets M :=
+  fun (r : nmodSet M) => nmod_of_commonoid_inv r.
+
+Lemma transf_to_nmodset_funK :
+  cancel transf_to_nmodset_fun transf_from_nmodset_fun.
+Proof. exact: nmod_of_commonoidK. Qed.
+Lemma transf_from_nmodset_funK :
+  cancel transf_from_nmodset_fun transf_to_nmodset_fun.
+Proof. exact: nmod_of_commonoid_invK. Qed.
+
+HB.instance Definition _ :=
+  isHom.Build Sets (forget_ComMonoids_to_Sets M) (nmodSet M)
+    transf_to_nmodset_fun I.
+HB.instance Definition _ :=
+  isIsom.Build Sets (forget_ComMonoids_to_Sets M) (nmodSet M)
+    transf_to_nmodset_fun I transf_to_nmodset_funK transf_from_nmodset_funK.
+
+Lemma transf_to_nmodset_invE :
+  inv_hom transf_to_nmodset_fun = transf_from_nmodset_fun.
+Proof. by []. Qed.
+
+End FixForgetNmodSet.
+
+Definition transf_to_nmodset :
+  forget_ComMonoids_to_Sets ~~> nmodSet := transf_to_nmodset_fun.
+Definition transf_from_nmodset :
+  nmodSet ~~> forget_ComMonoids_to_Sets := transf_from_nmodset_fun.
+Fact transf_to_nmodset_natural :
+  naturality forget_ComMonoids_to_Sets nmodSet transf_to_nmodset.
+Proof.
+move=> a b h /= x /=.
+rewrite /ForgetComMonoids_to_Monoids.forget_mor /= /transf_to_nmodset_fun.
+by rewrite nmod_of_commonoidK.
+Qed.
+HB.instance Definition _ :=
+  @isNatural.Build ComMonoids Sets forget_ComMonoids_to_Sets nmodSet
+    transf_to_nmodset transf_to_nmodset_natural.
+Fact transf_from_nmodset_natural :
+  naturality nmodSet forget_ComMonoids_to_Sets transf_from_nmodset.
+Proof.
+move=> a b h /= x /=.
+rewrite /ForgetComMonoids_to_Monoids.forget_mor /= /transf_from_nmodset_fun.
+by rewrite nmod_of_commonoidK.
+Qed.
+HB.instance Definition _ :=
+  @isNatural.Build ComMonoids Sets nmodSet forget_ComMonoids_to_Sets
+    transf_from_nmodset transf_from_nmodset_natural.
+
+Lemma transf_to_nmodsetK M :
+  cancel (transf_to_nmodset M) (transf_from_nmodset M).
+Proof. exact: nmod_of_commonoidK. Qed.
+Lemma transf_from_nmodsetK M :
+  cancel (transf_from_nmodset M) (transf_to_nmodset M).
+Proof. exact: nmod_of_commonoid_invK. Qed.
+
+Definition adjoint :
+  FreeComMonoid -| forget_ComMonoids_to_Sets
+  := adj_natisomR transf_from_nmodsetK transf_to_nmodsetK
+       (adj_comp adjoint_FreeNModule_forget_to_Sets adjoint_ComMonoid_NModule).
+
+End FreeComMonoidAdjoint.
+Notation adjoint_FreeComMonoid_forget_to_Sets := FreeComMonoidAdjoint.adjoint.
+
+Section UniversalProperty.
+
+Variables (A : Sets) (M : ComMonoids) (f : {hom[Sets] A -> M}).
+
+Let Adj := adjoint_FreeComMonoid_forget_to_Sets.
+
+Definition univmap_FreeComMonoid := AdjointFunctors.hom_inv Adj f.
+Definition cmon_gen a : {freecmon A} := (commonoid_of_nmod [mset a]).
+
+Lemma univmap_FreeComMonoidP a :
+  univmap_FreeComMonoid (cmon_gen a) = f a.
+Proof.
+rewrite -[RHS](AdjointFunctors.hom_invK Adj) /=; repeat congr (_ _).
+(* TODO: I'm reproving some cancellation here *)
+rewrite !HCompId /= !HIdComp /=.
+rewrite /FreeComMonoidAdjoint.transf_from_nmodset_fun /inv_hom /= /isoMC_inv /=.
+by rewrite nmod_of_commonoidK.
+Qed.
+
+Lemma univmap_FreeComMonoid_uniq (g : {hom[ComMonoids] {freecmon A} -> M}) :
+  (forall a : A, g (cmon_gen a) = f a) -> g =1 univmap_FreeComMonoid.
+Proof.
+move=> eq; apply: (AdjointFunctors.hom_iso_inj Adj).
+move=> a; rewrite AdjointFunctors.hom_invK -{}eq.
+(* TODO: I'm reproving some cancellation here *)
+rewrite /AdjointFunctors.hom_iso /= !HCompId /= !HIdComp /=.
+rewrite /inv_hom /= /ForgetComMonoids_to_Monoids.forget_mor /=.
+rewrite /FreeComMonoidAdjoint.transf_from_nmodset_fun.
+by rewrite nmod_of_commonoidK.
 Qed.
 
 End UniversalProperty.
@@ -1428,7 +1594,7 @@ Definition adjoint : FreeLModule R -| forget_LModules_to_Sets R :=
 
 End Adjoint.
 End FreeLModuleAdjoint.
-Definition adjoint_FreeLModule_forget_to_Sets := FreeLModuleAdjoint.adjoint.
+Notation adjoint_FreeLModule_forget_to_Sets := FreeLModuleAdjoint.adjoint.
 
 Section UniversalProperty.
 
@@ -1493,7 +1659,8 @@ Definition functorCom : {functor ComSemiRings -> ComMonoids} :=
   functor_multComMon_fun.
 
 End ForgetSemiRings_to_Monoids.
-Definition forget_SemiRings_to_Monoids := ForgetSemiRings_to_Monoids.functor.
+
+Notation forget_SemiRings_to_Monoids := ForgetSemiRings_to_Monoids.functor.
 Lemma forget_SemiRings_to_MonoidsE a b (f : {hom[SemiRings] a -> b}) :
   forget_SemiRings_to_Monoids # f = multMon_mor f :> (_ -> _).
 Proof. by []. Qed.
@@ -1911,7 +2078,7 @@ Definition adjoint : fMA -| forgetf := AdjointFunctors.mk triL triR.
 
 End Adjoint.
 End MonoidAlgebraAdjoint.
-Definition adjoint_MonoidAlgebra_forget_to_Monoids := MonoidAlgebraAdjoint.adjoint.
+Notation adjoint_MonoidAlgebra_forget_to_Monoids := MonoidAlgebraAdjoint.adjoint.
 
 
 Section UniversalProperty.
@@ -1992,7 +2159,7 @@ Definition adjoint  : FreeAlgebra R -| forget_Algebras_to_Sets R :=
 
 End FixAdjunctionFreeAlgebra.
 End FreeAlgebraAdjoint.
-Definition adjoint_FreeAlgebra_forget_to_Sets := FreeAlgebraAdjoint.adjoint.
+Notation adjoint_FreeAlgebra_forget_to_Sets := FreeAlgebraAdjoint.adjoint.
 
 
 Section UniversalProperty.
@@ -2227,7 +2394,7 @@ Definition adjoint : fMA -| forgetf := AdjointFunctors.mk triL triR.
 
 End Adjoint.
 End ComMonoidAlgebraAdjoint.
-Definition adjoint_ComMonoidAlgebra_forget_to_ComMonoids :=
+Notation adjoint_ComMonoidAlgebra_forget_to_ComMonoids :=
   ComMonoidAlgebraAdjoint.adjoint.
 
 

@@ -955,8 +955,8 @@ Variables
   (triR0 : TriangularLaws.right eta0 eps0)
   (triR1 : TriangularLaws.right eta1 eps1).
 
-Definition F := F1 \O F0.
-Definition G := G0 \O G1.
+Let F := F1 \O F0.
+Let G := G0 \O G1.
 
 Definition Eta : FId ~> G \O F :=
   [NEq G0 \O (G1 \O F1) \O F0 , G \O F]
