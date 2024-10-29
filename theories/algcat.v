@@ -2140,10 +2140,10 @@ Definition transf_multmon_to_Algebra : forgetMult ~> forget_Algebras_to_Sets R
 
 Lemma transf_Algebra_to_multmonE A :
   transf_Algebra_to_multmon A =1 transf_to_multmon A.
-Proof. Proof. by move=> a; rewrite /= !HCompId. Qed.
+Proof. by move=> a; rewrite /= !HCompId. Qed.
 Lemma transf_multmon_to_AlgebraE A :
   transf_multmon_to_Algebra A =1 transf_from_multmon A.
-Proof. Proof. by move=> a; rewrite /= !HCompId. Qed.
+Proof. by move=> a; rewrite /= !HCompId. Qed.
 Lemma transf_Algebra_to_multmonK A :
   cancel (transf_Algebra_to_multmon A) (transf_multmon_to_Algebra A).
 Proof. by move=> a; rewrite /= !HCompId /= transf_to_multmonK. Qed.
@@ -2424,3 +2424,148 @@ Qed.
 End UniversalProperty.
 
 
+(** Fix the non HB forgetful inheritance ComSemiRings -> ComMonoids *)
+Local Notation multCSet :=  (* Multiplicative forgetful Sets of a ComSemiRings *)
+  (forget_ComMonoids_to_Sets \o forget_ComSemiRings_to_ComMonoids).
+
+Section FixForgetMultComMon.
+Variable (R : ComSemiRings).
+
+Definition transf_to_multcmon_fun :
+  forget_SemiRings_to_Sets R -> multCSet R := fun (r : R) => to_multMon r.
+Definition transf_from_multcmon_fun :
+  multCSet R -> forget_SemiRings_to_Sets R := fun (r : multCSet R) => \val r.
+Lemma transf_to_multcmonK : cancel transf_to_multcmon_fun transf_from_multcmon_fun.
+Proof. by []. Qed.
+Lemma transf_from_multcmonK : cancel transf_from_multcmon_fun transf_to_multcmon_fun.
+Proof. by move=> x; apply val_inj. Qed.
+
+HB.instance Definition _ :=
+  isHom.Build Sets (forget_SemiRings_to_Sets R) (multCSet R)
+    transf_to_multcmon_fun I.
+HB.instance Definition _ :=
+  isIsom.Build Sets (forget_SemiRings_to_Sets R) (multCSet R)
+    transf_to_multcmon_fun I transf_to_multcmonK transf_from_multcmonK.
+
+Lemma transf_to_multcmon_invE :
+  inv_hom transf_to_multcmon_fun = transf_from_multcmon_fun.
+Proof. by []. Qed.
+
+End FixForgetMultComMon.
+
+Definition transf_to_multcmon :
+  forget_ComSemiRings_to_Sets ~~> multCSet := transf_to_multcmon_fun.
+Definition transf_from_multcmon :
+  multCSet ~~> forget_ComSemiRings_to_Sets := transf_from_multcmon_fun.
+Fact transf_to_multcmon_natural :
+  naturality forget_ComSemiRings_to_Sets multCSet transf_to_multcmon.
+Proof. by []. Qed.
+HB.instance Definition _ :=
+  @isNatural.Build ComSemiRings Sets forget_ComSemiRings_to_Sets multCSet
+    transf_to_multcmon transf_to_multcmon_natural.
+Fact transf_from_multcmon_natural :
+  naturality multCSet forget_ComSemiRings_to_Sets transf_from_multcmon.
+Proof. by []. Qed.
+HB.instance Definition _ :=
+  @isNatural.Build ComSemiRings Sets multCSet forget_ComSemiRings_to_Sets
+    transf_from_multcmon transf_from_multcmon_natural.
+
+
+Definition FreeComAlgebra R := ComMonoidAlgebra R \O FreeComMonoid.
+Notation "{ 'freecalg' R [ T ] }" := (FreeComAlgebra R T)
+  (at level 0, format "{ 'freecalg'  R [ T ] }").
+
+Module FreeComAlgebraAdjoint.
+Section FixAdjunctionFreeComAlgebra.
+Variable (R : ComRings).
+
+Definition forgetCMult :=
+  forget_ComMonoids_to_Sets \O forget_ComAlgebras_to_ComMonoids R.
+
+Definition forget_ComAlgebra_to_ComSemirings :=
+  forget_ComRings_to_ComSemiRings \O forget_ComAlgebras_to_ComRings R.
+
+Definition transf_ComAlgebra_to_multcmon :
+  forget_ComAlgebras_to_Sets R ~> forgetCMult
+  :=
+  [NEq forget_ComMonoids_to_Sets \O forget_ComSemiRings_to_ComMonoids \O
+         forget_ComAlgebra_to_ComSemirings,
+       forgetCMult]
+    \v (transf_to_multcmon \h NId forget_ComAlgebra_to_ComSemirings)
+    \v [NEq forget_ComAlgebras_to_Sets R,
+            forget_ComSemiRings_to_Sets \O forget_ComAlgebra_to_ComSemirings].
+
+Definition transf_multcmon_to_ComAlgebra :
+  forgetCMult ~> forget_ComAlgebras_to_Sets R
+  :=
+  [NEq forget_ComSemiRings_to_Sets \O forget_ComAlgebra_to_ComSemirings,
+       forget_ComAlgebras_to_Sets R]
+    \v (transf_from_multcmon \h NId forget_ComAlgebra_to_ComSemirings)
+    \v [NEq forgetCMult,
+            forget_ComMonoids_to_Sets \O forget_ComSemiRings_to_ComMonoids \O
+              forget_ComAlgebra_to_ComSemirings].
+
+Lemma transf_ComAlgebra_to_multcmonE A :
+  transf_ComAlgebra_to_multcmon A =1 transf_to_multcmon A.
+Proof. by move=> a; rewrite /= !HCompId. Qed.
+Lemma transf_multcmon_to_ComAlgebraE A :
+  transf_multcmon_to_ComAlgebra A =1 transf_from_multcmon A.
+Proof. by move=> a; rewrite /= !HCompId. Qed.
+Lemma transf_ComAlgebra_to_multcmonK A :
+  cancel (transf_ComAlgebra_to_multcmon A) (transf_multcmon_to_ComAlgebra A).
+Proof. by move=> a; rewrite /= !HCompId /= transf_to_multcmonK. Qed.
+Lemma transf_multcmon_to_ComAlgebraK A :
+  cancel (transf_multcmon_to_ComAlgebra A) (transf_ComAlgebra_to_multcmon A).
+Proof. by move=> a; rewrite /= !HCompId /= transf_from_multcmonK. Qed.
+
+Definition adjoint  : FreeComAlgebra R -| forget_ComAlgebras_to_Sets R :=
+  adj_natisomR transf_multcmon_to_ComAlgebraK transf_ComAlgebra_to_multcmonK
+    (adj_comp
+       (adjoint_FreeComMonoid_forget_to_Sets)
+       (adjoint_ComMonoidAlgebra_forget_to_ComMonoids R)).
+
+End FixAdjunctionFreeComAlgebra.
+End FreeComAlgebraAdjoint.
+Notation adjoint_FreeComAlgebra_forget_to_Sets := FreeComAlgebraAdjoint.adjoint.
+
+
+Section UniversalProperty.
+
+Variable (R : ComRings).
+
+Variables (S : Sets) (A :ComAlgebras R)
+  (f : {hom[Sets] S -> forget_ComAlgebras_to_Sets R A}).
+
+Let Adj := adjoint_FreeComAlgebra_forget_to_Sets R.
+
+Definition univmap_FreeComAlgebra := AdjointFunctors.hom_inv Adj f.
+Definition calg_gen i : {freecalg R[S]} := [fm / cmon_gen i |-> 1].
+
+
+Lemma univmap_FreeComAlgebraP i : univmap_FreeComAlgebra (calg_gen i) = f i.
+Proof.
+rewrite -[RHS](AdjointFunctors.hom_invK Adj) /=; repeat congr (_ _).
+rewrite /calg_gen !HCompId /= !HIdComp.
+rewrite /transf_from_multcmon_fun /=.
+rewrite /FreeComMonoidAdjoint.transf_from_nmodset_fun /inv_hom /= /isoMC_inv /=.
+by rewrite nmod_of_commonoidK.
+Qed.
+
+Lemma eta_FreeComAlgebraE i : AdjointFunctors.eta Adj S i = calg_gen i.
+Proof.
+rewrite /= !HCompId /transf_from_multcmon /transf_from_multcmon_fun /=.
+rewrite !HIdComp /=.
+rewrite /transf_from_multcmon_fun /=.
+rewrite /FreeComMonoidAdjoint.transf_from_nmodset_fun /inv_hom /= /isoMC_inv /=.
+by rewrite nmod_of_commonoidK.
+Qed.
+
+Lemma univmap_FreeComAlgebra_uniq (g : {hom[ComAlgebras R] {freecalg R[S]} -> A}) :
+  (forall i : S, g (calg_gen i) = f i) -> g =1 univmap_FreeComAlgebra.
+Proof.
+move=> eq; apply: (AdjointFunctors.hom_iso_inj Adj).
+move=> i; rewrite AdjointFunctors.hom_invK -{}eq.
+by have /= -> := (eta_FreeComAlgebraE i).
+Qed.
+
+End UniversalProperty.
