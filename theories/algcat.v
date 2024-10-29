@@ -2572,15 +2572,6 @@ Definition univmap_FreeComAlgebra := AdjointFunctors.hom_inv Adj f.
 Definition calg_gen i : {freecalg R[S]} := [fm / cmon_gen i |-> 1].
 
 
-Lemma univmap_FreeComAlgebraP i : univmap_FreeComAlgebra (calg_gen i) = f i.
-Proof.
-rewrite -[RHS](AdjointFunctors.hom_invK Adj) /=; repeat congr (_ _).
-rewrite /calg_gen !HCompId /= !HIdComp.
-rewrite /transf_from_multcmon_fun /=.
-rewrite /FreeComMonoidAdjoint.transf_from_nmodset_fun /inv_hom /= /isoMC_inv /=.
-by rewrite nmod_of_commonoidK.
-Qed.
-
 Lemma eta_FreeComAlgebraE i : AdjointFunctors.eta Adj S i = calg_gen i.
 Proof.
 rewrite /= !HCompId /transf_from_multcmon /transf_from_multcmon_fun /=.
@@ -2590,12 +2581,18 @@ rewrite /FreeComMonoidAdjoint.transf_from_nmodset_fun /inv_hom /= /isoMC_inv /=.
 by rewrite nmod_of_commonoidK.
 Qed.
 
+Lemma univmap_FreeComAlgebraP i : univmap_FreeComAlgebra (calg_gen i) = f i.
+Proof.
+rewrite -[RHS](AdjointFunctors.hom_invK Adj) /=; do 4 congr (_ _).
+by rewrite -eta_FreeComAlgebraE.
+Qed.
+
 Lemma univmap_FreeComAlgebra_uniq (g : {hom[ComAlgebras R] {freecalg R[S]} -> A}) :
   (forall i : S, g (calg_gen i) = f i) -> g =1 univmap_FreeComAlgebra.
 Proof.
 move=> eq; apply: (AdjointFunctors.hom_iso_inj Adj).
 move=> i; rewrite AdjointFunctors.hom_invK -{}eq.
-by have /= -> := (eta_FreeComAlgebraE i).
+by have /= -> := eta_FreeComAlgebraE i.
 Qed.
 
 End UniversalProperty.
