@@ -143,7 +143,6 @@ Proof. by rewrite iter_mulm mulm1. Qed.
 End MonoidTheory.
 
 
-
 HB.mixin Record Monoid_hasCommutativeMul M of Monoid M := {
   mulmC : commutative (@mul M)
 }.
@@ -231,14 +230,13 @@ End Projections.
 
 End MonMorphismTheory.
 
-
-(** Hack to avoid non forgetful inheritance problems *)
-Record multMon (R : semiRingType) := Mk { mval :> R; _ : true; }.
-HB.instance Definition _ R := [isSub of multMon R for @mval R].
-HB.instance Definition _ R := [Equality of multMon R by <:].
+Record multMon (R : semiRingType) := MkMultMon { multmonval : R }.
+Coercion to_multMon (R : semiRingType) (x : R) := MkMultMon x.
+Lemma to_multMonK R : cancel (@MkMultMon R) (@multmonval R).
+Proof. by []. Qed.
+HB.instance Definition _ R := [isNew of multMon R for @multmonval R].
 HB.instance Definition _ R := [Choice of multMon R by <:].
 
-Coercion to_multMon (R : semiRingType) (x : R) := Mk x is_true_true.
 
 Module Monoid_of_SemiRing.
 
@@ -248,7 +246,7 @@ Variable R : semiRingType.
 Implicit Type (x y : multMon R).
 
 Let one : multMon R := 1%R.
-Let mul x y : multMon R := (x * y)%R.
+Let mul x y : multMon R := (\val x * \val y)%R.
 Fact mulmA : associative mul.
 Proof. move=> x y z; apply val_inj; exact: mulrA. Qed.
 Fact mul1m : left_id one mul.
@@ -283,7 +281,7 @@ Variable R : semiRingType.
 Implicit Type (x y : multMon R).
 
 Lemma monE : (1%M : multMon R) = 1%R. Proof. by []. Qed.
-Lemma monME x y : (x * y)%M = (x * y)%R. Proof. by []. Qed.
+Lemma monME x y : (x * y)%M = (\val x * \val y)%R. Proof. by []. Qed.
 Lemma tomonE (x : R) : (to_multMon x) = x. Proof. by []. Qed.
 
 End Theory.
