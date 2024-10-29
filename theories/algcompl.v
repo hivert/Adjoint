@@ -157,8 +157,8 @@ HB.factory Record isComMonoid V & Choice V := {
   one : V;
   mul : V -> V -> V;
   mulmA : associative mul;
+  mulmC : commutative mul;
   mul1m : left_id one mul;
-  mulmC : commutative mul
 }.
 HB.builders Context V of isComMonoid V.
 Let mulm1_fromC : right_id one mul.

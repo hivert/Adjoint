@@ -11,6 +11,20 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 
+Section Cast.
+
+Definition type_cast (A B : Type) (eqAB : A = B) x := ecast T T eqAB x.
+
+Lemma type_castK A B (eqAB : A = B) :
+  cancel (type_cast eqAB) (type_cast (esym eqAB)).
+Proof. by move=> x; case:_/(eqAB). Qed.
+Lemma type_castKV A B (eqAB : A = B) :
+  cancel (type_cast (esym eqAB)) (type_cast eqAB).
+Proof. by rewrite -{2}(esymK eqAB); apply: type_castK. Qed.
+
+End Cast.
+
+
 Import GRing.Theory.
 
 Local Open Scope category_scope.
@@ -838,35 +852,43 @@ Proof. by []. Qed.
 
 
 (** Equivalence ComMonoid NModule ***********************************)
-Definition NMod_of_ComMonoid_type (M : ComMonoids) : Type := M.
-HB.lock Definition nmod_of_commonoid (M : ComMonoids) (x : M)
-  : (NMod_of_ComMonoid_type M) := x.
-Canonical nmod_of_commonoid_unlock := Unlockable nmod_of_commonoid.unlock.
-HB.lock Definition nmod_of_commonoid_inv M (x : NMod_of_ComMonoid_type M) : M := x.
-Canonical nmod_of_commonoid_inv_unlock := Unlockable nmod_of_commonoid_inv.unlock.
+Definition LockType := Type.
+HB.lock Definition NMod_of_ComMonoidT (M : ComMonoids) : LockType := M.
+Canonical NMod_of_ComMonoidT_unlock := Unlockable NMod_of_ComMonoidT.unlock.
+Lemma NMod_of_ComMonoidTE M : NMod_of_ComMonoidT M = M :> Type.
+Proof. by rewrite unlock. Qed.
+Definition nmod_of_commonoid (M : ComMonoids) (x : M) :=
+  type_cast (esym (NMod_of_ComMonoidTE M)) x.
+Definition nmod_of_commonoid_inv M (x : NMod_of_ComMonoidT M) : M :=
+  type_cast (NMod_of_ComMonoidTE M) x.
 
 Lemma nmod_of_commonoidK M :
   cancel (@nmod_of_commonoid M) (@nmod_of_commonoid_inv M).
-Proof. by rewrite !unlock. Qed.
+Proof. exact: type_castKV. Qed.
 Lemma nmod_of_commonoid_invK M :
   cancel (@nmod_of_commonoid_inv M) (@nmod_of_commonoid M).
-Proof. by rewrite !unlock. Qed.
+Proof. exact: type_castK. Qed.
+
 
 Section Defs.
 
 Variable M : ComMonoids.
-Local Notation nmodM := (NMod_of_ComMonoid_type M).
-HB.instance Definition _ := Choice.on nmodM.
+Local Notation nmodM := (NMod_of_ComMonoidT M).
+HB.instance Definition _ :=
+  Choice.copy nmodM (can_type (@nmod_of_commonoid_invK M)).
 
 Let zeronm := @nmod_of_commonoid M 1%M.
 Let addnm (x y : nmodM) :=
   nmod_of_commonoid (nmod_of_commonoid_inv x * nmod_of_commonoid_inv y).
 Fact addnmA : associative addnm.
-Proof. by move=> x y z; rewrite /addnm !unlock mulmA. Qed.
+Proof. by move=> x y z; rewrite /addnm !nmod_of_commonoidK mulmA. Qed.
 Fact addnmC : commutative addnm.
-Proof. by move=> x y; rewrite /addnm !unlock mulmC. Qed.
+Proof. by move=> x y; rewrite /addnm mulmC. Qed.
 Fact add0nm : left_id zeronm addnm.
-Proof. by move=> x; rewrite /addnm /zeronm !unlock mul1m. Qed.
+Proof.
+move=> x.
+by rewrite /addnm /zeronm nmod_of_commonoidK mul1m nmod_of_commonoid_invK.
+Qed.
 HB.instance Definition _ := GRing.isNmodule.Build nmodM addnmA addnmC add0nm.
 Definition NMod_of_ComMonoid : NModules := nmodM.
 
@@ -913,36 +935,43 @@ HB.instance Definition _ :=
     NMod_of_ComMonoid_ext NMod_of_ComMonoid_id NMod_of_ComMonoid_comp.
 
 
-Definition ComMonoid_of_NMod_type (M : NModules) : Type := M.
-HB.lock Definition commonoid_of_nmod (M : NModules) (x : M)
-  : (ComMonoid_of_NMod_type M) := x.
-Canonical commonoid_of_nmod_unlock := Unlockable commonoid_of_nmod.unlock.
-HB.lock Definition commonoid_of_nmod_inv M (x : ComMonoid_of_NMod_type M) : M := x.
-Canonical commonoid_of_nmod_inv_unlock := Unlockable commonoid_of_nmod_inv.unlock.
+HB.lock Definition ComMonoid_of_NModT (M : NModules) : LockType := M.
+Canonical ComMonoid_of_NModT_unlock := Unlockable ComMonoid_of_NModT.unlock.
+Lemma ComMonoid_of_NModTE M : ComMonoid_of_NModT M = M :> Type.
+Proof. by rewrite unlock. Qed.
+Definition commonoid_of_nmod (M : NModules) (x : M) :=
+  type_cast (esym (ComMonoid_of_NModTE M)) x.
+Definition commonoid_of_nmod_inv M (x : ComMonoid_of_NModT M) : M :=
+  type_cast (ComMonoid_of_NModTE M) x.
 
 Lemma commonoid_of_nmodK M :
   cancel (@commonoid_of_nmod M) (@commonoid_of_nmod_inv M).
-Proof. by rewrite !unlock. Qed.
+Proof. exact: type_castKV. Qed.
 Lemma commonoid_of_nmod_invK M :
   cancel (@commonoid_of_nmod_inv M) (@commonoid_of_nmod M).
-Proof. by rewrite !unlock. Qed.
+Proof. exact: type_castK. Qed.
+
 
 Section Defs.
 
 Variable M : NModules.
-Local Notation cmonM := (ComMonoid_of_NMod_type M).
-HB.instance Definition _ := Choice.on cmonM.
+Local Notation cmonM := (ComMonoid_of_NModT M).
+HB.instance Definition _ :=
+  Choice.copy cmonM (can_type (@commonoid_of_nmod_invK M)).
 
 Let onecm := @commonoid_of_nmod M 0%R.
 Let mulcm (x y : cmonM) :=
   commonoid_of_nmod (commonoid_of_nmod_inv x + commonoid_of_nmod_inv y).
 Fact mulcmA : associative mulcm.
-Proof. by move=> x y z; rewrite /mulcm !unlock addrA. Qed.
+Proof. by move=> x y z; rewrite /mulcm !commonoid_of_nmodK addrA. Qed.
 Fact mulcmC : commutative mulcm.
-Proof. by move=> x y; rewrite /mulcm !unlock addrC. Qed.
+Proof. by move=> x y; rewrite /mulcm addrC. Qed.
 Fact mul1cm : left_id onecm mulcm.
-Proof. by move=> x; rewrite /mulcm /onecm !unlock add0r. Qed.
-HB.instance Definition _ := isComMonoid.Build cmonM mulcmA mul1cm mulcmC.
+Proof.
+move=> x.
+by rewrite /mulcm /onecm commonoid_of_nmodK add0r commonoid_of_nmod_invK.
+Qed.
+HB.instance Definition _ := isComMonoid.Build cmonM mulcmA mulcmC mul1cm.
 Definition ComMonoid_of_NMod : ComMonoids := cmonM.
 
 Lemma commonoid_of_nmod0 : 1%M = commonoid_of_nmod 0%R :> cmonM.
