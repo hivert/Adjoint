@@ -1,3 +1,4 @@
+(* Copyright (C) 2024 Florent Hivert, license: LGPL-2.1-or-later       *)
 From HB Require Import structures.
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq.
 From mathcomp Require Import choice fintype finfun bigop.

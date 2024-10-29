@@ -1,9 +1,17 @@
-(* monae: Monadic equational reasoning in Coq                                 *)
-(* Copyright (C) 2020 monae authors, license: LGPL-2.1-or-later               *)
+(* Categories for the working MathComp developpers                            *)
+(* Copyright (C) 2020 monae authors, 2024 Florent Hivert,                     *)
+(* license: LGPL-2.1-or-later                                                 *)
 From HB Require Import structures.
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq.
 From mathcomp Require Import choice fintype finfun bigop.
 From mathcomp Require Import ssralg.
+(******************************************************************************)
+(*                                                                            *)
+(* This file is mostly copied and adapted from monae.                         *)
+(*   https://github.com/affeldt-aist/monae                                    *)
+(*                                                                            *)
+(******************************************************************************)
+
 
 
 (******************************************************************************)
@@ -1354,13 +1362,3 @@ Lemma Monad_of_adjoint_functorsE (C D : category)
   (F : {functor C -> D}) (G : {functor D -> C}) (A : F -| G) :
   Monad_of_adjoint_functors A = G \O F :> {functor C -> C}.
 Proof. by []. Qed.
-
-Section Essai.
-
-Variable (C D : category)
-           (F : {functor C -> D}) (G : {functor D -> C}) (A : F -| G).
-
-Canonical MA := Monad_of_adjoint_functors A.
-Let bla := G \O F : monad C.
-
-End Essai.
