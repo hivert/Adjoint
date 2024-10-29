@@ -19,8 +19,7 @@ Here are some difficulties encountered during the development process:
   `F # f \o h =1 F # idfun \o h =1 idfun \o h =1 h`.
   Currently lot's of time is spend in precisely folding and unfolding map
   compositions. See for example
-  https://github.com/hivert/Adjoint/blob/55353be6bbf1e8e086ee9cf977844a9cb67fb40d/theories/algcat.v#L1762
-
+  https://github.com/hivert/Adjoint/blob/55353be6bbf1e8e086ee9cf977844a9cb67fb40d/theories/algcat.v#L1762-L1771
 - Lots of the code in
   https://github.com/hivert/Adjoint/blob/main/theories/algcat.v
   could be automatically generated in particular the declaration of a category
@@ -30,7 +29,7 @@ Here are some difficulties encountered during the development process:
   is *not* a linear function but can only be coerced from and to. As a
   consequence, defining a forgetful functor is not automatic. See in
   particular
-  https://github.com/hivert/Adjoint/blob/55353be6bbf1e8e086ee9cf977844a9cb67fb40d/theories/algcat.v#L376 
+  https://github.com/hivert/Adjoint/blob/55353be6bbf1e8e086ee9cf977844a9cb67fb40d/theories/algcat.v#L385-L386
   where a proof of `LModules_mor_semi_additive f` is needed.
 
 - The fact that `monoidType` and `commonoidType` weren't in MathComp hierarchy
@@ -38,18 +37,18 @@ Here are some difficulties encountered during the development process:
   `SemiRings -> NModules -> Sets` and the multiplicative path
   `SemiRings -> Monoids -> Sets` en up in a different sets. This can be fixed
   using natural transformations but is a little bit accrobatic. See 
-  https://github.com/hivert/Adjoint/blob/55353be6bbf1e8e086ee9cf977844a9cb67fb40d/theories/algcat.v#L1675
+  https://github.com/hivert/Adjoint/blob/55353be6bbf1e8e086ee9cf977844a9cb67fb40d/theories/algcat.v#L1704-L1719
   and is usage in
-  https://github.com/hivert/Adjoint/blob/55353be6bbf1e8e086ee9cf977844a9cb67fb40d/theories/algcat.v#L2123 .
+  https://github.com/hivert/Adjoint/blob/55353be6bbf1e8e086ee9cf977844a9cb67fb40d/theories/algcat.v#L2123-L2130
 
   Another example with commutative monoids:
-  https://github.com/hivert/Adjoint/blob/55353be6bbf1e8e086ee9cf977844a9cb67fb40d/theories/algcat.v#L2488 .
+  https://github.com/hivert/Adjoint/blob/55353be6bbf1e8e086ee9cf977844a9cb67fb40d/theories/algcat.v#L2488-L2506
   I learned a lot about natural transformation doing that :-)
 
 - I'm not good at putting the proper locking at the proper place. There are
   place in the proof where one strive to avoid calling `/=`. Also, when using
   large composition of natural transformation, Coq can take quite some time
-  such as 20s for the QED of 
-  https://github.com/hivert/Adjoint/blob/55353be6bbf1e8e086ee9cf977844a9cb67fb40d/theories/algcat.v#L2545
+  such as 20s for the QED of
+  https://github.com/hivert/Adjoint/blob/55353be6bbf1e8e086ee9cf977844a9cb67fb40d/theories/algcat.v#L2545-L2552
 
 I'll add more comment if I think of some.
