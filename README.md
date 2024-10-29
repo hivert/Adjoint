@@ -46,7 +46,11 @@ Here are some difficulties encountered during the development process:
   I learned a lot about natural transformation doing that :-)
 
 - I'm not good at putting the proper locking at the proper place. There are
-  place in the proof where one strive to avoid calling `/=`. Also, when using
+  place in the proof where one strive to avoid calling `/=`. TODO : find some
+  place. This might be partially fixed by using Records instead of lock in
+  more recent versions.
+
+- Also, when using
   large composition of natural transformation, Coq can take quite some time
   such as 20s for the QED of
   https://github.com/hivert/Adjoint/blob/55353be6bbf1e8e086ee9cf977844a9cb67fb40d/theories/algcat.v#L2545-L2552
