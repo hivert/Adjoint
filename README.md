@@ -20,6 +20,7 @@ Here are some difficulties encountered during the development process:
   Currently lot's of time is spend in precisely folding and unfolding map
   compositions. See for example
   https://github.com/hivert/Adjoint/blob/55353be6bbf1e8e086ee9cf977844a9cb67fb40d/theories/algcat.v#L1762-L1771
+
 - Lots of the code in
   https://github.com/hivert/Adjoint/blob/main/theories/algcat.v
   could be automatically generated in particular the declaration of a category
@@ -44,6 +45,16 @@ Here are some difficulties encountered during the development process:
   Another example with commutative monoids:
   https://github.com/hivert/Adjoint/blob/55353be6bbf1e8e086ee9cf977844a9cb67fb40d/theories/algcat.v#L2488-L2506
   I learned a lot about natural transformation doing that :-)
+
+- It is not clear if higher order inheritance can be properly set-up. By that
+  I mean diamond inheritance with different numbers of parameters. The example
+  I have in mind is natural isomorphism. For a fixed category, I have a
+  structure `{isom a -> b}` that inherits from `{hom a -> b}`. Also, a natural
+  transformation is a structure whose key is a
+  `phi : forall a, {hom F a -> G a}`. I didn't manage
+  to properly define a natural isomorphisms interface for a `psi` which both
+  inherits from natural transformation, and ensure that
+  `forall a, psi a : {isom F a -> G a}` typecheck.
 
 - I'm not good at putting the proper locking at the proper place. There are
   place in the proof where one strive to avoid calling `/=`. TODO : find some
