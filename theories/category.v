@@ -26,8 +26,9 @@ From mathcomp Require Import ssralg.
 (*                        function el that associates to each object A the    *)
 (*                        type el A of its elements; this corresponds to the  *)
 (*                        definition of concrete categories                   *)
-(*          {hom A, B} == the hom-set of morphisms from A to B, where A and B *)
+(*     {hom[C] A -> B} == the hom-set of morphisms from A to B, where A and B *)
 (*                        are objects of a category C                         *)
+(*        {hom A -> B} == the hom-set where the ategory C is inferred         *)
 (*             [hom f] == morphism corresponding to the function f            *)
 (*                  CT := [the category of Type]                              *)
 (*         FunctorLaws == module that defines the functor laws                *)
@@ -35,6 +36,7 @@ From mathcomp Require Import ssralg.
 (*             F ~~> G == forall a, {hom F a, G a}, which corresponds to a    *)
 (*                        natural transformation when it satisfies the        *)
 (*                        predicate naturality                                *)
+(*              F ~> G == natural transformation from F to G                  *)
 (*                 NId == the identity natural transformation                 *)
 (*          [NEq F, G] == natural transformation from F to G where F and G    *)
 (*                        are convertible, especially when they are           *)
@@ -52,7 +54,6 @@ From mathcomp Require Import ssralg.
 (*   Monad_of_munit_mu == factory, monad defined by munit and mu              *)
 (* Monad_of_adjoint_functors == module that defines a monad by a pair of      *)
 (*                        adjoint functors                                    *)
-(* Monad_of_category_monad == module, interface to isMonad from hierarchy.v   *)
 (******************************************************************************)
 
 Set Implicit Arguments.
@@ -135,7 +136,6 @@ Notation "{ 'hom' '[' C ']' U '->' V }" := (@Hom.type C U V)
    [the {hom ...} of f] is undesirably printed instead. *)
 Notation "[ 'hom' f ]" := [the {hom _ -> _} of f]
   (at level 0, format "[ 'hom'  f ]") : category_scope.
-
 
 
 Section hom_interface.
@@ -285,13 +285,13 @@ Section ismorphism_lemmas.
 Variable C : category.
 
 Lemma isom_bij (a b : C) (f : {isom a -> b}) : bijective f.
-Proof. by case: f => [f [[inv _ fK invK]] _] /=; exists inv. Qed.
+Proof. by exists (inv_hom f); [exact: homK | exact: inv_homK]. Qed.
 
 Lemma isomK (a b : C) (f : {isom a -> b}) : cancel f (inv_hom f).
-Proof. by case: f => [f [[inv ih fK invK]] ?] /=. Qed.
+Proof. exact: homK. Qed.
 
 Lemma isom_invK (a b : C) (f : {isom a -> b}) : cancel (inv_hom f) f.
-Proof. by case: f => [f [[inv ih fK invK]] ?] /=. Qed.
+Proof. exact: inv_homK. Qed.
 
 End ismorphism_lemmas.
 
