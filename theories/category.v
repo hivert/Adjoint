@@ -64,7 +64,9 @@ Declare Scope category_scope.
 
 Reserved Notation "f \O g" (at level 50, format "f  \O  g").
 Reserved Notation "F ~~> G" (at level 51).
+Reserved Notation "F <~~> G" (at level 51).
 Reserved Notation "f ~> g" (at level 51).
+Reserved Notation "f <~> g" (at level 51).
 Reserved Notation "F # g" (at level 11).
 Reserved Notation "F =#= g" (at level 70, no associativity).
 Reserved Notation "F =%= g" (at level 70, no associativity).
@@ -500,6 +502,7 @@ End functor_inv_hom.
 
 
 Notation "F ~~> G" := (forall a, {hom F a -> G a}) : category_scope.
+Notation "F <~~> G" := (forall a, {isom F a -> G a}) : category_scope.
 Definition naturality (C D : category) (F G : {functor C -> D}) (f : F ~~> G) :=
   forall (a b : C) (h : {hom a -> b}), (G # h) \o (f a) =1 (f b) \o (F # h).
 Arguments naturality [C D].
@@ -512,6 +515,39 @@ HB.structure Definition Natural (C D : category) (F G : {functor C -> D}) :=
 Arguments natural [C D F G] phi : rename.
 Notation "F ~> G" := (nattrans F G) : category_scope.
 
+
+
+HB.mixin Record Natural_isNaturalIsom
+  (C D : category) (F G : {functor C -> D}) (f : F ~~> G) := {
+    natural_is_isom : forall a, Isom D (f a)
+  }.
+#[short(type=natisom)]
+HB.structure Definition NaturalIsom (C D : category) (F G : {functor C -> D}) :=
+  { f of Natural_isNaturalIsom C D F G f & isNatural C D F G f }.
+Arguments natural [C D F G] phi : rename.
+Notation "F <~> G" := (natisom F G) : category_scope.
+
+Section Tentative.
+
+Variables (C D : category) (F G : {functor C -> D}) (phi : F <~> G).
+
+Definition NaturalIsom_isom a : {isom (F a) -> (G a)} :=
+  Isom.Pack (natural_is_isom (s := phi) a).
+Canonical NaturalIsom_isom.
+
+End Tentative.
+
+HB.factory Record isNaturalIsom
+  (C D : category) (F G : {functor C -> D}) (f : F <~~> G) := {
+    isom_natural : naturality F G f }.
+HB.builders Context (C D : category) (F G : {functor C -> D}) (f : F <~~> G)
+            of isNaturalIsom C D F G f.
+Let natural_is_isom : forall a, Isom D (f a).
+Proof. by move=> a; case: (f a). Qed.
+Definition nattransf := f : F ~~> G.
+HB.instance Definition _ := isNatural.Build C D F G nattransf isom_natural.
+HB.instance Definition _ := Natural_isNaturalIsom.Build C D F G nattransf natural_is_isom.
+HB.end.
 
 Section natural_transformation_lemmas.
 
@@ -550,6 +586,12 @@ Definition unnattrans_id := fun (a : C) => [hom (@idfun (el (F a)))].
 Fact natural_id : naturality _ _ unnattrans_id.
 Proof. by []. Qed.
 HB.instance Definition _ := isNatural.Build C D F F unnattrans_id natural_id.
+
+
+Check unnattrans_id : F <~~> F.
+
+HB.instance Definition _ := isNaturalIsom.Build C D F F unnattrans_id natural_id.
+
 Definition NId : F ~> F := [the _ ~> _ of unnattrans_id].
 Lemma NIdE : NId  = (fun a => [hom idfun]) :> (_ ~~> _).
 Proof. by []. Qed.
