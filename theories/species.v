@@ -241,7 +241,7 @@ Lemma card_sumSp A B n : cardSp (A + B) n = (cardSp A n + cardSp B n)%N.
 Proof. by rewrite /sumSp /sumSp_fun /= /cardSp /= card_sum. Qed.
 
 
-Section SumSpeciesCom.
+Section SumSpeciesCommutative.
 
 Implicit Types (A B : Species).
 
@@ -265,7 +265,7 @@ HB.instance Definition _ A B :=
 Lemma sumSpCK A B : sumSpC B A \v sumSpC A B =%= NId (A + B).
 Proof. by move=> S []. Qed.
 
-End SumSpeciesCom.
+End SumSpeciesCommutative.
 
 
 Section SumSpeciesZero.
@@ -608,3 +608,39 @@ End ProductSpecies.
 Notation "f * g" := (prodSp f g) : species_scope.
 
 
+Section ProdSpeciesCommutative.
+
+Implicit Types (A B : Species).
+Lemma prodSpC_subproof A B S (x : el ((A * B) S)) : setb x == ~: seta x.
+Proof. by rewrite (eqP (prodsp_dijs x)) setCK. Qed.
+
+Definition prodSpC_fun A B S : el ((A * B) S) -> el ((B * A) S)
+  := fun x => MkProdSp (valb x) (vala x) (prodSpC_subproof x).
+
+Lemma prodSpC_funK A B S : cancel (@prodSpC_fun A B S) (@prodSpC_fun B A S).
+Proof.
+move=> [a va b vb eq]; rewrite /prodSpC_fun /=.
+by congr MkProdSp; apply: bool_irrelevance.
+Qed.
+Fact prodSpC_bij A B S : bijective (@prodSpC_fun A B S).
+Proof. by exists (prodSpC_fun (S := S)); exact: prodSpC_funK. Qed.
+HB.instance Definition _ A B S :=
+  @BijHom.Build ((A * B) S) ((B * A) S) (@prodSpC_fun A B S) (@prodSpC_bij A B S).
+Definition prodSpC A B : (A * B) ~~> (B * A) := @prodSpC_fun A B.
+
+Fact prodSpC_natural A B : naturality (A * B) (B * A) (prodSpC A B).
+Proof.
+move=> S T h [a va b vb eq]; rewrite /= /prodSp_fun /prodSpC_fun /=.
+by congr MkProdSp; apply: bool_irrelevance.
+Qed.
+HB.instance Definition _ A B :=
+  @isNatural.Build Bij Bij (A * B) (B * A)
+    (prodSpC A B) (@prodSpC_natural A B).
+
+Lemma prodSpCK A B : prodSpC B A \v prodSpC A B =%= NId (A * B).
+Proof.
+move=> S [a va b vb eq]; rewrite /= /prodSpC_fun /=.
+by congr MkProdSp; apply: bool_irrelevance.
+Qed.
+
+End ProdSpeciesCommutative.
