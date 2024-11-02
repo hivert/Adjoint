@@ -115,7 +115,7 @@ HB.instance Definition _ :=
 Definition Species := {functor Bij -> Bij}.
 
 
-Section Card.
+Section Cardinality.
 
 HB.instance Definition _ (S : Bij) :=
   BijHom.Build _ _ (@enum_rank S : el S -> el ('I_#|S| : Bij)) (@enum_rank_bij S).
@@ -126,7 +126,28 @@ Definition cardSp (A : Species) (n : nat) := #|A 'I_n|.
 Lemma cardSpE (A : Species) (S : Bij) : #|A S| = cardSp A #|S|.
 Proof. exact: BijHom_eq_card (A # (@enum_rankBij S)). Qed.
 
-End Card.
+Definition SpSet (A : Species) (S : Bij) : predArgType :=
+  { I : {set S} & A { x : S | x \in I } }.
+Lemma cardSp_set (A : Species) (T : Bij) (S : {set T}) :
+  cardSp A #|S| = #|[set p : SpSet A T | tag p == S]|.
+Proof.
+pose TT : Bij := { x : T | x \in S }.
+have <- : #|TT| = #|S|.
+  rewrite -[LHS](card_imset _ val_inj); congr #|pred_of_set _|.
+  apply/setP => x; apply/imsetP/idP => [[/= [y y_in_S] _ ->] // | x_in_S].
+  by exists (exist _ x x_in_S).
+rewrite -cardSpE {}/TT.
+pose totag (x : A {x : T | x \in S}) : SpSet A T :=
+  Tagged (fun U : {set T} => A {x : T | x \in U}) x.
+have totag_inj : injective totag.
+  by rewrite /totag=> x y /eqP /[!eq_Tagged] /= /eqP.
+rewrite -(card_imset _ totag_inj); congr #|pred_of_set _|.
+apply/setP => /= x; apply/imsetP/idP => [[y _ ->{x}] /[!inE] //| ].
+move: x => [U x /[!inE] /= /eqP U_eq_S]; subst S.
+by exists x.
+Qed.
+
+End Cardinality.
 
 
 Definition Sp0_fun := fun _ : Bij => voidB.
@@ -184,16 +205,16 @@ Section SumSpecies.
 
 Variable A B : Species.
 
-Definition SumSp_fun S : Bij := (A S + B S)%type.
-Definition SumSp_mor S T (f : {hom[Bij] S -> T}) :
-  el (SumSp_fun S) -> el (SumSp_fun T) :=
+Definition sumSp_fun S : Bij := (A S + B S)%type.
+Definition sumSp_mor S T (f : {hom[Bij] S -> T}) :
+  el (sumSp_fun S) -> el (sumSp_fun T) :=
   fun x => match x with
            | inl a => inl ((A # f) a)
            | inr b => inr ((B # f) b)
            end.
-Lemma SumSp_mor_bij S T (f : {hom[Bij] S -> T}) : bijective (SumSp_mor f).
+Lemma sumSp_mor_bij S T (f : {hom[Bij] S -> T}) : bijective (sumSp_mor f).
 Proof.
-exists (SumSp_mor (finv f)); case => [a|b] /=; congr (_ _);
+exists (sumSp_mor (finv f)); case => [a|b] /=; congr (_ _);
   rewrite -[LHS]compapp -functor_o.
 - by rewrite -[RHS](@functor_id _ _ A); apply/functor_ext_hom/finvK.
 - by rewrite -[RHS](@functor_id _ _ B); apply/functor_ext_hom/finvK.
@@ -201,47 +222,47 @@ exists (SumSp_mor (finv f)); case => [a|b] /=; congr (_ _);
 - by rewrite -[RHS](@functor_id _ _ B); apply/functor_ext_hom/finvKV.
 Qed.
 HB.instance Definition _ S T (f : {hom[Bij] S -> T}) :=
-  BijHom.Build (SumSp_fun S) (SumSp_fun T) (SumSp_mor f) (SumSp_mor_bij f).
-Fact SumSp_ext : FunctorLaws.ext SumSp_mor.
+  BijHom.Build (sumSp_fun S) (sumSp_fun T) (sumSp_mor f) (sumSp_mor_bij f).
+Fact sumSp_ext : FunctorLaws.ext sumSp_mor.
 Proof. by move=> S T f g eq [a|b] /=; congr (_ _); apply: functor_ext_hom. Qed.
-Fact SumSp_id : FunctorLaws.id SumSp_mor.
+Fact sumSp_id : FunctorLaws.id sumSp_mor.
 Proof. by move=> S [a|b] /=; rewrite functor_id. Qed.
-Fact SumSp_comp  : FunctorLaws.comp SumSp_mor.
+Fact sumSp_comp  : FunctorLaws.comp sumSp_mor.
 Proof. by move=> S T U f g [a|b]; rewrite /= functor_o. Qed.
 HB.instance Definition _ :=
-  @isFunctor.Build Bij Bij SumSp_fun SumSp_mor SumSp_ext SumSp_id SumSp_comp.
-Definition SumSp : Species := SumSp_fun.
+  @isFunctor.Build Bij Bij sumSp_fun sumSp_mor sumSp_ext sumSp_id sumSp_comp.
+Definition sumSp : Species := sumSp_fun.
 
 End SumSpecies.
 
-Notation "f + g" := (SumSp f g) : species_scope.
+Notation "f + g" := (sumSp f g) : species_scope.
 
 Lemma card_sumSp A B n : cardSp (A + B) n = (cardSp A n + cardSp B n)%N.
-Proof. by rewrite /SumSp /SumSp_fun /= /cardSp /= card_sum. Qed.
+Proof. by rewrite /sumSp /sumSp_fun /= /cardSp /= card_sum. Qed.
 
 
 Section SumSpeciesCom.
 
 Implicit Types (A B : Species).
 
-Definition SumSpC_fun A B S : el ((A + B) S) -> el ((B + A) S) :=
+Definition sumSpC_fun A B S : el ((A + B) S) -> el ((B + A) S) :=
   fun x => match x with inl a => inr a | inr b => inl b end.
 
-Lemma SumSpC_funK A B S : cancel (@SumSpC_fun A B S) (@SumSpC_fun B A S).
+Lemma sumSpC_funK A B S : cancel (@sumSpC_fun A B S) (@sumSpC_fun B A S).
 Proof. by case. Qed.
-Fact SumSpC_bij A B S : bijective (@SumSpC_fun A B S).
-Proof. by exists (SumSpC_fun (S := S)); exact: SumSpC_funK. Qed.
+Fact sumSpC_bij A B S : bijective (@sumSpC_fun A B S).
+Proof. by exists (sumSpC_fun (S := S)); exact: sumSpC_funK. Qed.
 HB.instance Definition _ A B S :=
-  @BijHom.Build ((A + B) S) ((B + A) S) (@SumSpC_fun A B S) (@SumSpC_bij A B S).
-Definition SumSpC A B : (A + B) ~~> (B + A) := @SumSpC_fun A B.
+  @BijHom.Build ((A + B) S) ((B + A) S) (@sumSpC_fun A B S) (@sumSpC_bij A B S).
+Definition sumSpC A B : (A + B) ~~> (B + A) := @sumSpC_fun A B.
 
-Fact SumSpC_natural A B : naturality (A + B) (B + A) (SumSpC A B).
+Fact sumSpC_natural A B : naturality (A + B) (B + A) (sumSpC A B).
 Proof. by move=> S T h []. Qed.
 HB.instance Definition _ A B :=
   @isNatural.Build Bij Bij (A + B) (B + A)
-    (SumSpC A B) (@SumSpC_natural A B).
+    (sumSpC A B) (@sumSpC_natural A B).
 
-Lemma SumSpCK A B : SumSpC B A \v SumSpC A B =%= NId (A + B).
+Lemma sumSpCK A B : sumSpC B A \v sumSpC A B =%= NId (A + B).
 Proof. by move=> S []. Qed.
 
 End SumSpeciesCom.
@@ -254,42 +275,42 @@ Implicit Types (A B : Species).
 Section Mor.
 
 Variables (A : Species) (S : Bij).
-Definition SumSp0_fun : (el ((A + 0) S)) -> (el (A S)) :=
+Definition sumSp0_fun : (el ((A + 0) S)) -> (el (A S)) :=
   fun x => match x with inl a => a | inr b => match b with end end.
-Definition SumSp0_inv : (el (A S)) -> (el ((A + 0) S)) := fun a => inl a.
-Let SumSp0_funK : cancel SumSp0_fun SumSp0_inv.
+Definition sumSp0_inv : (el (A S)) -> (el ((A + 0) S)) := fun a => inl a.
+Let sumSp0_funK : cancel sumSp0_fun sumSp0_inv.
 Proof. by case => [|[]]. Qed.
-Let SumSp0_invK : cancel SumSp0_inv SumSp0_fun.
+Let sumSp0_invK : cancel sumSp0_inv sumSp0_fun.
 Proof. by []. Qed.
-Fact SumSp0_fun_bij : bijective SumSp0_fun.
-Proof. by exists SumSp0_inv. Qed.
-Fact SumSp0_inv_bij : bijective SumSp0_inv.
-Proof. by exists SumSp0_fun. Qed.
+Fact sumSp0_fun_bij : bijective sumSp0_fun.
+Proof. by exists sumSp0_inv. Qed.
+Fact sumSp0_inv_bij : bijective sumSp0_inv.
+Proof. by exists sumSp0_fun. Qed.
 HB.instance Definition _ :=
-  @BijHom.Build ((A + 0) S) (A S) SumSp0_fun SumSp0_fun_bij.
+  @BijHom.Build ((A + 0) S) (A S) sumSp0_fun sumSp0_fun_bij.
 HB.instance Definition _ :=
-  @BijHom.Build (A S) ((A + 0) S) SumSp0_inv SumSp0_inv_bij.
+  @BijHom.Build (A S) ((A + 0) S) sumSp0_inv sumSp0_inv_bij.
 
 End Mor.
-Definition SumSp0  A : A + 0 ~~> A := @SumSp0_fun A.
-Definition SumSp0V A : A ~~> A + 0 := @SumSp0_inv A.
+Definition sumSp0  A : A + 0 ~~> A := @sumSp0_fun A.
+Definition sumSp0V A : A ~~> A + 0 := @sumSp0_inv A.
 
-Fact SumSp0_natural A : naturality (A + 0) A (SumSp0 A).
+Fact sumSp0_natural A : naturality (A + 0) A (sumSp0 A).
 Proof. by move=> S T h []. Qed.
-Fact SumSp0V_natural A : naturality A (A + 0) (SumSp0V A).
+Fact sumSp0V_natural A : naturality A (A + 0) (sumSp0V A).
 Proof. by []. Qed.
 HB.instance Definition _ A :=
-  @isNatural.Build Bij Bij (A + 0) A (SumSp0 A) (@SumSp0_natural A).
+  @isNatural.Build Bij Bij (A + 0) A (sumSp0 A) (@sumSp0_natural A).
 HB.instance Definition _ A :=
-  @isNatural.Build Bij Bij A (A + 0) (SumSp0V A) (@SumSp0V_natural A).
+  @isNatural.Build Bij Bij A (A + 0) (sumSp0V A) (@sumSp0V_natural A).
 
-Lemma SumSp0K A : SumSp0V A \v SumSp0 A =%= NId (A + 0).
+Lemma sumSp0K A : sumSp0V A \v sumSp0 A =%= NId (A + 0).
 Proof. by move=> S []. Qed.
-Lemma SumSp0VK A : SumSp0 A \v SumSp0V A =%= NId A.
+Lemma sumSp0VK A : sumSp0 A \v sumSp0V A =%= NId A.
 Proof. by []. Qed.
 
-Definition Sum0Sp A : 0 + A ~> A := (SumSp0 A) \v (SumSpC 0 A).
-Definition Sum0SpV A : A ~> 0 + A := (SumSpC A 0) \v (SumSp0V A).
+Definition Sum0Sp A : 0 + A ~> A := (sumSp0 A) \v (sumSpC 0 A).
+Definition Sum0SpV A : A ~> 0 + A := (sumSpC A 0) \v (sumSp0V A).
 
 Lemma Sum0SpK A : Sum0SpV A \v Sum0Sp A =%= NId (0 + A).
 Proof. by move=> S []. Qed.
@@ -401,9 +422,6 @@ Proof. by move => x /=; apply val_inj; rewrite !cast_TinE !val_restrE. Qed.
 
 Section ProductSpecies.
 
-Definition SpSet (A : Species) (S : Bij) : predArgType :=
-  { I : {set S} & A { x : S | x \in I } }.
-
 Variable A B : Species.
 
 Section Elements.
@@ -416,7 +434,7 @@ Record prodSpType : predArgType := MkProdSp {
                       valb : B {x : S | x \in setb};
                       prodsp_dijs : seta == ~: setb
                     }.
-Definition to_auxType (x : prodSpType) : SpSet A S * SpSet B S :=
+Definition prodSpPair (x : prodSpType) : SpSet A S * SpSet B S :=
   (Tagged (i := (seta x)) _ (vala x), Tagged (i := (setb x)) _ (valb x)).
 Definition from_auxType (y : SpSet A S * SpSet B S) : option prodSpType :=
   let: (existT a xa, existT b xb) := y in
@@ -424,13 +442,13 @@ Definition from_auxType (y : SpSet A S * SpSet B S) : option prodSpType :=
   | @AltTrue _ _ eq => Some (MkProdSp xa xb eq)
   | _ => None
   end.
-Lemma to_auxTypeK : pcancel to_auxType from_auxType.
+Lemma prodSpPairK : pcancel prodSpPair from_auxType.
 Proof.
 move=> [a va b vb eq] /=.
 case (boolP (a == ~: b)) => [eq'|]; last by rewrite eq.
 by rewrite (bool_irrelevance eq eq').
 Qed.
-HB.instance Definition _ := Finite.copy prodSpType (pcan_type to_auxTypeK).
+HB.instance Definition _ := Finite.copy prodSpType (pcan_type prodSpPairK).
 Definition prodSpT : Bij := prodSpType.
 
 End Elements.
@@ -447,7 +465,7 @@ Definition prodSp_fun S T (f : {hom[Bij] S -> T}) (x : el (prodSpT S : Bij))
 Lemma prodSp_fun_id S : prodSp_fun (S := S) [hom idfun] =1 idfun.
 Proof.
 move=> [a va b vb eq] /=; rewrite /prodSp_fun /=.
-apply/eqP; rewrite eqE /= /to_auxType /= {eq} -pair_eqE /=; apply/andP; split.
+apply/eqP; rewrite eqE /= /prodSpPair /= {eq} -pair_eqE /=; apply/andP; split.
 - have /= -> := functor_ext_hom A _ _ (restr_id (I := a)).
   by rewrite /= Tagged_SpTin_castE.
 - have /= -> := functor_ext_hom B _ _ (restr_id (I := b)).
@@ -457,7 +475,7 @@ Lemma prodSp_fun_comp S T U (f : {hom[Bij] S -> T}) (g : {hom[Bij] T -> U}) :
   prodSp_fun g \o prodSp_fun f =1 prodSp_fun (g \o f).
 Proof.
 rewrite /prodSp_fun => [][a va b vb eq] /=.
-apply/eqP; rewrite eqE /= /to_auxType /= {eq} -pair_eqE /=; apply/andP; split.
+apply/eqP; rewrite eqE /= /prodSpPair /= {eq} -pair_eqE /=; apply/andP; split.
 - rewrite -[_ (_ va)]compapp -functor_o /=.
   have /= -> := functor_ext_hom A _ _ (restr_comp f g (I := a)).
   by rewrite functor_o /= Tagged_SpTin_castE.
@@ -469,7 +487,7 @@ Lemma prodSp_fun_ext S T (f g : {hom[Bij] S -> T}) :
   f =1 g -> prodSp_fun f =1 prodSp_fun g.
 Proof.
 rewrite /prodSp_fun => eqfg [a va b vb eq] /=.
-apply/eqP; rewrite eqE /= /to_auxType /= {eq} -pair_eqE /=; apply/andP; split.
+apply/eqP; rewrite eqE /= /prodSpPair /= {eq} -pair_eqE /=; apply/andP; split.
 - have /= -> := functor_ext_hom A _ _ (restr_ext eqfg).
   by rewrite functor_o /= Tagged_SpTin_castE.
 - have /= -> := functor_ext_hom B _ _ (restr_ext eqfg).
@@ -498,15 +516,49 @@ HB.instance Definition _ :=
   @isFunctor.Build Bij Bij prodSpT prodSp_mor prodSp_ext prodSp_id prodSp_comp.
 Definition prodSp : Species := prodSpT.
 
-(*
-Lemma card_ProdSp S : #|prodSp S| = 0%N.
+
+Lemma imset_prodSpPair S :
+  (@prodSpPair S) @: xpredT = [set p | tag p.1 == ~: tag p.2].
 Proof.
-rewrite -(card_imset predT (pcan_inj (@to_auxTypeK S))).
-pose P := [set 
-rewrite /prodSp /prodSpT.
-card_imset
-rewrite card_tagged /= sumnE big_map big_enum /=.
- *)
+apply/setP => /= [][[a vala] [b valb]]; rewrite !inE /=.
+apply/imsetP/eqP => [[/= [a' vala' b' valb' eq _ ]] | /eqP eq].
+  by move=> [/[swap] _ -> /[swap] _ ->]; apply/eqP.
+by exists (MkProdSp vala valb eq).
+Qed.
+
+Lemma card_prodSp n :
+  cardSp prodSp n = \sum_(i < n.+1) 'C(n, i) * (cardSp A i) * (cardSp B (n - i)).
+Proof.
+rewrite {1}/cardSp.
+pose Pairs := (SpSet A 'I_n * SpSet B 'I_n)%type.
+rewrite -(card_imset predT (pcan_inj (@prodSpPairK 'I_n))) imset_prodSpPair.
+rewrite -sum1_card.
+rewrite -[LHS]big_enum [LHS](partition_big (fun p => tag p.1) xpredT) //=.
+have cardle (S : {set 'I_n}) : #|S| < n.+1.
+  rewrite ltnS -[X in _ <= X](card_ord n).
+  exact/subset_leq_card/subset_predT.
+pose cardS S := Ordinal (cardle S).
+rewrite -[LHS]big_enum [LHS](partition_big cardS xpredT) //=; apply eq_bigr => i _.
+rewrite big_enum_cond /=.
+under eq_bigl => S do rewrite -val_eqE /=.
+rewrite {cardS cardle} -[X in 'C(X, i)](card_ord n) -card_draws.
+rewrite -sum1_card !big_distrl /=.
+apply esym; under eq_bigl => S do rewrite inE.
+apply eq_bigr => S /eqP eq_card.
+rewrite mul1n big_enum_cond /= sum1dep_card /=.
+rewrite [[set _ | _ ]](_ : _ =
+  setX [set p : (SpSet A 'I_n) | tag p == S]
+       [set p : (SpSet B 'I_n) | tag p == ~: S]); first last.
+  apply/setP => p; rewrite !inE andbC; case: eqP => //= ->.
+  by rewrite eq_sym inv_eq //; exact: setCK.
+rewrite [RHS]cardsX -!cardSp_set eq_card; congr (_ * (cardSp _ _)).
+rewrite -[X in X - i]card_ord.
+have:= (cardsCs S); rewrite eq_card => ->.
+exact/subKn/subset_leq_card/subset_predT.
+Qed.
 
 End ProductSpecies.
+
+Notation "f * g" := (prodSp f g) : species_scope.
+
 
