@@ -269,12 +269,10 @@ End SumSpeciesCom.
 
 
 Section SumSpeciesZero.
-
-Implicit Types (A B : Species).
+Variable (A : Species).
 
 Section Mor.
-
-Variables (A : Species) (S : Bij).
+Variable (S : Bij).
 Definition sumSp0_fun : (el ((A + 0) S)) -> (el (A S)) :=
   fun x => match x with inl a => a | inr b => match b with end end.
 Definition sumSp0_inv : (el (A S)) -> (el ((A + 0) S)) := fun a => inl a.
@@ -292,35 +290,83 @@ HB.instance Definition _ :=
   @BijHom.Build (A S) ((A + 0) S) sumSp0_inv sumSp0_inv_bij.
 
 End Mor.
-Definition sumSp0  A : A + 0 ~~> A := @sumSp0_fun A.
-Definition sumSp0V A : A ~~> A + 0 := @sumSp0_inv A.
+Definition sumSp0  : A + 0 ~~> A := @sumSp0_fun.
+Definition sumSp0V : A ~~> A + 0 := @sumSp0_inv.
 
-Fact sumSp0_natural A : naturality (A + 0) A (sumSp0 A).
+Fact sumSp0_natural : naturality (A + 0) A sumSp0.
 Proof. by move=> S T h []. Qed.
-Fact sumSp0V_natural A : naturality A (A + 0) (sumSp0V A).
+Fact sumSp0V_natural : naturality A (A + 0) sumSp0V.
 Proof. by []. Qed.
-HB.instance Definition _ A :=
-  @isNatural.Build Bij Bij (A + 0) A (sumSp0 A) (@sumSp0_natural A).
-HB.instance Definition _ A :=
-  @isNatural.Build Bij Bij A (A + 0) (sumSp0V A) (@sumSp0V_natural A).
+HB.instance Definition _ :=
+  @isNatural.Build Bij Bij (A + 0) A sumSp0 sumSp0_natural.
+HB.instance Definition _ :=
+  @isNatural.Build Bij Bij A (A + 0) sumSp0V sumSp0V_natural.
 
-Lemma sumSp0K A : sumSp0V A \v sumSp0 A =%= NId (A + 0).
+Lemma sumSp0K : sumSp0V \v sumSp0 =%= NId (A + 0).
 Proof. by move=> S []. Qed.
-Lemma sumSp0VK A : sumSp0 A \v sumSp0V A =%= NId A.
+Lemma sumSp0VK : sumSp0 \v sumSp0V =%= NId A.
 Proof. by []. Qed.
 
-Definition Sum0Sp A : 0 + A ~> A := (sumSp0 A) \v (sumSpC 0 A).
-Definition Sum0SpV A : A ~> 0 + A := (sumSpC A 0) \v (sumSp0V A).
+Definition Sum0Sp : 0 + A ~> A := sumSp0 \v (sumSpC 0 A).
+Definition Sum0SpV : A ~> 0 + A := (sumSpC A 0) \v sumSp0V.
 
-Lemma Sum0SpK A : Sum0SpV A \v Sum0Sp A =%= NId (0 + A).
+Lemma Sum0SpK : Sum0SpV \v Sum0Sp =%= NId (0 + A).
 Proof. by move=> S []. Qed.
-Lemma Sum0SpVK A : Sum0Sp A \v Sum0SpV A =%= NId A.
+Lemma Sum0SpVK : Sum0Sp \v Sum0SpV =%= NId A.
 Proof. by []. Qed.
 
 End SumSpeciesZero.
 
 
-(** TODO Associativity *)
+Section SumSpeciesAssociative.
+Variables (A B C : Species).
+
+Section Mor.
+Variable (S : Bij).
+Definition sumSpA_fun : el ((A + (B + C)) S) -> el ((A + B + C) S) :=
+  fun x => match x with
+           | inl a => inl (inl a)
+           | inr (inl b) => inl (inr b)
+           | inr (inr a) => inr a
+           end.
+Definition sumSpA_inv : el ((A + B + C) S) -> el ((A + (B + C)) S) :=
+  fun x => match x with
+           | inl (inl a) => inl a
+           | inl (inr b) => inr (inl b)
+           | inr a => inr (inr a)
+           end.
+Let sumSpA_funK : cancel sumSpA_fun sumSpA_inv.
+Proof. by case => [|[]]. Qed.
+Let sumSpA_invK : cancel sumSpA_inv sumSpA_fun.
+Proof. by case => [[]|]. Qed.
+Fact sumSpA_fun_bij : bijective sumSpA_fun.
+Proof. by exists sumSpA_inv. Qed.
+Fact sumSpA_inv_bij : bijective sumSpA_inv.
+Proof. by exists sumSpA_fun. Qed.
+HB.instance Definition _ :=
+  @BijHom.Build ((A + (B + C)) S) ((A + B + C) S) sumSpA_fun sumSpA_fun_bij.
+HB.instance Definition _ :=
+  @BijHom.Build ((A + B + C) S) ((A + (B + C)) S) sumSpA_inv sumSpA_inv_bij.
+
+End Mor.
+Definition sumSpA  : (A + (B + C)) ~~> (A + B + C) := sumSpA_fun.
+Definition sumSpAV : (A + B + C) ~~> (A + (B + C)) := sumSpA_inv.
+
+Fact sumSpA_natural : naturality (A + (B + C)) (A + B + C) sumSpA.
+Proof. by move=> S T h [|[]]. Qed.
+Fact sumSpAV_natural : naturality (A + B + C) (A + (B + C)) sumSpAV.
+Proof. by move=> S T h [[]|]. Qed.
+HB.instance Definition _ :=
+  @isNatural.Build Bij Bij (A + (B + C)) (A + B + C) sumSpA sumSpA_natural.
+HB.instance Definition _ :=
+  @isNatural.Build Bij Bij (A + B + C)( A + (B + C)) sumSpAV sumSpAV_natural.
+
+Lemma sumSpAK : sumSpAV \v sumSpA =%= NId (A + (B + C)).
+Proof. by move=> S [|[]]. Qed.
+Lemma sumSpAVK : sumSpA \v sumSpAV =%= NId (A + B + C).
+Proof. by move=> S [[]|]. Qed.
+
+End SumSpeciesAssociative.
 
 
 Section Restriction.
