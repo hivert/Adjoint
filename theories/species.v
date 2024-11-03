@@ -20,7 +20,7 @@ Reserved Notation "\X" (at level 0).
 
 Section SSRCompl.
 
-Variable (S T : finType)  (f : S -> T) (I : {set S}).
+Variable (S T : finType) (f : S -> T) (I : {set S}).
 
 Lemma imsetCE : bijective f -> [set f y | y in ~: I] =  ~: [set f i | i in I].
 Proof.
@@ -32,6 +32,12 @@ move: f_bij => [g fK gK] nex.
 exists (g y); last by rewrite gK.
 rewrite inE; apply/negP => gy_in_i; apply: nex.
 by exists (g y); last rewrite gK.
+Qed.
+
+Lemma imsetT : bijective f -> [set f y | y in [set: S]] = [set: T].
+Proof.
+move=> [fV fK fKV]; apply/setP => i; rewrite inE; apply/imsetP.
+by exists (fV i).
 Qed.
 
 End SSRCompl.
@@ -116,8 +122,9 @@ Definition Species := {functor Bij -> Bij}.
 
 Section Cardinality.
 
-Lemma card_sigma (T : Bij) (S : {set T}) :
-  #|{x : T | x \in S} : Bij| = #|S|.
+Definition TinSet (T : Bij) (X : {set T}) : Bij := {x : T | x \in X} : Bij.
+
+Lemma card_TinSet (T : Bij) (S : {set T}) : #|TinSet S| = #|S|.
 Proof.
 rewrite -[LHS](card_imset _ val_inj); congr #|pred_of_set _|.
 apply/setP => x; apply/imsetP/idP => [[/= [y y_in_S] _ ->] // | x_in_S].
@@ -134,15 +141,13 @@ Lemma cardSpE (A : Species) (S : Bij) : #|A S| = cardSp A #|S|.
 Proof. exact: BijHom_eq_card (A # (@enum_rankBij S)). Qed.
 
 Definition SpSet (A : Species) (S : Bij) : predArgType :=
-  { I : {set S} & A { x : S | x \in I } }.
+  { I : {set S} & A (TinSet I) }.
 Lemma cardSp_set (A : Species) (T : Bij) (S : {set T}) :
   cardSp A #|S| = #|[set p : SpSet A T | tag p == S]|.
 Proof.
-pose TT : Bij := { x : T | x \in S }.
-have <- : #|TT| = #|S| by rewrite card_sigma.
-rewrite -cardSpE {}/TT.
-pose totag (x : A {x : T | x \in S}) : SpSet A T :=
-  Tagged (fun U : {set T} => A {x : T | x \in U}) x.
+rewrite -(card_TinSet S) -cardSpE.
+pose totag (x : A (TinSet S)) : SpSet A T :=
+  Tagged (fun U : {set T} => A (TinSet U)) x.
 have totag_inj : injective totag.
   by rewrite /totag=> x y /eqP /[!eq_Tagged] /= /eqP.
 rewrite -(card_imset _ totag_inj); congr #|pred_of_set _|.
@@ -156,7 +161,7 @@ End Cardinality.
 
 Section Localization.
 
-Definition setTB (T : Bij) : Bij := {x : T | x \in [set: T]} : Bij.
+Definition setTB (T : Bij) : Bij := TinSet [set: T] : Bij.
 
 Section Defs.
 Variable (T : Bij).
@@ -260,6 +265,8 @@ Proof. exact: card_SpDelta. Qed.
 Lemma cardSpX n : cardSp \X n = (n == 1%N).
 Proof. exact: card_SpDelta. Qed.
 
+Lemma SpDeltaE n S (x : SpDelta n S) : all_equal_to x.
+Proof. by apply: fintype_le1P; rewrite cardSpE card_SpDelta; case eqP. Qed.
 
 Section SumSpecies.
 
@@ -476,37 +483,39 @@ End Restriction.
 Section EqCast.
 
 Variable (T : Bij) (I J : {set T}) (eq : I = J).
-Definition Tin (X : {set T}) := el ({x : T | x \in X} : Bij).
 
-Definition cast_Tin (y : Tin I) : Tin J := ecast X (Tin X) eq y.
-Definition cast_TinV (y : Tin J) : Tin I := ecast X (Tin X) (esym eq) y.
+Definition cast_TinSet (y : el (TinSet I)) : el (TinSet J) :=
+  ecast X (TinSet X) eq y.
+Definition cast_TinSetV (y : el (TinSet J)) : el (TinSet I) :=
+  ecast X (TinSet X) (esym eq) y.
 
-Lemma cast_TinE y : \val (cast_Tin y) = \val y.
-Proof. by rewrite /cast_Tin; case: y => [x Hx] /=; case:_/eq. Qed.
-Lemma cast_TinVE y : \val (cast_TinV y) = \val y.
-Proof. by rewrite /cast_TinV; case: y => [x Hx] /=; case:_/(esym eq). Qed.
-Lemma cast_TinK : cancel cast_Tin cast_TinV.
-Proof. by move=> x; apply: val_inj; rewrite cast_TinVE cast_TinE. Qed.
-Lemma cast_TinVK : cancel cast_TinV cast_Tin.
-Proof. by move=> x; apply: val_inj; rewrite cast_TinE cast_TinVE. Qed.
-Fact cast_Tin_bij : bijective cast_Tin.
-Proof. exists cast_TinV; [exact: cast_TinK | exact: cast_TinVK]. Qed.
-Fact cast_TinV_bij : bijective cast_TinV.
-Proof. exists cast_Tin; [exact: cast_TinVK | exact: cast_TinK]. Qed.
-HB.instance Definition _ := BijHom.Build _ _ cast_Tin cast_Tin_bij.
-HB.instance Definition _ := BijHom.Build _ _ cast_TinV cast_TinV_bij.
+Lemma cast_TinSetE y : \val (cast_TinSet y) = \val y.
+Proof. by rewrite /cast_TinSet; case: y => [x Hx] /=; case:_/eq. Qed.
+Lemma cast_TinSetVE y : \val (cast_TinSetV y) = \val y.
+Proof. by rewrite /cast_TinSetV; case: y => [x Hx] /=; case:_/(esym eq). Qed.
+Lemma cast_TinSetK : cancel cast_TinSet cast_TinSetV.
+Proof. by move=> x; apply: val_inj; rewrite cast_TinSetVE cast_TinSetE. Qed.
+Lemma cast_TinSetVK : cancel cast_TinSetV cast_TinSet.
+Proof. by move=> x; apply: val_inj; rewrite cast_TinSetE cast_TinSetVE. Qed.
+Fact cast_TinSet_bij : bijective cast_TinSet.
+Proof. exists cast_TinSetV; [exact: cast_TinSetK | exact: cast_TinSetVK]. Qed.
+Fact cast_TinSetV_bij : bijective cast_TinSetV.
+Proof. exists cast_TinSet; [exact: cast_TinSetVK | exact: cast_TinSetK]. Qed.
+HB.instance Definition _ := BijHom.Build _ _ cast_TinSet cast_TinSet_bij.
+HB.instance Definition _ := BijHom.Build _ _ cast_TinSetV cast_TinSetV_bij.
 
-Definition cast_hom : {hom _ -> _} := cast_Tin.
-Definition cast_homV : {hom _ -> _} := cast_TinV.
+Definition cast_hom : {hom _ -> _} := cast_TinSet.
+Definition cast_homV : {hom _ -> _} := cast_TinSetV.
 
-Lemma Tagged_Tin_castE (x : Tin I) :
-  Tagged Tin x = Tagged Tin (ecast X (Tin X) eq x).
+Lemma Tagged_TinSet_castE (x : TinSet I) :
+  Tagged (@TinSet T) x = Tagged (@TinSet T) (ecast X (TinSet X) eq x).
 Proof. by move: x; subst I. Qed.
 
 End EqCast.
 
-Lemma Tagged_SpTin_castE (T : Bij) (I J : {set T}) (eq : I = J) (A : Species) x :
-  Tagged (fun S => A (Tin S)) ((A # cast_hom eq) x) = Tagged (fun S => A (Tin S)) x.
+Lemma Tagged_SpTinSet_castE (T : Bij) (I J : {set T}) (eq : I = J) (A : Species) x :
+  Tagged (fun S => A (TinSet S)) ((A # cast_hom eq) x) =
+    Tagged (fun S => A (TinSet S)) x.
 Proof.
 subst I => /=.
 have /functor_ext_hom -> /= : cast_hom (erefl J) =1 idfun by [].
@@ -516,17 +525,19 @@ Qed.
 
 Lemma restr_id (S : Bij) (I : {set S}) :
   restr_hom I [hom idfun] =1 cast_hom (esym (imset_id I)).
-Proof. by move=> x /=; apply val_inj; rewrite cast_TinE. Qed.
+Proof. by move=> x /=; apply val_inj; rewrite cast_TinSetE. Qed.
 Lemma restr_comp (S T U : Bij) (f : {hom S -> T}) (g : {hom T -> U}) (I : {set S}) :
   restr_hom _ g \o restr_hom I f
   =1 cast_hom (imset_comp g f I) \o restr_hom _ (g \o f).
-Proof. by move => x /=; apply val_inj; rewrite cast_TinE !val_restrE. Qed.
+Proof. by move => x /=; apply val_inj; rewrite cast_TinSetE !val_restrE. Qed.
 Lemma restr_ext (S T : Bij) (f g : {hom S -> T}) (I : {set S}) (eq_fg : f =1 g) :
   restr_hom I f =1 cast_hom (eq_imset _ (fsym eq_fg)) \o (restr_hom I g).
-Proof. by move => x /=; apply val_inj; rewrite !cast_TinE !val_restrE. Qed.
+Proof. by move => x /=; apply val_inj; rewrite !cast_TinSetE !val_restrE. Qed.
 
 
 Section ProductSpecies.
+
+Definition appSpSet (A : Species) {T : Bij} := fun (S : {set T}) => A (TinSet S).
 
 Variable A B : Species.
 
@@ -535,13 +546,13 @@ Variable (S : Bij).
 
 Record prodSpType : predArgType := MkProdSp {
                       seta : {set S};
-                      vala : A {x : S | x \in seta};
+                      vala : appSpSet A seta;
                       setb : {set S};
-                      valb : B {x : S | x \in setb};
+                      valb : appSpSet B setb;
                       prodsp_dijs : seta == ~: setb
                     }.
 Definition prodSpPair (x : prodSpType) : SpSet A S * SpSet B S :=
-  (Tagged (i := (seta x)) _ (vala x), Tagged (i := (setb x)) _ (valb x)).
+  (Tagged (appSpSet A) (vala x), Tagged (appSpSet B) (valb x)).
 Definition from_auxType (y : SpSet A S * SpSet B S) : option prodSpType :=
   let: (existT a xa, existT b xb) := y in
   match boolP (a == ~: b) with
@@ -557,6 +568,16 @@ Qed.
 HB.instance Definition _ := Finite.copy prodSpType (pcan_type prodSpPairK).
 Definition prodSpT : Bij := prodSpType.
 
+Lemma eq_prodSpP (i j : prodSpT) :
+  reflect
+    (Tagged (appSpSet A) (vala i) = Tagged (appSpSet A) (vala j) /\
+     Tagged (appSpSet B) (valb i) = Tagged (appSpSet B) (valb j))
+     (i == j).
+Proof.
+rewrite /eq_op /= /prodSpPair /= xpair_eqE.
+by apply (iffP andP) => [][]/eqP -> /eqP ->.
+Qed.
+
 End Elements.
 
 
@@ -570,34 +591,31 @@ Definition prodSp_fun S T (f : {hom[Bij] S -> T}) (x : el (prodSpT S : Bij))
        (prodSp_mor_subproof f x).
 Lemma prodSp_fun_id S : prodSp_fun (S := S) [hom idfun] =1 idfun.
 Proof.
-move=> [a va b vb eq] /=; rewrite /prodSp_fun /=.
-apply/eqP; rewrite eqE /= /prodSpPair /= {eq} -pair_eqE /=; apply/andP; split.
+move=> [a va b vb eq] /=; apply/eqP/eq_prodSpP; split.
 - have /= -> := functor_ext_hom A _ _ (restr_id (I := a)).
-  by rewrite /= Tagged_SpTin_castE.
+  by rewrite /= Tagged_SpTinSet_castE.
 - have /= -> := functor_ext_hom B _ _ (restr_id (I := b)).
-  by rewrite /= Tagged_SpTin_castE.
+  by rewrite /= Tagged_SpTinSet_castE.
 Qed.
 Lemma prodSp_fun_comp S T U (f : {hom[Bij] S -> T}) (g : {hom[Bij] T -> U}) :
   prodSp_fun g \o prodSp_fun f =1 prodSp_fun (g \o f).
 Proof.
-rewrite /prodSp_fun => [][a va b vb eq] /=.
-apply/eqP; rewrite eqE /= /prodSpPair /= {eq} -pair_eqE /=; apply/andP; split.
+rewrite /prodSp_fun => [][a va b vb eq] /=; apply/eqP/eq_prodSpP; split.
 - rewrite -[_ (_ va)]compapp -functor_o /=.
   have /= -> := functor_ext_hom A _ _ (restr_comp f g (I := a)).
-  by rewrite functor_o /= Tagged_SpTin_castE.
+  by rewrite functor_o /= Tagged_SpTinSet_castE.
 - rewrite -[_ (_ vb)]compapp -functor_o /=.
   have /= -> := functor_ext_hom B _ _ (restr_comp f g (I := b)).
-  by rewrite functor_o /= Tagged_SpTin_castE.
+  by rewrite functor_o /= Tagged_SpTinSet_castE.
 Qed.
 Lemma prodSp_fun_ext S T (f g : {hom[Bij] S -> T}) :
   f =1 g -> prodSp_fun f =1 prodSp_fun g.
 Proof.
-rewrite /prodSp_fun => eqfg [a va b vb eq] /=.
-apply/eqP; rewrite eqE /= /prodSpPair /= {eq} -pair_eqE /=; apply/andP; split.
+rewrite /prodSp_fun => eqfg [a va b vb eq] /=; apply/eqP/eq_prodSpP; split.
 - have /= -> := functor_ext_hom A _ _ (restr_ext eqfg).
-  by rewrite functor_o /= Tagged_SpTin_castE.
+  by rewrite functor_o /= Tagged_SpTinSet_castE.
 - have /= -> := functor_ext_hom B _ _ (restr_ext eqfg).
-  by rewrite functor_o /= Tagged_SpTin_castE.
+  by rewrite functor_o /= Tagged_SpTinSet_castE.
 Qed.
 
 Lemma prodSp_fun_bij S T (f : {hom[Bij] S -> T}) : bijective (prodSp_fun f).
@@ -704,3 +722,137 @@ by congr MkProdSp; apply: bool_irrelevance.
 Qed.
 
 End ProdSpeciesCommutative.
+
+
+Section ProdSpeciesZero.
+
+Variable (A : Species).
+
+Section Mor.
+Variable (S : Bij).
+Definition prodSp0_fun : el ((A * 0) S) -> el (0 S).
+by move=> [a va [f []]].
+Defined.
+Definition prodSp0_inv : el (0 S) -> el ((A * 0) S).
+by []. Defined.
+Lemma prodSp0_funK : cancel prodSp0_fun prodSp0_inv.
+Proof. by move=> [a va [f []]]. Qed.
+Lemma prodSp0_invK : cancel prodSp0_inv prodSp0_fun.
+Proof. by []. Qed.
+Fact prodSp0_fun_bij : bijective prodSp0_fun.
+Proof. exists prodSp0_inv; [exact: prodSp0_funK | exact: prodSp0_invK]. Qed.
+Fact prodSp0_inv_bij : bijective prodSp0_inv.
+Proof. exists prodSp0_fun; [exact: prodSp0_invK | exact: prodSp0_funK]. Qed.
+HB.instance Definition _ :=
+  @BijHom.Build ((A * 0) S) (0 S) prodSp0_fun prodSp0_fun_bij.
+HB.instance Definition _ :=
+  @BijHom.Build (0 S) ((A * 0) S) prodSp0_inv prodSp0_inv_bij.
+
+End Mor.
+Definition prodSp0  : A * 0 ~~> 0 := @prodSp0_fun.
+Definition prodSp0V : 0 ~~> A * 0 := @prodSp0_inv.
+
+Fact prodSp0_natural : naturality (A * 0) 0 prodSp0.
+Proof. by move=> S T h []. Qed.
+Fact prodSp0V_natural : naturality 0 (A * 0) prodSp0V.
+Proof. by move=> S T h []. Qed.
+HB.instance Definition _ :=
+  @isNatural.Build Bij Bij (A * 0) 0 prodSp0 prodSp0_natural.
+HB.instance Definition _ :=
+  @isNatural.Build Bij Bij 0 (A * 0) prodSp0V prodSp0V_natural.
+
+Definition prod0Sp : 0 * A ~> 0 := prodSp0 \v (prodSpC 0 A).
+Definition Prod0SpV : 0 ~> 0 * A := (prodSpC A 0) \v prodSp0V.
+
+End ProdSpeciesZero.
+
+
+Section ProdSpeciesOne.
+
+Lemma appSpSet1_card T (S : {set T}) : appSpSet 1 S -> #|S| = 0%N.
+Proof.
+rewrite /appSpSet /SpDelta /SpDelta_fun /= /SpDelta_fun card_TinSet.
+by case eqP.
+Qed.
+
+Section Mor.
+Variable (A : Species).
+Variable (S : Bij).
+
+Definition prodSp1_inv_def : el (A S) -> el ((A * 1) S).
+move=> x.
+pose a : A {x : S | x \in setT} := (A # toSetT S) x.
+have b : 1 {x : S | x \in set0}.
+  rewrite /SpDelta /= /SpDelta_fun card_TinSet cards0 eqxx.
+  exact tt.
+by apply: (MkProdSp a b _); rewrite setC0.
+Defined.
+Definition prodSp1_inv := locked prodSp1_inv_def.
+Lemma prodSp1_inv_inj : injective prodSp1_inv.
+Proof.
+rewrite /prodSp1_inv; unlock.
+have aux_lemma i : (A # toSetTV S) ((A # toSetT S) i) = i.
+  rewrite -![(A # _) _]compapp -!functor_o.
+  have /= ->:= functor_ext_hom A _ _ (@toSetTK S) i.
+  by rewrite NIdE !functor_id /=.
+move=> i j /eqP/eq_prodSpP [/[swap] _] /eqP.
+rewrite !eq_Tagged => /eqP /(congr1 (A # toSetTV S)) /=.
+by rewrite !aux_lemma.
+Qed.
+Lemma prodSp1_inv_bij : bijective prodSp1_inv.
+Proof.
+apply: (inj_card_bij prodSp1_inv_inj).
+rewrite !cardSpE card_prodSp.
+rewrite (bigD1 (Ordinal (ltnSn #|S|))) //= binn mul1n cardSp1 subnn eqxx muln1.
+rewrite big1 ?addn0 // => [i]; rewrite -val_eqE /= => /negbTE neqi.
+rewrite cardSp1 subn_eq0 leqNgt.
+have:= ltn_ord i; rewrite ltnS leq_eqVlt neqi /= => -> /=.
+by rewrite !muln0.
+Qed.
+HB.instance Definition _ :=
+  @BijHom.Build (A S) ((A * 1) S) prodSp1_inv prodSp1_inv_bij.
+Definition prodSp1_hom : {hom (A * 1) S -> A S} := inv_hom prodSp1_inv.
+Lemma prodSp1_homK : cancel prodSp1_hom prodSp1_inv.
+Proof. exact: inv_homK. Qed.
+Lemma prodSp1_invK : cancel prodSp1_inv prodSp1_hom.
+Proof. exact: isom_invK. Qed.
+End Mor.
+Definition prodSp1V (A : Species) : A ~~> A * 1 := @prodSp1_inv A.
+Definition prodSp1 (A : Species) : A * 1 ~~> A := @prodSp1_hom A.
+
+Lemma restr_hom_setTE (U V : Bij) (f : {hom U -> V}) :
+  restr_hom setT f \o toSetT U
+  =1 cast_TinSet (esym (imsetT (BijP f))) \o (toSetT V \o f).
+Proof. by move=> x; apply val_inj; rewrite cast_TinSetE. Qed.
+
+Fact prodSp1V_natural A : naturality A (A * 1) (prodSp1V A).
+Proof.
+move=> S T h x /=.
+apply/eqP/eq_prodSpP; split => /=.
+  rewrite /prodSp1_inv; unlock; rewrite /= -![(A # _) _]compapp -!functor_o /=.
+  have /= -> := functor_ext_hom A _ _ (restr_hom_setTE h).
+  by rewrite functor_o /= Tagged_SpTinSet_castE.
+have eq0 : h @: (setb (prodSp1_inv x)) = setb (prodSp1_inv ((A # h) x)).
+  by rewrite /prodSp1_inv; unlock; rewrite /= imset0.
+have /= <- := Tagged_SpTinSet_castE eq0 (A := 1).
+rewrite -[(1 # _) _]compapp -functor_o.
+apply/eqP; rewrite eq_Tagged /=; apply/eqP.
+apply SpDeltaE.
+Qed.
+Fact prodSp1_natural A : naturality (A * 1) A (prodSp1 A).
+Proof. exact: (natural_inv (@prodSp1V_natural A)). Qed.
+
+HB.instance Definition _ A :=
+  @isNatural.Build Bij Bij A (A * 1) (@prodSp1V A) (@prodSp1V_natural A).
+HB.instance Definition _ A :=
+  @isNatural.Build Bij Bij (A * 1) A (@prodSp1 A) (@prodSp1_natural A).
+
+Definition prod1Sp A : 1 * A ~> A := prodSp1 A \v prodSpC 1 A.
+Definition Prod1SpV A : A ~> 1 * A := prodSpC A 1 \v prodSp1V A.
+
+Lemma prodSp1K A : prodSp1V A \v prodSp1 A =%= NId (A * 1).
+Proof. exact: prodSp1_homK. Qed.
+Lemma prodSp1KV A : prodSp1 A \v prodSp1V A =%= NId A.
+Proof. exact: prodSp1_invK. Qed.
+
+End ProdSpeciesOne.
