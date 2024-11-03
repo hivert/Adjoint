@@ -154,6 +154,61 @@ Qed.
 End Cardinality.
 
 
+Section Localization.
+
+Definition setTB (T : Bij) : Bij := {x : T | x \in [set: T]} : Bij.
+
+Section Defs.
+Variable (T : Bij).
+Definition toSetT_fun (x : el T) : setTB T := exist _ x (in_setT x).
+Definition toSetT_inv (x : el (setTB T)) : T := \val x.
+Lemma toSetT_funK : cancel toSetT_fun toSetT_inv.
+Proof. by []. Qed.
+Lemma toSetT_invK : cancel toSetT_inv toSetT_fun.
+Proof. by move=> [x pf]; apply val_inj. Qed.
+Lemma toSetT_bij : bijective toSetT_fun.
+Proof. by exists toSetT_inv; [exact: toSetT_funK | exact: toSetT_invK]. Qed.
+Fact toSetT_inv_bij : bijective toSetT_inv.
+Proof. by exists toSetT_fun; [exact: toSetT_invK | exact: toSetT_funK]. Qed.
+HB.instance Definition _ :=
+  @BijHom.Build T (setTB T) toSetT_fun toSetT_bij.
+HB.instance Definition _ :=
+  @BijHom.Build (setTB T) T toSetT_inv toSetT_inv_bij.
+
+End Defs.
+
+Definition setTB_mor (T U : Bij) (f : {hom T -> U}) : {hom setTB T -> setTB U} :=
+  [hom @toSetT_fun U \o f \o @toSetT_inv T].
+Fact setTB_ext : FunctorLaws.ext setTB_mor.
+Proof. by move=> T U f g eq x; apply val_inj; rewrite /= eq. Qed.
+Fact setTB_id : FunctorLaws.id setTB_mor.
+Proof. by move=> T x; apply val_inj. Qed.
+Fact setTB_comp  : FunctorLaws.comp setTB_mor.
+Proof. by move=> /= T U V f g x; apply val_inj. Qed.
+HB.instance Definition _ := @isFunctor.Build Bij Bij setTB setTB_mor
+                              setTB_ext setTB_id setTB_comp.
+
+Definition toSetT : FId ~~> setTB := toSetT_fun.
+Definition toSetTV : setTB ~~> FId := toSetT_inv.
+Lemma toSetT_natural : naturality FId setTB toSetT.
+Proof. by []. Qed.
+Lemma toSetTV_natural : naturality setTB FId toSetTV.
+Proof. by []. Qed.
+HB.instance Definition _ :=
+  @isNatural.Build Bij Bij FId setTB toSetT toSetT_natural.
+HB.instance Definition _ :=
+  @isNatural.Build Bij Bij setTB FId toSetTV toSetTV_natural.
+
+Lemma toSetTK : toSetTV \v toSetT =%= NId FId.
+Proof. by move=> S x /=; rewrite toSetT_funK. Qed.
+Lemma toSetTVK : toSetT \v toSetTV =%= NId setTB.
+Proof. by move=> S x /=; rewrite toSetT_invK. Qed.
+
+End Localization.
+
+
+Section ZeroSpecies.
+
 Definition Sp0_fun := fun _ : Bij => voidB.
 Definition Sp0_mor (A B : Bij) (f : {hom[Bij] A -> B}) :
   {hom[Bij] voidB -> voidB} := idfun.
@@ -161,10 +216,11 @@ HB.instance Definition _ :=
   @isFunctor.Build Bij Bij Sp0_fun Sp0_mor
     (fun _ _ _ _ _ => frefl _) (fun _ => frefl _) (fun _ _ _ _ _ => frefl _).
 Definition Sp0 : Species := Sp0_fun.
-Notation "0" := Sp0 : species_scope.
-
-Lemma cardSp0 n : cardSp 0 n = 0%N.
+Lemma cardSp0 n : cardSp Sp0 n = 0%N.
 Proof. by rewrite /cardSp /= card_void. Qed.
+
+End ZeroSpecies.
+Notation "0" := Sp0 : species_scope.
 
 
 Section SpDelta.
