@@ -223,6 +223,52 @@ End ZeroSpecies.
 Notation "0" := Sp0 : species_scope.
 
 
+Section ifSpecies.
+Variable (A B : Species) (cond : pred nat).
+
+Local Notation ifAB c V := (if c then A V else B V).
+Definition ifSp_fun (S : Bij) : Bij := ifAB (cond #|S|) S.
+
+Section Hom.
+Variables (U V : Bij) (f : {isom[Bij] U -> V}).
+
+Definition ifSp_mor : el (ifSp_fun U) -> el (ifSp_fun V) :=
+  match esym (BijHom_eq_card f) in (_ = a)
+        return ifAB (cond a) U -> ifAB (cond #|V|) V
+  with erefl => if cond #|V| as b return ifAB b U -> ifAB b V
+                then A # f else B # f
+  end.
+Definition ifSp_inv : el (ifSp_fun V) -> el (ifSp_fun U) :=
+  match (BijHom_eq_card f) in (_ = a)
+        return ifAB (cond a) V -> ifAB (cond #|U|) U
+  with erefl => if cond #|U| as b return ifAB b V -> ifAB b U
+                then A # (inv_hom f) else B # (inv_hom f)
+  end.
+
+Lemma ifSp_morK : cancel ifSp_mor ifSp_inv.
+Proof.
+rewrite /ifSp_mor /ifSp_inv /ifSp_fun; case:_/(BijHom_eq_card f) => /=.
+by case: (cond #|U|) => x; rewrite -functor_inv_homE homK.
+Qed.
+Lemma ifSp_invK : cancel ifSp_inv ifSp_mor.
+Proof.
+rewrite /ifSp_mor /ifSp_inv /ifSp_fun; case:_/(BijHom_eq_card f) => /=.
+by case: (cond #|U|) => x; rewrite -functor_inv_homE inv_homK.
+Qed.
+Lemma ifSp_mor_bij : bijective ifSp_mor.
+Proof. exists ifSp_inv; [exact: ifSp_morK | exact: ifSp_invK]. Qed.
+Lemma ifSp_inv_bij : bijective ifSp_inv.
+Proof. exists ifSp_mor; [exact: ifSp_invK | exact: ifSp_morK]. Qed.
+HB.instance Definition _ :=
+  @BijHom.Build (ifSp_fun U) (ifSp_fun V) ifSp_mor ifSp_mor_bij.
+HB.instance Definition _ :=
+  @BijHom.Build (ifSp_fun V) (ifSp_fun U) ifSp_inv ifSp_inv_bij.
+
+End Hom.
+
+End ifSpecies.
+
+
 Section SpDelta.
 
 Variable (C : nat).
@@ -704,3 +750,128 @@ by congr MkProdSp; apply: bool_irrelevance.
 Qed.
 
 End ProdSpeciesCommutative.
+
+
+Section ProdSpeciesZero.
+
+Variable (A : Species).
+
+Section Mor.
+Variable (S : Bij).
+Definition prodSp0_fun : el ((A * 0) S) -> el (0 S).
+by move=> [a va [f []]].
+Defined.
+Definition prodSp0_inv : el (0 S) -> el ((A * 0) S).
+by []. Defined.
+Lemma prodSp0_funK : cancel prodSp0_fun prodSp0_inv.
+Proof. by move=> [a va [f []]]. Qed.
+Lemma prodSp0_invK : cancel prodSp0_inv prodSp0_fun.
+Proof. by []. Qed.
+Fact prodSp0_fun_bij : bijective prodSp0_fun.
+Proof. exists prodSp0_inv; [exact: prodSp0_funK | exact: prodSp0_invK]. Qed.
+Fact prodSp0_inv_bij : bijective prodSp0_inv.
+Proof. exists prodSp0_fun; [exact: prodSp0_invK | exact: prodSp0_funK]. Qed.
+HB.instance Definition _ :=
+  @BijHom.Build ((A * 0) S) (0 S) prodSp0_fun prodSp0_fun_bij.
+HB.instance Definition _ :=
+  @BijHom.Build (0 S) ((A * 0) S) prodSp0_inv prodSp0_inv_bij.
+
+End Mor.
+Definition prodSp0  : A * 0 ~~> 0 := @prodSp0_fun.
+Definition prodSp0V : 0 ~~> A * 0 := @prodSp0_inv.
+
+Fact prodSp0_natural : naturality (A * 0) 0 prodSp0.
+Proof. by move=> S T h []. Qed.
+Fact prodSp0V_natural : naturality 0 (A * 0) prodSp0V.
+Proof. by move=> S T h []. Qed.
+HB.instance Definition _ :=
+  @isNatural.Build Bij Bij (A * 0) 0 prodSp0 prodSp0_natural.
+HB.instance Definition _ :=
+  @isNatural.Build Bij Bij 0 (A * 0) prodSp0V prodSp0V_natural.
+
+Definition prod0Sp : 0 * A ~> 0 := prodSp0 \v (prodSpC 0 A).
+Definition Prod0SpV : 0 ~> 0 * A := (prodSpC A 0) \v prodSp0V.
+
+End ProdSpeciesZero.
+
+
+Section ProdpeciesOne.
+Variable (A : Species).
+
+Section Mor.
+Variable (S : Bij).
+Definition prodSp1_fun : el ((A * 1) S) -> el (A S).
+move=> [a va b /=]; rewrite /SpDelta_fun.
+case: eqP => [ceq0 _ /eqP eq| _[]].
+move: ceq0 eq; rewrite card_sigma => /cards0_eq ->{b} /[!setC0] eq; subst a.
+exact: ((A # toSetTV S) va).
+Defined.
+Definition prodSp1_inv : el (A S) -> el ((A * 1) S).
+move=> x.
+pose a : A {x : S | x \in setT} := (A # toSetT S) x.
+have b : 1 {x : S | x \in set0}.
+  rewrite /SpDelta /= /SpDelta_fun card_sigma cards0 eqxx.
+  exact tt.
+by apply: (MkProdSp a b _); rewrite setC0.
+Defined.
+Lemma prosSp1_inv_inj : injective prodSp1_inv.
+Proof.
+move=> i j /eqP; rewrite /eq_op /= /prodSp1_fun /=.
+rewrite xpair_eqE => /andP[]; rewrite /= !eq_Tagged /= => /[swap] _ /eqP.
+move=> /(congr1 (A # toSetTV S)).
+have /= := functor_ext_hom A _ _ (@toSetTK S).
+rewrite -![(A # _) _]compapp -!functor_o /vcomp => eq.
+by rewrite !{}eq /unnattrans_id !functor_id /=.
+Qed.
+
+
+Let prodSp1_funK : cancel prodSp1_fun prodSp1_inv.
+Proof.
+move=> x; apply/eqP; rewrite /eq_op /= /prodSpPair /=.
+rewrite xpair_eqE; apply/andP; split => /=.
+  
+rewrite /= eq_Tagged.
+tagged_asE.
+move=> [a sa b]; rewrite /SpDelta /= /SpDelta_fun.
+case (boolP (#|{x : S | x \in b}: Bij| == 0%N)).
+move/eqP ->.
+sb eq]; rewrite /=. /prodSp1_inv /=.
+by case => [|[]]. Qed.
+Let prodSp1_invK : cancel prodSp1_inv prodSp1_fun.
+Proof. by []. Qed.
+Fact prodSp1_fun_bij : bijective prodSp1_fun.
+Proof. by exists prodSp1_inv. Qed.
+Fact prodSp1_inv_bij : bijective prodSp1_inv.
+Proof. by exists prodSp1_fun. Qed.
+HB.instance Definition _ :=
+  @BijHom.Build ((A * 1) S) (A S) prodSp1_fun prodSp1_fun_bij.
+HB.instance Definition _ :=
+  @BijHom.Build (A S) ((A * 1) S) prodSp1_inv prodSp1_inv_bij.
+
+End Mor.
+Definition prodSp1  : A * 1 ~~> A := @prodSp1_fun.
+Definition prodSp1V : A ~~> A * 1 := @prodSp1_inv.
+
+Fact prodSp1_natural : naturality (A * 1) A prodSp1.
+Proof. by move=> S T h []. Qed.
+Fact prodSp1V_natural : naturality A (A * 1) prodSp1V.
+Proof. by []. Qed.
+HB.instance Definition _ :=
+  @isNatural.Build Bij Bij (A * 1) A prodSp1 prodSp1_natural.
+HB.instance Definition _ :=
+  @isNatural.Build Bij Bij A (A * 1) prodSp1V prodSp1V_natural.
+
+Lemma prodSp1K : prodSp1V \v prodSp1 =%= NId (A * 1).
+Proof. by move=> S []. Qed.
+Lemma prodSp1VK : prodSp1 \v prodSp1V =%= NId A.
+Proof. by []. Qed.
+
+Definition Sum0Sp : 0 + A ~> A := prodSp1 \v (sumSpC 0 A).
+Definition Sum0SpV : A ~> 0 + A := (sumSpC A 0) \v prodSp1V.
+
+Lemma Sum0SpK : Sum0SpV \v Sum0Sp =%= NId (0 + A).
+Proof. by move=> S []. Qed.
+Lemma Sum0SpVK : Sum0Sp \v Sum0SpV =%= NId A.
+Proof. by []. Qed.
+
+End SumSpeciesZero.
