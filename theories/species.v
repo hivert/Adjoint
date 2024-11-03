@@ -26,13 +26,12 @@ Lemma imsetCE : bijective f -> [set f y | y in ~: I] =  ~: [set f i | i in I].
 Proof.
 move=> f_bij.
 apply/setP => y; rewrite inE.
-(* apply/imsetP/(negPP imsetP) => [[x /[swap] ->{y}] |]. *)
-apply/imsetP/idP => [[x /[swap] ->{y}] |].
-  by rewrite inE; apply contra => /imsetP[z z_in_I/(bij_inj f_bij)->].
-move: f_bij => [g fK gK] y_notin.
+apply/imsetP/(negPP imsetP) => [[x /[swap] ->{y}] |].
+  by rewrite inE => /[swap] [[z z_in_I /(bij_inj f_bij)-> /[!z_in_I]]].
+move: f_bij => [g fK gK] nex.
 exists (g y); last by rewrite gK.
-move: y_notin; rewrite inE; apply contra => gy_in_i.
-by apply/imsetP; exists (g y); last by rewrite gK.
+rewrite inE; apply/negP => gy_in_i; apply: nex.
+by exists (g y); last rewrite gK.
 Qed.
 
 End SSRCompl.
@@ -117,6 +116,14 @@ Definition Species := {functor Bij -> Bij}.
 
 Section Cardinality.
 
+Lemma card_sigma (T : Bij) (S : {set T}) :
+  #|{x : T | x \in S} : Bij| = #|S|.
+Proof.
+rewrite -[LHS](card_imset _ val_inj); congr #|pred_of_set _|.
+apply/setP => x; apply/imsetP/idP => [[/= [y y_in_S] _ ->] // | x_in_S].
+by exists (exist _ x x_in_S).
+Qed.
+
 HB.instance Definition _ (S : Bij) :=
   BijHom.Build _ _ (@enum_rank S : el S -> el ('I_#|S| : Bij)) (@enum_rank_bij S).
 Definition enum_rankBij (S : Bij) : {hom[Bij] S -> 'I_#|S|} :=
@@ -132,10 +139,7 @@ Lemma cardSp_set (A : Species) (T : Bij) (S : {set T}) :
   cardSp A #|S| = #|[set p : SpSet A T | tag p == S]|.
 Proof.
 pose TT : Bij := { x : T | x \in S }.
-have <- : #|TT| = #|S|.
-  rewrite -[LHS](card_imset _ val_inj); congr #|pred_of_set _|.
-  apply/setP => x; apply/imsetP/idP => [[/= [y y_in_S] _ ->] // | x_in_S].
-  by exists (exist _ x x_in_S).
+have <- : #|TT| = #|S| by rewrite card_sigma.
 rewrite -cardSpE {}/TT.
 pose totag (x : A {x : T | x \in S}) : SpSet A T :=
   Tagged (fun U : {set T} => A {x : T | x \in U}) x.
