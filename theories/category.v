@@ -124,6 +124,7 @@ Arguments isCategory.phant_Build : clear implicits.
 HB.structure Definition Category := {C of isCategory C}.
 Arguments idhom {C a} : rename.
 Arguments homapp {C a b} (f) : rename.
+Coercion homapp : hom >-> Funclass.
 Arguments comphom {C a b c} (f g) : rename.
 
 Notation "{ 'hom' U -> V }" := (@hom _ U V) : category_scope.
@@ -131,23 +132,20 @@ Notation "{ 'hom' '[' C ']' U '->' V }" := (@hom C U V)
   (only parsing) : category_scope.
 Notation "g '\O' f" := (comphom g f).
 
-Definition eqhom C a b (f g : {hom[C] a -> b}) := homapp f =1 homapp g.
-Notation "f =1= g" := (eqhom f g).
-
 Section category_lemmas.
 Variables (C : category) (a b c d : C).
 
 Lemma homcompA (h : {hom c -> d}) (g : {hom b -> c}) (f : {hom a -> b}) :
-  (h \O g) \O f =1= h \O (g \O f).
+  (h \O g) \O f =1 h \O (g \O f).
 Proof. by move=> x; repeat rewrite !comphomapp /=. Qed.
 
 Lemma hom_compE (g : {hom b -> c}) (f : {hom a -> b}) x :
-  homapp g (homapp f x) = homapp (g \O f) x.
+  g (f x) = (g \O f) x.
 Proof. by rewrite !comphomapp. Qed.
 
-Lemma comphomid (f : {hom a -> b}) : f \O idhom =1= f.
+Lemma comphomid (f : {hom a -> b}) : f \O idhom =1 f.
 Proof. by move=> x; repeat rewrite !(comphomapp, idhomapp) /=. Qed.
-Lemma compidhom (f : {hom a -> b}) : idhom \O f =1= f.
+Lemma compidhom (f : {hom a -> b}) : idhom \O f =1 f.
 Proof. by move=> x; repeat rewrite !(comphomapp, idhomapp) /=. Qed.
 
 End category_lemmas.
@@ -173,26 +171,26 @@ Definition hom_of_eq (a b : C) (p : a = b) : {hom a -> b} :=
 
 (* F for factorization *)
 Lemma transport_domF (a a' b : C) (p : a = a') (f : {hom a -> b}) :
-  transport_dom p f =1= f \O (hom_of_eq (esym p)).
+  transport_dom p f =1 f \O hom_of_eq (esym p).
 Proof. by subst a' => x /=; rewrite !(comphomapp, idhomapp) /= idhomapp. Qed.
 Lemma transport_codomF (a b b' : C) (p : b = b') (f : {hom a -> b}) :
-  transport_codom p f =1= hom_of_eq p \O f.
+  transport_codom p f =1 hom_of_eq p \O f.
 Proof. by subst b' => x /=; rewrite !(comphomapp, idhomapp) /= idhomapp. Qed.
 Lemma transport_homF (a a' b b' : C) (pa : a = a') (pb : b = b') (f : {hom a -> b}) :
-  homapp (transport_hom pa pb f) =1 homapp (hom_of_eq pb \O f \O hom_of_eq (esym pa)).
+  transport_hom pa pb f =1 hom_of_eq pb \O f \O hom_of_eq (esym pa).
 Proof. by subst a' b' => x /=; repeat rewrite !(comphomapp, idhomapp) /=. Qed.
 
 Lemma transport_homE (a a' b b' : C) (pa : a = a') (pb : b = b')
   (f g : {hom a -> b}) :
-  f =1= g -> transport_hom pa pb f =1= transport_hom pa pb g.
+  f =1 g -> transport_hom pa pb f =1 transport_hom pa pb g.
 Proof. by subst a b. Qed.
 Lemma transport_hom_inj (a a' b b' : C) (pa : a = a') (pb : b = b')
   (f g : {hom a -> b}) :
-  transport_hom pa pb f =1= transport_hom pa pb g -> f =1= g.
+  transport_hom pa pb f =1 transport_hom pa pb g -> f =1 g.
 Proof. by subst a b. Qed.
 Lemma transport_hom_trans (a a' a'' b b' b'' : C)
   (pa : a = a') (pa' : a' = a'') (pb : b = b') (pb' : b' = b'') (f : {hom a -> b}) :
-  (transport_hom pa' pb' \o transport_hom pa pb) f =1=
+  (transport_hom pa' pb' \o transport_hom pa pb) f =1
     transport_hom (eq_trans pa pa') (eq_trans pb pb') f.
 Proof. by subst a a' b b'. Qed.
 
@@ -204,10 +202,10 @@ Section def.
 Variable (C D : category).
 Variable (F : C -> D) (actm : forall a b, {hom a -> b} -> {hom F a -> F b}).
 Definition ext := forall a b (f g : {hom a -> b}),
-    f =1= g -> actm f =1= actm g.
-Definition id := forall a, actm (@idhom _ a) =1= idhom.
+    f =1 g -> actm f =1 actm g.
+Definition id := forall a, actm (@idhom _ a) =1 idhom.
 Definition comp := forall a b c (g : {hom b -> c}) (h : {hom a -> b}),
-    actm (g \O h) =1= actm g \O actm h.
+    actm (g \O h) =1 actm g \O actm h.
 End def.
 End FunctorLaws.
 
@@ -234,23 +232,23 @@ Record eq_functor (C D : category)
   (F : {functor C -> D}) (G : {functor C -> D}) : Prop := EqFunctor {
     pm : F =1 G;
     eq_transport : forall (A B : C) (f : {hom A  -> B}),
-      transport_hom (pm A) (pm B) (F # f) =1= G # f
+      transport_hom (pm A) (pm B) (F # f) =1 G # f
   }.
 Notation "F =#= G" := (eq_functor F G).
 
 Section functor_lemmas.
 Variables (C D : category) (F : {functor C -> D}).
 
-Lemma functor_id a : F # (@idhom _ a) =1= idhom.
+Lemma functor_id a : F # (@idhom _ a) =1 idhom.
 Proof. by move=> x; rewrite functor_id_hom. Qed.
 
 Lemma functor_o a b c (g : {hom b -> c}) (h : {hom a -> b}) :
-  F # (g \O h) =1= F # g \O F # h.
+  F # (g \O h) =1 F # g \O F # h.
 Proof. by move=> fa; rewrite functor_comp_hom. Qed.
 
 Lemma functor_ext (G : {functor C -> D}) (eq : F =1 G) :
   (forall (A B : C) (f : {hom A -> B}),
-      transport_hom (eq A) (eq B) (F # f) =1= G # f) -> F =#= G.
+      transport_hom (eq A) (eq B) (F # f) =1 G # f) -> F =#= G.
 Proof. exact: EqFunctor. Qed.
 
 End functor_lemmas.
@@ -299,7 +297,7 @@ Variable C D : category.
 Lemma functor_o_head (a b c : C)
   (g : {hom b -> c}) (h : {hom a -> b}) d (F : {functor C -> D})
     (k : {hom d -> F a}) :
-  (F # (g \O h)) \O k =1= [\O F # g, F # h, k].
+  (F # (g \O h)) \O k =1 [\O F # g, F # h, k].
 Proof.
 by move=> x /=; repeat rewrite !(comphomapp, idhomapp, functor_comp_hom) /=.
 Qed.
@@ -361,7 +359,7 @@ Section functorcomposition_lemmas.
 Variables (C0 C1 C2 C3 : category).
 
 Lemma FCompE (F : {functor C1 -> C2}) (G : {functor C0 -> C1}) a b (k : {hom a -> b}) :
-  (F \O# G) # k =1= F # (G # k).
+  (F \O# G) # k =1 F # (G # k).
 Proof. by []. Qed.
 
 Lemma FCompId (F : {functor C0 -> C1}) : F \O# FId =#= F.
@@ -408,7 +406,7 @@ End functor_inv_hom.
 
 Notation "F ~~> G" := (forall a, {hom F a -> G a}) : category_scope.
 Definition naturality (C D : category) (F G : {functor C -> D}) (f : F ~~> G) :=
-  forall (a b : C) (h : {hom a -> b}), (G # h) \O (f a) =1= (f b) \O (F # h).
+  forall (a b : C) (h : {hom a -> b}), (G # h) \O (f a) =1 (f b) \O (F # h).
 Arguments naturality [C D].
 HB.mixin Record isNatural
     (C D : category) (F G : {functor C -> D}) (f : F ~~> G) :=
@@ -426,7 +424,7 @@ Import comps_notation.
 Variables (C D : category) (F G : {functor C -> D}).
 
 Lemma natural_head (phi : F ~> G) a b c (h : {hom a -> b}) (f : {hom c -> F a}) :
-  [\O G # h, phi a, f] =1= [\O phi b, F # h, f].
+  [\O G # h, phi a, f] =1 [\O phi b, F # h, f].
 Proof.
 move=> x; repeat rewrite !comphomapp /=.
 case: phi => [t [[]]] /=; rewrite /naturality /= => /(_ _ _ h (homapp f x)).
@@ -434,7 +432,7 @@ by repeat rewrite !comphomapp /=.
 Qed.
 
 Definition eq_nattrans (phi psi : F ~> G) :=
-  forall a : C, (phi a =1= psi a).
+  forall a : C, (phi a =1 psi a).
 Notation "p =%= q" := (eq_nattrans p q).
 
 Lemma eq_nattrans_refl (phi : F ~> G) : phi =%= phi.
@@ -458,7 +456,7 @@ Fact natural_id : naturality _ _ unnattrans_id.
 Proof. by move=> a b h x; repeat rewrite !(comphomapp, idhomapp) /=. Qed.
 HB.instance Definition _ := isNatural.Build C D F F unnattrans_id natural_id.
 Definition NId : F ~> F := [the _ ~> _ of unnattrans_id].
-Lemma NIdE a : NId a =1= @idhom _ (F a).
+Lemma NIdE a : NId a =1 @idhom _ (F a).
 Proof. by []. Qed.
 End id_natural_transformation.
 
@@ -471,7 +469,7 @@ Variables (C D : category) (F G : {functor C -> D}).
 Variable (Iobj : forall c, F c = G c).
 Local Notation tc := (transport_codom (Iobj _)).
 Local Notation td := (transport_dom (esym (Iobj _))).
-Variable (Imor : forall a b (f : {hom a -> b}), tc (F # f) =1= td (G # f)).
+Variable (Imor : forall a b (f : {hom a -> b}), tc (F # f) =1 td (G # f)).
 (* tc (F # f) and td (G # f) : {hom F a -> G b}) *)
 Definition f : F ~~> G := fun (c : C) => tc idhom.
 
@@ -493,7 +491,7 @@ Module Exports.
 Arguments n [C D] : simpl never.
 Notation NEq := n.
 Lemma NEqE (C D : category) (F G : {functor C -> D}) Iobj Imor a :
-  ((@NEq C D F G Iobj Imor a) : {hom (F a) -> (G a)}) =1=
+  ((@NEq C D F G Iobj Imor a) : {hom (F a) -> (G a)}) =1
   transport_codom (Iobj _) (@idhom _ (F a)).
 Proof. by []. Qed.
 End Exports.
@@ -563,7 +561,7 @@ Definition hcomp : F' \O# F ~~> G' \O# G := fun (c : C) => t (G c) \O F' # s c.
 Fact natural_hcomp : naturality (F' \O# F) (G' \O# G) hcomp.
 Proof.
 move=> c0 c1 h x; rewrite /hcomp.
-have := natural t _ _ (G # h) (homapp (F' # s c0) x).
+have := natural t _ _ (G # h) ((F' # s c0) x).
 repeat rewrite !(comphomapp) /=.
 move=> ->; congr homapp.
 rewrite -[RHS]compapp -[LHS]compapp -!comphomapp.
@@ -577,7 +575,6 @@ Definition HComp : F' \O# F ~> G' \O# G := [the _ ~> _ of hcomp].
 End horizontal_composition.
 Notation "f \h g" := (locked (HComp g f)).
 
-(*** Stopped here *)
 
 Section hcomp_extensionality_lemmas.
 
@@ -585,13 +582,14 @@ Variables (C D E : category) (F G : {functor C -> D}) (F' G' : {functor D -> E})
 Variables (s : F ~> G) (t : F' ~> G').
 
 Lemma HCompE_def : t \h s = HComp s t. Proof. by unlock. Qed.
-Lemma HCompE c : (t \h s) c = t (G c) \o F' # s c :> (_ -> _).
-Proof. by unlock. Qed.
-Lemma HCompE_alt c : (t \h s) c =1 G' # (s c) \o t (F c) :> (_ -> _).
+Lemma HCompE c : (t \h s) c =1 t (G c) \O F' # s c.
+Proof. by rewrite HCompE_def. Qed.
+Lemma HCompE_alt c : (t \h s) c =1 G' # (s c) \O t (F c) :> (_ -> _).
 Proof. by move=> x; rewrite HCompE natural. Qed.
 
 End hcomp_extensionality_lemmas.
 
+(*** Stopped here *****************************************************)
 
 Section hcomp_id_assoc_lemmas.
 
