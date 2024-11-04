@@ -66,4 +66,11 @@ Here are some difficulties encountered during the development process:
   such as 20s for the QED of
   https://github.com/hivert/Adjoint/blob/55353be6bbf1e8e086ee9cf977844a9cb67fb40d/theories/algcat.v#L2545-L2552
 
+- It is not clear whether morphisms should be function as they are now or more
+  enriched objects which map to function such as ({linear a -> b}) see
+  https://github.com/hivert/Adjoint/tree/morphism for a tentative.
+
+- This formalisation of categories seem to allows formalisation of
+  [Combinatorial Species](https://en.wikipedia.org/wiki/Combinatorial_species).
+
 I'll add more comment if I think of some.
