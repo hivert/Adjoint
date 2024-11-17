@@ -644,7 +644,7 @@ Proof. exact: (functor_ext (eq := fun=> _)). Qed.
 
 Fact comp_is_monmorphism_fun (a b c : monoidType) (f : a -> b) (g : b -> c) :
   monmorphism f -> monmorphism g -> monmorphism (g \o f).
-Proof. by move=> fM gM; split => [x y|]; rewrite /= fM gM. Qed.
+Proof. by move=> fM gM; split => [|x y]; rewrite /= fM gM. Qed.
 HB.instance Definition _ :=
   isCategory.Build monoidType (fun T : monoidType => T)
     monmorphism idfun_is_monmorphism comp_is_monmorphism_fun.
@@ -708,7 +708,7 @@ Lemma hom_FreeMonoidE (s : {freemon a}) :
   hom_FreeMonoid s = \prod_(i <- s) [fmon f i].
 Proof. by elim: s => [//=| s0 s /= ->]; rewrite ?big_nil ?big_cons. Qed.
 Lemma hom_FreeMonoid_monmorphism : monmorphism hom_FreeMonoid.
-Proof. by rewrite /hom_FreeMonoid; split => [/= x y| //]; rewrite map_cat. Qed.
+Proof. by rewrite /hom_FreeMonoid; split => [// | /= x y]; rewrite map_cat. Qed.
 
 End FreeMonoid.
 
@@ -745,7 +745,7 @@ HB.instance Definition _ :=
 Definition eps_fun T (m : (FreeMonoid \o forget_Monoids_to_Sets) T) : T :=
       \prod_(i <- m : {freemon _}) i.
 Fact eps_fun_monmorphism T : monmorphism (@eps_fun T).
-Proof. by rewrite /eps_fun; split => [s t |]; rewrite ?big_nil ?big_cat. Qed.
+Proof. by rewrite /eps_fun; split => [|s t]; rewrite ?big_nil ?big_cat. Qed.
 HB.instance Definition _ T :=
   isHom.Build Monoids ((FreeMonoid \o forget_Monoids_to_Sets) T) (FId T)
     (@eps_fun T) (@eps_fun_monmorphism T).
@@ -962,9 +962,9 @@ Let commonoid_of_nmod_mor : (ComMonoid_of_NMod M) -> (ComMonoid_of_NMod N) :=
 
 Fact commonoid_of_nmod_mor_monmorphism : monmorphism commonoid_of_nmod_mor.
 Proof.
-rewrite /commonoid_of_nmod_mor; split => /= [x y /=|].
-  by rewrite -commonoid_of_nmodD -(additive_of_NmodE f) -raddfD.
-by rewrite commonoid_of_nmod0 -(additive_of_NmodE f) raddf0.
+rewrite /commonoid_of_nmod_mor; split => /= [|x y].
+  by rewrite commonoid_of_nmod0 -(additive_of_NmodE f) raddf0.
+by rewrite -commonoid_of_nmodD -(additive_of_NmodE f) -raddfD.
 Qed.
 HB.instance Definition _ :=
   isHom.Build ComMonoids (ComMonoid_of_NMod M) (ComMonoid_of_NMod N)
@@ -1010,18 +1010,18 @@ Fact isoCM_invK : cancel isoCM_inv isoCM_map.
 Proof. by []. Qed.
 Fact isoCM_monmorphism : monmorphism isoCM_map.
 Proof.
-split => [x y |].
-  by rewrite -{1}(isoCM_mapK x) -{1}(isoCM_mapK y).
-by rewrite commonoid_of_nmod0 nmod_of_commonoid1.
+split => [|x y].
+  by rewrite commonoid_of_nmod0 nmod_of_commonoid1.
+by rewrite -{1}(isoCM_mapK x) -{1}(isoCM_mapK y).
 Qed.
 HB.instance Definition _ :=
   isHom.Build ComMonoids (CM M) M isoCM_map isoCM_monmorphism.
 
 Fact isoCM_inv_monmorphism : monmorphism isoCM_inv.
 Proof.
-rewrite /isoCM_inv; split => [x y |] /=.
-  by rewrite nmod_of_commonoidM commonoid_of_nmodD.
-by rewrite commonoid_of_nmod0 nmod_of_commonoid1.
+rewrite /isoCM_inv; split => [|x y ] /=.
+  by rewrite commonoid_of_nmod0 nmod_of_commonoid1.
+by rewrite nmod_of_commonoidM commonoid_of_nmodD.
 Qed.
 HB.instance Definition _ :=
   isIsom.Build ComMonoids (CM M) M isoCM_map

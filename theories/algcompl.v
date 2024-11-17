@@ -168,7 +168,7 @@ HB.end.
 
 
 Definition monmorphism (R S : monoidType) (f : R -> S) : Prop :=
-  {morph f : x y / x * y} * (f 1 = 1).
+  (f 1 = 1) * {morph f : x y / x * y}.
 
 HB.mixin Record isMonMorphism (R S : monoidType) (f : R -> S) := {
   monmorphism_subproof : monmorphism f
@@ -204,7 +204,7 @@ Proof. by elim: n => [|n IHn] x; rewrite ?mmorph1 // !expmS mmorphM IHn. Qed.
 Lemma can2_mmorphism f' : cancel f f' -> cancel f' f -> monmorphism f'.
 Proof.
 move=> fK f'K.
-by split=> [x y|]; apply: (canLR fK); rewrite /= (mmorphM, mmorph1) ?f'K.
+by split=> [|x y]; apply: (canLR fK); rewrite /= (mmorphM, mmorph1) ?f'K.
 Qed.
 
 End Properties.
@@ -221,7 +221,7 @@ HB.instance Definition _ := isMonMorphism.Build R R idfun
   idfun_is_monmorphism.
 
 Fact comp_is_monmorphism : monmorphism (f \o g).
-Proof. by split=> [x y|] /=; rewrite ?mmorph1 ?mmorphM. Qed.
+Proof. by split=> [|x y] /=; rewrite ?mmorph1 ?mmorphM. Qed.
 #[export]
 HB.instance Definition _ := isMonMorphism.Build R T (f \o g)
   comp_is_monmorphism.
@@ -297,7 +297,7 @@ Variable (R S : semiRingType) (f : {rmorphism R -> S}).
 Definition multMon_mor (r : multMon R) : multMon S := to_multMon (f (val r)).
 Fact multMon_mor_monmorphism : monmorphism multMon_mor.
 Proof.
-rewrite /multMon_mor; split; last by rewrite !monE /= rmorph1.
+rewrite /multMon_mor; split; first by rewrite !monE /= rmorph1.
 by move=> x y; rewrite !monME rmorphM.
 Qed.
 HB.instance Definition _ :=
