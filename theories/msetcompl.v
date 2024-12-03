@@ -12,6 +12,7 @@ Unset Printing Implicit Defensive.
 
 Import GRing.Theory.
 
+
 Section FSFunComplement.
 
 Variables (K : choiceType) (R : eqType) (z : R) (M : Type).
@@ -92,7 +93,7 @@ Fact addfm_key : unit. Proof. exact: tt. Qed.
 Definition addfm f g : {freemod R[T]} :=
   [fm[addfm_key] x in finsupp f `|` finsupp g => f x + g x].
 
-Lemma addfmE f g x : addfm f g x = f x + g x.
+Lemma fmD f g x : addfm f g x = f x + g x.
 Proof.
 rewrite fsfun_fun in_fsetU.
 case: (finsuppP f); case: (finsuppP g) => _ _ //=.
@@ -100,11 +101,11 @@ by rewrite addr0.
 Qed.
 
 Fact addfmA : associative addfm.
-Proof. by move=> f g h; apply/fsfunP => x; rewrite !addfmE addrA. Qed.
+Proof. by move=> f g h; apply/fsfunP => x; rewrite !fmD addrA. Qed.
 Fact addfmC : commutative addfm.
-Proof. by move=> f g; apply/fsfunP => x; rewrite !addfmE addrC. Qed.
+Proof. by move=> f g; apply/fsfunP => x; rewrite !fmD addrC. Qed.
 Fact add0fm : left_id [fsfun with 0] addfm.
-Proof. by move=> f; apply/fsfunP => x; rewrite addfmE /= fsfun0E add0r. Qed.
+Proof. by move=> f; apply/fsfunP => x; rewrite fmD /= fsfun0E add0r. Qed.
 HB.instance Definition _ :=
   GRing.isNmodule.Build {freemod R[T]} addfmA addfmC add0fm.
 
@@ -170,7 +171,7 @@ Proof. by rewrite fsfun_fun; case: (finsuppP f) => //=; rewrite oppr0. Qed.
 
 Fact addNfm : left_inverse 0%R oppfm (+%R)%R.
 Proof.
-by move=> f; apply/fsfunP => x; rewrite addfmE oppfmE addNr fsfun0E.
+by move=> f; apply/fsfunP => x; rewrite fmD oppfmE addNr fsfun0E.
 Qed.
 HB.instance Definition _ :=
   GRing.Nmodule_isZmodule.Build {freemod R[T]} addNfm.
@@ -208,12 +209,12 @@ Proof. by move=> f; apply/fsfunP => x; rewrite !scalefmE mul1r. Qed.
 Fact scalefmDr : right_distributive scalefm +%R.
 Proof.
 move=> a f g; apply/fsfunP => x.
-by rewrite !(addfmE, scalefmE) /= mulrDr.
+by rewrite !(fmD, scalefmE) /= mulrDr.
 Qed.
 Fact scalefmDl f : {morph scalefm^~ f: a b / (a + b)%R}.
 Proof.
 move=> a b; apply/fsfunP => x.
-by rewrite !(addfmE, scalefmE) /= mulrDl.
+by rewrite !(fmD, scalefmE) /= mulrDl.
 Qed.
 
 HB.instance Definition _ :=
@@ -231,12 +232,18 @@ Qed.
 Lemma fmcZE x c d : c *: [fm / x |-> d] = [fm / x |-> c * d].
 Proof. by rewrite -fm1ZE scalerA fm1ZE. Qed.
 
+Lemma linear_fm_scaleE (V : zmodType) (s1 s2 : GRing.Scale.law R V)
+  (f : {linear {freemod R[T]} -> V | s1})
+  (g : {linear {freemod R[T]} -> V | s2}) :
+  (s1 =2 s2) -> (forall x : T, f [fm / x |-> 1] = g [fm / x |-> 1]) -> f =1 g.
+Proof.
+move=> eqs eqfg m; rewrite -(fmE m) !linear_sum; apply eq_bigr=> x _.
+by rewrite -fm1ZE !linearZ_LR eqs eqfg.
+Qed.
+
 Lemma linear_fmE (M : lmodType R) (f g : {linear {freemod R[T]} -> M}) :
   (forall x : T, f [fm / x |-> 1] = g [fm / x |-> 1]) -> f =1 g.
-Proof.
-move=> eqfg m; rewrite -(fmE m) !linear_sum; apply eq_bigr=> x _.
-by rewrite -fm1ZE !linearZ /= eqfg.
-Qed.
+Proof. exact: linear_fm_scaleE. Qed.
 
 End OnRing.
 
