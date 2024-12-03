@@ -1982,7 +1982,7 @@ HB.instance Definition _ :=
     homRing_MonoidLAlgebra homRing_MonoidLAlgebra_is_multiplicative.
 
 Lemma homRing_MonoidLAlgebra_unicity
-  (g : {lrmorphism {monalg R[A]} -> {monalg S[A]} | fun r => *:%R (f r)}) :
+  (g : {lrmorphism {monalg R[A]} -> {monalg S[A]} | f \; *:%R }) :
   (forall a, g [fm / a |-> 1] = [fm / a |-> 1]) -> g =1 homRing_MonoidLAlgebra.
 Proof. exact: homRing_FreeLModule_unicity. Qed.
 
@@ -2309,7 +2309,7 @@ HB.instance Definition _ := GRing.Linear.on homRing_FreeAlgebra.
 HB.instance Definition _ := GRing.RMorphism.on homRing_FreeAlgebra.
 
 Lemma homRing_FreeAlgebra_unicity
-  (g : {lrmorphism {freealg R[A]} -> {freealg S[A]} | fun r => *:%R (f r)}) :
+  (g : {lrmorphism {freealg R[A]} -> {freealg S[A]} | f \; *:%R }) :
   (forall a, g [fm / a |-> 1] = [fm / a |-> 1]) -> g =1 homRing_FreeAlgebra.
 Proof. exact: homRing_MonoidLAlgebra_unicity. Qed.
 
@@ -2713,7 +2713,7 @@ HB.instance Definition _ := GRing.Linear.on homRing_FreeComAlgebra.
 HB.instance Definition _ := GRing.RMorphism.on homRing_FreeComAlgebra.
 
 Lemma homRing_FreeComAlgebra_unicity
-  (g : {lrmorphism {freecalg R[A]} -> {freecalg S[A]} | fun r => *:%R (f r)}) :
+  (g : {lrmorphism {freecalg R[A]} -> {freecalg S[A]} | f \; *:%R }) :
   (forall a, g [fm / a |-> 1] = [fm / a |-> 1]) -> g =1 homRing_FreeComAlgebra.
 Proof. exact: homRing_MonoidLAlgebra_unicity. Qed.
 
