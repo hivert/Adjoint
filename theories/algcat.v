@@ -2837,10 +2837,7 @@ Fact univmap_RingFreeComAlgebra_is_scalable :
 Proof.
 (* TODO : Big problem with locking *)
 rewrite /univmap_RingFreeComAlgebra => r x.
-move UME : (X in X \o _) => UM.
-move RFCE : (X in _ \o X) => RFC.
-rewrite /= -{1}RFCE linearZ_LR /= RFCE.
-by rewrite -UME linearZ_LR.
+by rewrite !compapp !linearZ_LR.
 Qed.
 HB.instance Definition _ :=
   GRing.isScalable.Build R {freecalg R[X]} A (fRm \; *:%R)
@@ -2849,11 +2846,8 @@ HB.instance Definition _ :=
 Lemma univmap_RingFreeComAlgebraP i :
   univmap_RingFreeComAlgebra (fcalg_gen R i) = fX i.
 Proof.
-rewrite /univmap_RingFreeComAlgebra.
 (* TODO : Big problem with locking *)
-move UME : (X in X \o _) => UM.
-move RFCE : (X in _ \o X) => RFC /=.
-rewrite -{}RFCE homRing_FreeComAlgebraP -UME.
+rewrite /univmap_RingFreeComAlgebra !compapp homRing_FreeComAlgebraP.
 exact: univmap_FreeComAlgebraP.
 Qed.
 
