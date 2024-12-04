@@ -690,7 +690,9 @@ Notation "{ 'freemon' T }" := (FreeMonoidT T)
 Notation "[fmon x ]" := ([:: x] : {freemon _})
                         (at level 0, format "[fmon  x ]").
 
-Lemma FreeMonoidE (a : Sets) (x : {freemon a}) : \prod_(i <- x) [fmon i] = x.
+Lemma freemon1 (a : Sets) : (1%M : {freemon a}) = [::] :> seq a.
+Proof. by []. Qed.
+Lemma freemonE (a : Sets) (x : {freemon a}) : \prod_(i <- x) [fmon i] = x.
 Proof. by elim: x => [|s s0 {2}<-]; rewrite ?big_nil // big_cons [LHS]cat1s. Qed.
 
 Section FreeMonoid.
@@ -704,7 +706,7 @@ Lemma hom_FreeMonoid1 x : hom_FreeMonoid [fmon x] = [fmon f x].
 Proof. by []. Qed.
 Lemma hom_FreeMonoidE (s : {freemon a}) :
   hom_FreeMonoid s = \prod_(i <- s) [fmon f i].
-Proof. by elim: s => [//=| s0 s /= ->]; rewrite ?big_nil ?big_cons. Qed.
+Proof. by rewrite /hom_FreeMonoid -[LHS]freemonE big_map. Qed.
 Lemma hom_FreeMonoid_monmorphism : monmorphism hom_FreeMonoid.
 Proof. by rewrite /hom_FreeMonoid; split => [// | /= x y]; rewrite map_cat. Qed.
 
@@ -762,7 +764,7 @@ Fact triL : TriangularLaws.left eta eps.
 Proof.
 move=> /= a x.
 rewrite -!mmorphism_of_MonoidsE /= /eps_fun /hom_FreeMonoid.
-by rewrite big_map -[RHS]FreeMonoidE.
+by rewrite big_map -[RHS]freemonE.
 Qed.
 Fact triR : TriangularLaws.right eta eps.
 Proof. by move=> /= M m; rewrite /= /eps_fun big_cons big_nil mulm1. Qed.
@@ -2248,6 +2250,26 @@ Definition FreeAlgebra R := MonoidAlgebra R \O FreeMonoid.
 Notation "{ 'freealg' R [ T ] }" := (FreeAlgebra R T)
   (at level 0, format "{ 'freealg'  R [ T ] }").
 
+Definition falg_gen {R} S i : {freealg R[S]} := [fm / [fmon i] |-> 1].
+
+Section FreeAlgebraTheory.
+Variable (R : ComRings) (A : Sets).
+Implicit Types (x y : {freealg R[A]}).
+
+Lemma freealg1E : 1%R = [fm / 1%M |-> 1] :> {freealg R[A]}.
+Proof. by []. Qed.
+Lemma freealgE x :
+  \sum_(m <- finsupp x) x m *: \prod_(i <- m) falg_gen i = x.
+Proof.
+rewrite -[RHS](fmE x); apply: eq_bigr => m _.
+rewrite -fm1ZE; congr (_ *: _).
+rewrite /falg_gen -prodmaE; congr [fm / _ |-> 1].
+by rewrite freemonE.
+Qed.
+
+End FreeAlgebraTheory.
+
+
 Module FreeAlgebraAdjoint.
 Section FixAdjunctionFreeAlgebra.
 Variable (R : ComRings).
@@ -2311,24 +2333,24 @@ Let Adj := adjoint_FreeAlgebra_forget_to_Sets R.
 
 Definition univmap_FreeAlgebra := AdjointFunctors.hom_inv Adj f.
 
-Lemma univmap_FreeAlgebraP i : univmap_FreeAlgebra [fm / [:: i] |-> 1] = f i.
+Lemma univmap_FreeAlgebraP i : univmap_FreeAlgebra (falg_gen i) = f i.
 Proof.
 rewrite -[RHS](AdjointFunctors.hom_invK Adj) /=; repeat congr (_ _).
 by rewrite !HCompId /= HIdComp.
 Qed.
 
-Lemma eta_FreeAlgebraE i : AdjointFunctors.eta Adj S i = [fm / [:: i] |-> 1].
+Lemma eta_FreeAlgebraE i : AdjointFunctors.eta Adj S i = falg_gen i.
 Proof.
 rewrite /= !HCompId /transf_from_multmon /transf_from_multmon_fun /=.
 by rewrite HIdComp /=.
 Qed.
 
 Lemma univmap_FreeAlgebra_uniq (g : {hom[Algebras R] {freealg R[S]} -> A}) :
-  (forall i : S, g [fm / [:: i] |-> 1] = f i) -> g =1 univmap_FreeAlgebra.
+  (forall i : S, g (falg_gen i) = f i) -> g =1 univmap_FreeAlgebra.
 Proof.
 move=> eq; apply: (AdjointFunctors.hom_iso_inj Adj).
 move=> i; rewrite AdjointFunctors.hom_invK -{}eq.
-by have /= -> := (eta_FreeAlgebraE i).
+by have /= -> := eta_FreeAlgebraE i.
 Qed.
 
 End UniversalProperty.
@@ -2342,15 +2364,15 @@ Definition homRing_FreeAlgebra : {freealg R[A]} -> {freealg S[A]} :=
 HB.instance Definition _ := GRing.LRMorphism.on homRing_FreeAlgebra.
 
 Lemma homRing_FreeAlgebraP i :
-  homRing_FreeAlgebra [fm / [:: i] |-> 1] = [fm / [:: i] |-> 1].
+  homRing_FreeAlgebra (falg_gen i) = falg_gen i.
 Proof. by rewrite /homRing_FreeAlgebra homRing_MonoidLAlgebraP. Qed.
 Lemma homRing_FreeAlgebra_uniq
   (g : {lrmorphism {freealg R[A]} -> {freealg S[A]} | f \; *:%R }) :
-  (forall i, g [fm / [:: i] |-> 1] = [fm / [:: i] |-> 1]) ->
+  (forall i, g (falg_gen i) = falg_gen i) ->
   g =1 homRing_FreeAlgebra.
 Proof.
 move=> eq; apply: homRing_MonoidLAlgebra_uniq => /= a.
-rewrite -!/[fm / _ |-> _] -(FreeMonoidE a) !prodmaE rmorph_prod.
+rewrite -!/[fm / _ |-> _] -(freemonE a) !prodmaE rmorph_prod.
 by apply: eq_bigr => i _; exact: eq.
 Qed.
 
@@ -2653,7 +2675,7 @@ Definition FreeComAlgebra R := ComMonoidAlgebra R \O FreeComMonoid.
 Notation "{ 'freecalg' R [ T ] }" := (FreeComAlgebra R T)
   (at level 0, format "{ 'freecalg'  R [ T ] }").
 
-Definition calg_gen R S i : {freecalg R[S]} := [fm / cmon_gen i |-> 1].
+Definition fcalg_gen R S i : {freecalg R[S]} := [fm / cmon_gen i |-> 1].
 
 Section FreeComAlgebraTheory.
 Variable (R : ComRings) (A : Sets).
@@ -2662,11 +2684,11 @@ Implicit Types (x y : {freecalg R[A]}).
 Lemma freecalg1E : 1%R = [fm / 1%M |-> 1] :> {freecalg R[A]}.
 Proof. by []. Qed.
 Lemma freecalgE x :
-  \sum_(m <- finsupp x) x m *: \prod_(i <- enum_freecmon m) calg_gen R i = x.
+  \sum_(m <- finsupp x) x m *: \prod_(i <- enum_freecmon m) fcalg_gen R i = x.
 Proof.
 rewrite -[RHS](fmE x); apply: eq_bigr => m _.
 rewrite -fm1ZE; congr (_ *: _).
-rewrite /calg_gen -prodmaE; congr [fm / _ |-> 1].
+rewrite /fcalg_gen -prodmaE; congr [fm / _ |-> 1].
 by rewrite freecmonE.
 Qed.
 
@@ -2737,20 +2759,20 @@ Let Adj := adjoint_FreeComAlgebra_forget_to_Sets R.
 
 Definition univmap_FreeComAlgebra := AdjointFunctors.hom_inv Adj f.
 
-Lemma eta_FreeComAlgebraE i : AdjointFunctors.eta Adj S i = calg_gen R i.
+Lemma eta_FreeComAlgebraE i : AdjointFunctors.eta Adj S i = fcalg_gen R i.
 Proof.
 rewrite /= !HCompId /transf_from_multcmon /transf_from_multcmon_fun /=.
 by rewrite !HIdComp /=.
 Qed.
 
-Lemma univmap_FreeComAlgebraP i : univmap_FreeComAlgebra (calg_gen R i) = f i.
+Lemma univmap_FreeComAlgebraP i : univmap_FreeComAlgebra (fcalg_gen R i) = f i.
 Proof.
 rewrite -[RHS](AdjointFunctors.hom_invK Adj) /=; do 4 congr (_ _).
 by rewrite -eta_FreeComAlgebraE.
 Qed.
 
 Lemma univmap_FreeComAlgebra_uniq (g : {hom[ComAlgebras R] {freecalg R[S]} -> A}) :
-  (forall i : S, g (calg_gen R i) = f i) -> g =1 univmap_FreeComAlgebra.
+  (forall i : S, g (fcalg_gen R i) = f i) -> g =1 univmap_FreeComAlgebra.
 Proof.
 move=> eq; apply: (AdjointFunctors.hom_iso_inj Adj).
 move=> i; rewrite AdjointFunctors.hom_invK -{}eq.
@@ -2766,11 +2788,11 @@ Definition homRing_FreeComAlgebra : {freecalg R[A]} -> {freecalg S[A]} :=
   @homRing_MonoidLAlgebra R S f (FreeComMonoid A).
 HB.instance Definition _ := GRing.LRMorphism.on homRing_FreeComAlgebra.
 Lemma homRing_FreeComAlgebraP i :
-  homRing_FreeComAlgebra (calg_gen R i) = (calg_gen S i).
+  homRing_FreeComAlgebra (fcalg_gen R i) = (fcalg_gen S i).
 Proof. by rewrite /homRing_FreeComAlgebra homRing_MonoidLAlgebraP. Qed.
 Lemma homRing_FreeComAlgebra_uniq
   (g : {lrmorphism {freecalg R[A]} -> {freecalg S[A]} | f \; *:%R }) :
-  (forall i, g (calg_gen R i) = calg_gen S i) -> g =1 homRing_FreeComAlgebra.
+  (forall i, g (fcalg_gen R i) = fcalg_gen S i) -> g =1 homRing_FreeComAlgebra.
 Proof.
 move=> eqg x; rewrite -(freecalgE x) !linear_sum; apply: eq_bigr => i _.
 rewrite !linearZ_LR !rmorph_prod /=; congr (_ *: _); apply: eq_bigr => a _.
@@ -2825,7 +2847,7 @@ HB.instance Definition _ :=
     univmap_RingFreeComAlgebra univmap_RingFreeComAlgebra_is_scalable.
 
 Lemma univmap_RingFreeComAlgebraP i :
-  univmap_RingFreeComAlgebra (calg_gen R i) = fX i.
+  univmap_RingFreeComAlgebra (fcalg_gen R i) = fX i.
 Proof.
 rewrite /univmap_RingFreeComAlgebra.
 (* TODO : Big problem with locking *)
@@ -2837,7 +2859,7 @@ Qed.
 
 Lemma univmap_RingFreeComAlgebra_uniq
   (g : {lrmorphism {freecalg R[X]} -> A | fRm \; *:%R }) :
-  (forall i : X, g (calg_gen R i) = fX i) -> g =1 univmap_RingFreeComAlgebra.
+  (forall i : X, g (fcalg_gen R i) = fX i) -> g =1 univmap_RingFreeComAlgebra.
 Proof.
 move=> eqg a; rewrite -(freecalgE a) !linear_sum; apply eq_bigr => m _.
 rewrite !linearZ /=; congr (_ *: _).
