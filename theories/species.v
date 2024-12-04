@@ -193,16 +193,18 @@ Proof. by move=> /= T U V f g x; apply val_inj. Qed.
 HB.instance Definition _ := @isFunctor.Build Bij Bij setTB setTB_mor
                               setTB_ext setTB_id setTB_comp.
 
-Definition toSetT : FId ~~> setTB := toSetT_fun.
-Definition toSetTV : setTB ~~> FId := toSetT_inv.
-Lemma toSetT_natural : naturality FId setTB toSetT.
+Definition SpSetT : Species := setTB.
+
+Definition toSetT : FId ~~> SpSetT := toSetT_fun.
+Definition toSetTV : SpSetT ~~> FId := toSetT_inv.
+Lemma toSetT_natural : naturality FId SpSetT toSetT.
 Proof. by []. Qed.
-Lemma toSetTV_natural : naturality setTB FId toSetTV.
+Lemma toSetTV_natural : naturality SpSetT FId toSetTV.
 Proof. by []. Qed.
 HB.instance Definition _ :=
-  @isNatural.Build Bij Bij FId setTB toSetT toSetT_natural.
+  @isNatural.Build Bij Bij FId SpSetT toSetT toSetT_natural.
 HB.instance Definition _ :=
-  @isNatural.Build Bij Bij setTB FId toSetTV toSetTV_natural.
+  @isNatural.Build Bij Bij SpSetT FId toSetTV toSetTV_natural.
 
 Lemma toSetTK : toSetTV \v toSetT =%= NId FId.
 Proof. by move=> S x /=; rewrite toSetT_funK. Qed.
@@ -856,3 +858,6 @@ Lemma prodSp1KV A : prodSp1 A \v prodSp1V A =%= NId A.
 Proof. exact: prodSp1_invK. Qed.
 
 End ProdSpeciesOne.
+
+
+(** TODO associativity of product and distributivity over addition *)
