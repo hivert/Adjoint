@@ -232,13 +232,13 @@ Notation "0" := Sp0 : species_scope.
 
 Section SpDelta.
 
-Variable (C : nat).
-Definition SpDelta_fun := fun S : Bij => if #|S| == C then unitB else voidB.
+Variable (cond : nat -> bool).
+Definition SpDelta_fun := fun S : Bij => if cond #|S| then unitB else voidB.
 Lemma SpDelta_funE (A B : Bij) (f : {hom[Bij] A -> B}) :
   SpDelta_fun A = SpDelta_fun B.
 Proof. by rewrite /SpDelta_fun (BijHom_eq_card f). Qed.
 Lemma SpDelta_fun_uniq (A : Bij) (x y : SpDelta_fun A) : x = y.
-Proof. by move: x y; rewrite /SpDelta_fun; case: eqP => _ [] []. Qed.
+Proof. by move: x y; rewrite /SpDelta_fun; case: cond => - [] []. Qed.
 Definition SpDelta_mor (A B : Bij) (f : {hom[Bij] A -> B}) :
   {hom[Bij] SpDelta_fun A -> SpDelta_fun B} :=
   eq_rect _ (fun x => {hom x -> SpDelta_fun B}) idfun _ (esym (SpDelta_funE f)).
@@ -252,23 +252,24 @@ HB.instance Definition _ := @isFunctor.Build Bij Bij SpDelta_fun SpDelta_mor
                               SpDelta_ext SpDelta_id SpDelta_comp.
 Definition SpDelta : Species := SpDelta_fun.
 
-Lemma card_SpDelta n : cardSp SpDelta n = (n == C).
+Lemma card_SpDelta n : cardSp SpDelta n = cond n.
 Proof.
 rewrite /cardSp /= /SpDelta_fun /= card_ord.
-by case: eqP => _; rewrite ?card_unit ?card_void.
+by case: cond; rewrite ?card_unit ?card_void.
 Qed.
 
 End SpDelta.
-Notation "1" := (SpDelta 0) : species_scope.
-Notation "\X" := (SpDelta 1) : species_scope.
+Notation "1" := (SpDelta (fun n => n == 0%N)) : species_scope.
+Notation "\X" := (SpDelta (fun n => n == 1%N)) : species_scope.
 
 Lemma cardSp1 n : cardSp 1 n = (n == 0%N).
 Proof. exact: card_SpDelta. Qed.
 Lemma cardSpX n : cardSp \X n = (n == 1%N).
 Proof. exact: card_SpDelta. Qed.
 
-Lemma SpDeltaE n S (x : SpDelta n S) : all_equal_to x.
-Proof. by apply: fintype_le1P; rewrite cardSpE card_SpDelta; case eqP. Qed.
+Lemma SpDeltaE c S (x : SpDelta c S) : all_equal_to x.
+Proof. by apply: fintype_le1P; rewrite cardSpE card_SpDelta; case c. Qed.
+
 
 Section SumSpecies.
 
@@ -428,7 +429,7 @@ Proof. by move=> S T h [[]|]. Qed.
 HB.instance Definition _ :=
   @isNatural.Build Bij Bij (A + (B + C)) (A + B + C) sumSpA sumSpA_natural.
 HB.instance Definition _ :=
-  @isNatural.Build Bij Bij (A + B + C)( A + (B + C)) sumSpAV sumSpAV_natural.
+  @isNatural.Build Bij Bij (A + B + C) (A + (B + C)) sumSpAV sumSpAV_natural.
 
 Lemma sumSpAK : sumSpAV \v sumSpA =%= NId (A + (B + C)).
 Proof. by move=> S [|[]]. Qed.
@@ -839,7 +840,7 @@ have eq0 : h @: (setb (prodSp1_inv x)) = setb (prodSp1_inv ((A # h) x)).
 have /= <- := Tagged_SpTinSet_castE eq0 (A := 1).
 rewrite -[(1 # _) _]compapp -functor_o.
 apply/eqP; rewrite eq_Tagged /=; apply/eqP.
-apply SpDeltaE.
+exact: SpDeltaE.
 Qed.
 Fact prodSp1_natural A : naturality (A * 1) A (prodSp1 A).
 Proof. exact: (natural_inv (@prodSp1V_natural A)). Qed.
@@ -849,15 +850,81 @@ HB.instance Definition _ A :=
 HB.instance Definition _ A :=
   @isNatural.Build Bij Bij (A * 1) A (@prodSp1 A) (@prodSp1_natural A).
 
-Definition prod1Sp A : 1 * A ~> A := prodSp1 A \v prodSpC 1 A.
-Definition Prod1SpV A : A ~> 1 * A := prodSpC A 1 \v prodSp1V A.
-
 Lemma prodSp1K A : prodSp1V A \v prodSp1 A =%= NId (A * 1).
 Proof. exact: prodSp1_homK. Qed.
 Lemma prodSp1KV A : prodSp1 A \v prodSp1V A =%= NId A.
 Proof. exact: prodSp1_invK. Qed.
 
+Definition prod1Sp A : 1 * A ~> A := prodSp1 A \v prodSpC 1 A.
+Definition prod1SpV A : A ~> 1 * A := prodSpC A 1 \v prodSp1V A.
+
+Lemma prod1SpK A : prod1SpV A \v prod1Sp A =%= NId (1 * A).
+Proof. by move=> U x; rewrite /= prodSp1_homK prodSpC_funK. Qed.
+Lemma prod1SpKV A : prod1Sp A \v prod1SpV A =%= NId A.
+Proof. by move=> U x; rewrite /= prodSpC_funK prodSp1_invK. Qed.
+
 End ProdSpeciesOne.
 
 
-(** TODO associativity of product and distributivity over addition *)
+Section ProdSumSpeciesDistributive.
+Variables (A B C : Species).
+
+Section Mor.
+Variable (S : Bij).
+
+Definition prodSpDl_fun : el ((A * (B + C)) S) -> el ((A * B + A * C) S) :=
+  fun x => match valb x with
+           | inl b => inl (MkProdSp (vala x) b (prodsp_dijs x))
+           | inr c => inr (MkProdSp (vala x) c (prodsp_dijs x))
+           end.
+Definition prodSpDl_inv : el ((A * B + A * C) S) -> el ((A * (B + C)) S).
+refine
+  (fun x => match x with
+           | inl b => MkProdSp (vala b) _ (prodsp_dijs b)
+           | inr c => MkProdSp (vala c) _ (prodsp_dijs c)
+           end).
+exact (inl (valb b)).
+exact (inr (valb c)).
+Defined.
+
+Let prodSpDl_funK : cancel prodSpDl_fun prodSpDl_inv.
+Proof. by case => [a Aa b []]. Qed.
+Let prodSpDl_invK : cancel prodSpDl_inv prodSpDl_fun.
+Proof. by case => [][]/=. Qed.
+Fact prodSpDl_fun_bij : bijective prodSpDl_fun.
+Proof. by exists prodSpDl_inv. Qed.
+Fact prodSpDl_inv_bij : bijective prodSpDl_inv.
+Proof. by exists prodSpDl_fun. Qed.
+HB.instance Definition _ :=
+  @BijHom.Build ((A * (B + C)) S) ((A * B + A * C) S) prodSpDl_fun prodSpDl_fun_bij.
+HB.instance Definition _ :=
+  @BijHom.Build ((A * B + A * C) S) ((A * (B + C)) S) prodSpDl_inv prodSpDl_inv_bij.
+
+End Mor.
+Definition prodSpDl  : (A * (B + C)) ~~> (A * B + A * C) := prodSpDl_fun.
+Definition prodSpDlV : (A * B + A * C) ~~> (A * (B + C)) := prodSpDl_inv.
+
+Fact prodSpDl_natural : naturality (A * (B + C)) (A * B + A * C) prodSpDl.
+Proof.
+move=> S T h [a Aa b [] Xb eqXb]; rewrite /= /prodSp_fun /=;
+  congr (_ _); by apply/eqP/eq_prodSpP.
+Qed.
+Fact prodSpDlV_natural : naturality (A * B + A * C) (A * (B + C)) prodSpDlV.
+Proof.
+by move=> S T h [][a Aa b Xb eqXb]; rewrite /prodSp_fun /=; apply/eqP/eq_prodSpP.
+Qed.
+HB.instance Definition _ :=
+  @isNatural.Build Bij Bij (A * (B + C)) (A * B + A * C) prodSpDl prodSpDl_natural.
+HB.instance Definition _ :=
+  @isNatural.Build Bij Bij (A * B + A * C) (A * (B + C)) prodSpDlV prodSpDlV_natural.
+
+Lemma prodSpDlK : prodSpDlV \v prodSpDl =%= NId (A * (B + C)).
+Proof. by move=> S [a Aa b []]. Qed.
+Lemma prodSpDlVK : prodSpDl \v prodSpDlV =%= NId (A * B + A * C).
+Proof. by move=> S [][]. Qed.
+
+End ProdSumSpeciesDistributive.
+(** TODO right distributivity over addition *)
+
+
+(** TODO associativity of product *)
