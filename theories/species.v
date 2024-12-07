@@ -220,7 +220,7 @@ End Localization.
 Section ZeroSpecies.
 
 Definition Sp0_fun := fun _ : Bij => voidB.
-Definition Sp0_mor (A B : Bij) (f : {hom[Bij] A -> B}) :
+Definition Sp0_mor (S T : Bij) (f : {hom[Bij] S -> T}) :
   {hom[Bij] voidB -> voidB} := idfun.
 HB.instance Definition _ :=
   @isFunctor.Build Bij Bij Sp0_fun Sp0_mor
@@ -237,16 +237,16 @@ Section SpDelta.
 
 Variable (cond : nat -> bool).
 Definition SpDelta_fun := fun S : Bij => if cond #|S| then unitB else voidB.
-Lemma SpDelta_funE (A B : Bij) (f : {hom[Bij] A -> B}) :
-  SpDelta_fun A = SpDelta_fun B.
+Lemma SpDelta_funE (S T : Bij) (f : {hom[Bij] S -> T}) :
+  SpDelta_fun S = SpDelta_fun T.
 Proof. by rewrite /SpDelta_fun (BijHom_eq_card f). Qed.
-Lemma SpDelta_fun_uniq (A : Bij) (x y : SpDelta_fun A) : x = y.
+Lemma SpDelta_fun_uniq (S : Bij) (x y : SpDelta_fun S) : x = y.
 Proof. by move: x y; rewrite /SpDelta_fun; case: cond => - [] []. Qed.
-Definition SpDelta_mor (A B : Bij) (f : {hom[Bij] A -> B}) :
-  {hom[Bij] SpDelta_fun A -> SpDelta_fun B} :=
-  eq_rect _ (fun x => {hom x -> SpDelta_fun B}) idfun _ (esym (SpDelta_funE f)).
+Definition SpDelta_mor (S T : Bij) (f : {hom[Bij] S -> T}) :
+  {hom[Bij] SpDelta_fun S -> SpDelta_fun T} :=
+  eq_rect _ (fun x => {hom x -> SpDelta_fun T}) idfun _ (esym (SpDelta_funE f)).
 Fact SpDelta_ext : FunctorLaws.ext SpDelta_mor.
-Proof. by move=> /= A B f g _ x; apply: SpDelta_fun_uniq. Qed.
+Proof. by move=> /= S T f g _ x; apply: SpDelta_fun_uniq. Qed.
 Fact SpDelta_id : FunctorLaws.id SpDelta_mor.
 Proof. move=> /= a x; apply: SpDelta_fun_uniq. Qed.
 Fact SpDelta_comp  : FunctorLaws.comp SpDelta_mor.
@@ -277,16 +277,16 @@ Proof. by apply: fintype_le1P; rewrite cardSpE card_SpDelta; case c. Qed.
 Section SetSpecies.
 
 Definition setSp_fun (S : Bij) := unitB.
-Lemma setSp_funE (A B : Bij) (f : {hom[Bij] A -> B}) :
-  setSp_fun A = setSp_fun B.
+Lemma setSp_funE (S T : Bij) (f : {hom[Bij] S -> T}) :
+  setSp_fun S = setSp_fun T.
 Proof. by []. Qed.
-Lemma setSp_fun_uniq (A : Bij) (x y : setSp_fun A) : x = y.
+Lemma setSp_fun_uniq (S : Bij) (x y : setSp_fun S) : x = y.
 Proof. by move: x y; rewrite /setSp_fun => - [] []. Qed.
-Definition setSp_mor (A B : Bij) (f : {hom[Bij] A -> B}) :
-  {hom[Bij] setSp_fun A -> setSp_fun B} :=
-  eq_rect _ (fun x => {hom x -> setSp_fun B}) idfun _ (esym (setSp_funE f)).
+Definition setSp_mor (S T : Bij) (f : {hom[Bij] S -> T}) :
+  {hom[Bij] setSp_fun S -> setSp_fun T} :=
+  eq_rect _ (fun x => {hom x -> setSp_fun T}) idfun _ (esym (setSp_funE f)).
 Fact setSp_ext : FunctorLaws.ext setSp_mor.
-Proof. by move=> /= A B f g _ x; apply: setSp_fun_uniq. Qed.
+Proof. by move=> /= S T f g _ x; apply: setSp_fun_uniq. Qed.
 Fact setSp_id : FunctorLaws.id setSp_mor.
 Proof. move=> /= a x; apply: setSp_fun_uniq. Qed.
 Fact setSp_comp  : FunctorLaws.comp setSp_mor.
