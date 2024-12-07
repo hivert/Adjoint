@@ -211,6 +211,9 @@ Proof. by move=> S x /=; rewrite toSetT_funK. Qed.
 Lemma toSetTVK : toSetT \v toSetTV =%= NId setTB.
 Proof. by move=> S x /=; rewrite toSetT_invK. Qed.
 
+Lemma cardSpSetT n : cardSp SpSetT n = n.
+Proof. by rewrite /cardSp (BijHom_eq_card (@toSetT_inv _)) card_ord. Qed.
+
 End Localization.
 
 
@@ -269,6 +272,67 @@ Proof. exact: card_SpDelta. Qed.
 
 Lemma SpDeltaE c S (x : SpDelta c S) : all_equal_to x.
 Proof. by apply: fintype_le1P; rewrite cardSpE card_SpDelta; case c. Qed.
+
+
+Section SetSpecies.
+
+Definition setSp_fun (S : Bij) := unitB.
+Lemma setSp_funE (A B : Bij) (f : {hom[Bij] A -> B}) :
+  setSp_fun A = setSp_fun B.
+Proof. by []. Qed.
+Lemma setSp_fun_uniq (A : Bij) (x y : setSp_fun A) : x = y.
+Proof. by move: x y; rewrite /setSp_fun => - [] []. Qed.
+Definition setSp_mor (A B : Bij) (f : {hom[Bij] A -> B}) :
+  {hom[Bij] setSp_fun A -> setSp_fun B} :=
+  eq_rect _ (fun x => {hom x -> setSp_fun B}) idfun _ (esym (setSp_funE f)).
+Fact setSp_ext : FunctorLaws.ext setSp_mor.
+Proof. by move=> /= A B f g _ x; apply: setSp_fun_uniq. Qed.
+Fact setSp_id : FunctorLaws.id setSp_mor.
+Proof. move=> /= a x; apply: setSp_fun_uniq. Qed.
+Fact setSp_comp  : FunctorLaws.comp setSp_mor.
+Proof. by move=> /= a b c f g x; apply: setSp_fun_uniq. Qed.
+HB.instance Definition _ := @isFunctor.Build Bij Bij setSp_fun setSp_mor
+                              setSp_ext setSp_id setSp_comp.
+Definition setSp : Species := setSp_fun.
+
+Lemma card_setSp n : cardSp setSp n = 1%N.
+Proof. by rewrite /cardSp /= /setSp_fun /= card_unit. Qed.
+
+End SetSpecies.
+
+
+Section SubsetSpecies.
+
+Definition subsetSp_fun (S : Bij) : Bij := {set S}.
+Definition subsetSp_mor S T (f : {hom[Bij] S -> T}) :
+  el (subsetSp_fun S) -> el (subsetSp_fun T) := fun X => f @: X.
+
+Lemma subsetSp_mor_bij S T (f : {hom[Bij] S -> T}) : bijective (subsetSp_mor f).
+Proof.
+by exists (subsetSp_mor (finv f)) => X;
+  rewrite /subsetSp_mor -imset_comp -[RHS]imset_id; apply: eq_imset;
+  [exact: finvK | exact: finvKV].
+Qed.
+HB.instance Definition _ S T (f : {hom[Bij] S -> T}) :=
+  BijHom.Build (subsetSp_fun S) (subsetSp_fun T)
+    (subsetSp_mor f) (subsetSp_mor_bij f).
+Fact subsetSp_ext : FunctorLaws.ext subsetSp_mor.
+Proof. by move=> S T f g eq X /=; rewrite /subsetSp_mor /=; apply: eq_imset. Qed.
+Fact subsetSp_id : FunctorLaws.id subsetSp_mor.
+Proof. by move=> S X; apply: imset_id. Qed.
+Fact subsetSp_comp  : FunctorLaws.comp subsetSp_mor.
+Proof. by move=> S T U f g X; rewrite /= /subsetSp_mor -imset_comp. Qed.
+HB.instance Definition _ :=
+  @isFunctor.Build Bij Bij subsetSp_fun subsetSp_mor
+    subsetSp_ext subsetSp_id subsetSp_comp.
+Definition subsetSp : Species := subsetSp_fun.
+
+Lemma card_subsetSp0n n : cardSp subsetSp n = (2 ^ n)%N.
+Proof.
+by rewrite /cardSp -cardsT /subsetSp_fun -powersetT card_powerset cardsT card_ord.
+Qed.
+
+End SubsetSpecies.
 
 
 Section SumSpecies.
