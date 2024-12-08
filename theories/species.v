@@ -233,6 +233,137 @@ End ZeroSpecies.
 Notation "0" := Sp0 : species_scope.
 
 
+Section ifSpecies.
+Variable (A B : Species) (cond : pred nat).
+
+Local Notation ifAB c V := (if c then A V else B V).
+Let ifSp_fun (S : Bij) : Bij := ifAB (cond #|S|) S.
+
+Section Hom.
+Variables (U V : Bij) (f : {hom[Bij] U -> V}).
+
+Definition ifSp_mor : el (ifSp_fun U) -> el (ifSp_fun V) :=
+  match esym (BijHom_eq_card f) in (_ = a)
+        return ifAB (cond a) U -> ifAB (cond #|V|) V
+  with erefl => if cond #|V| as b return ifAB b U -> ifAB b V
+                then A # f else B # f
+  end.
+Definition ifSp_inv : el (ifSp_fun V) -> el (ifSp_fun U) :=
+  match (BijHom_eq_card f) in (_ = a)
+        return ifAB (cond a) V -> ifAB (cond #|U|) U
+  with erefl => if cond #|U| as b return ifAB b V -> ifAB b U
+                then A # (finv f) else B # (finv f)
+  end.
+
+Lemma ifSp_morK : cancel ifSp_mor ifSp_inv.
+Proof.
+rewrite /ifSp_mor /ifSp_inv /ifSp_fun.
+case:_/(BijHom_eq_card f) => /=.
+have finvK : finv f \o f =1 idfun by apply: finvK.
+by case: (cond #|U|) => x;
+  rewrite -[LHS]compapp -functor_o (functor_ext_hom _ _ _ finvK) functor_id.
+Qed.
+Lemma ifSp_invK : cancel ifSp_inv ifSp_mor.
+Proof.
+rewrite /ifSp_mor /ifSp_inv /ifSp_fun; case:_/(BijHom_eq_card f) => /=.
+have finvK : f \o finv f =1 idfun by apply: finvKV.
+by case: (cond #|U|) => x;
+  rewrite -[LHS]compapp -functor_o (functor_ext_hom _ _ _ finvK) functor_id.
+Qed.
+Lemma ifSp_mor_bij : bijective ifSp_mor.
+Proof. exists ifSp_inv; [exact: ifSp_morK | exact: ifSp_invK]. Qed.
+Lemma ifSp_inv_bij : bijective ifSp_inv.
+Proof. exists ifSp_mor; [exact: ifSp_invK | exact: ifSp_morK]. Qed.
+HB.instance Definition _ :=
+  @BijHom.Build (ifSp_fun U) (ifSp_fun V) ifSp_mor ifSp_mor_bij.
+HB.instance Definition _ :=
+  @BijHom.Build (ifSp_fun V) (ifSp_fun U) ifSp_inv ifSp_inv_bij.
+
+End Hom.
+
+Fact ifSp_id : FunctorLaws.id ifSp_mor.
+Proof.
+move=> S x; move: x; rewrite  /= /ifSp_mor /ifSp_fun.
+move: (esym (BijHom_eq_card _)) => eq.
+
+case:_/(BijHom_eq_card _) => /=.
+
+
+apply: SpDelta_fun_uniq. Qed.
+
+
+Fact ifSp_ext : FunctorLaws.ext ifSp_mor.
+Proof.
+move=> E F f g eqfg x.
+rewrite /ifSp_mor.
+case:_/(BijHom_eq_card _) => /=.
+
+Lemma ifSp_funTE (U : Bij) : cond #|U| -> ifSp_fun U = A U.
+Proof. by rewrite /ifSp_fun => ->. Qed.
+Lemma ifSp_funITE U V (f : {hom[Bij] U -> V}) : cond #|U| -> ifSp_fun V = A V.
+Proof. by rewrite /ifSp_fun (BijHom_eq_card f) => ->. Defined.
+
+Lemma ifSp_morTE U V (f : {hom[Bij] U -> V}) (u : (ifSp_fun U)) (cT : cond #|U|) :
+  ifSp_mor f u =
+    ecast V V (esym (ifSp_funITE f cT)) ((A # f) (ecast U U (ifSp_funTE cT) u)).
+Proof.
+rewrite /ifSp_mor /ifSp_funITE.
+case: _/(esym (BijHom_eq_card f)).
+
+"{hom A U -> A V}" while it is expected to have type
+ "el (ifSp_fun U) -> el (ifSp_fun V)".
+
+End ifSpecies. 
+
+
+Fact ifSp_ext A B cond : FunctorLaws.ext (@ifSp_mor A B cond).
+Proof.
+move=> E F f x.
+case: f x => [f Hf] [g Hg] /= eqfg /=.
+rewrite /ifSp_mor.
+move: (esym (BijHom_eq_card _)) => Bf.
+move: (esym (BijHom_eq_card _)) => Bg.
+
+move: x.
+rewrite /species_ifSp_mor__canonical__category_Hom.
+case:_/Bf.
+
+have eqcfg := BijHom_eq_card f.
+move: x f g eqfg.
+rewrite /ifSp_mor.
+move: eqcfg.
+
+move: #|F| => cF.
+
+case (boolP (cond #|E|)) => Hcond.
+move Hf : (ifSp_mor f) => if_f.
+move Hg : (ifSp_mor g) => if_g.
+rewrite -Hf -Hg.
+have eqcfg := BijHom_eq_card f.
+move=> x /=; move: x.
+subst 
+
+case:_/(esym (BijHom_eq_card _)) => /=.
+have bla := (BijHom_eq_card f).
+rewrite -{15}bla.
+
+
+rewrite /ifSp_mor.
+have -> : (esym (BijHom_eq_card f)) = erefl.
+
+by move=> /= A B f g _ x; apply: SpDelta_fun_uniq. Qed.
+Fact SpDelta_id : FunctorLaws.id SpDelta_mor.
+Proof. move=> /= a x; apply: SpDelta_fun_uniq. Qed.
+Fact SpDelta_comp  : FunctorLaws.comp SpDelta_mor.
+Proof. by move=> /= a b c f g x; apply: SpDelta_fun_uniq. Qed.
+HB.instance Definition _ := @isFunctor.Build Bij Bij SpDelta_fun SpDelta_mor
+                              SpDelta_ext SpDelta_id SpDelta_comp.
+Definition SpDelta : Species := SpDelta_fun.
+
+
+End ifSpecies.
+
+
 Section SpDelta.
 
 Variable (cond : nat -> bool).
