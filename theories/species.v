@@ -1,5 +1,5 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect.
+From mathcomp Require Import all_ssreflect all_fingroup.
 
 Require Import category.
 
@@ -16,7 +16,6 @@ Local Open Scope species_scope.
 
 
 Reserved Notation "\X" (at level 0).
-
 
 Section SSRCompl.
 
@@ -57,6 +56,7 @@ HB.instance Definition _ :=
 Definition cat : category :=  finType.
 
 End FinBijCat.
+
 Notation Bij := FinBijCat.cat.
 
 Lemma BijP (S T : Bij) (f : {hom S -> T}) : bijective f.
@@ -94,6 +94,24 @@ Lemma finvKV : cancel finv f.
 Proof. by rewrite /finv; case: hom_is_isom => x _ []. Qed.
 
 End Homs.
+
+Lemma finvI (S T : Bij) (f : {hom S -> T}) : finv (finv f) =1 f.
+Proof.
+move => x /=; apply (bij_inj (BijP (finv f))).
+by rewrite finvKV [RHS]finvK.
+Qed.
+Lemma finv_id (S : Bij) : finv (@idfun S) =1 idfun.
+Proof. by move=> x /=; apply (bij_inj (BijP idfun)); rewrite finvK. Qed.
+Lemma finvE (S T : Bij) (f g : {hom S -> T}) :
+  f =1 g -> finv f =1 finv g.
+Proof. by move=> eq x; apply (bij_inj (BijP f)); rewrite finvKV eq finvKV. Qed.
+Lemma finv_comp (S T U : Bij) (f : {hom S -> T}) (g : {hom T -> U}) :
+  finv (g \o f) =1 (finv f) \o (finv g).
+Proof.
+move=> x /=.
+apply (bij_inj (BijP f)); apply (bij_inj (BijP g)).
+by rewrite -[LHS]compapp !finvKV.
+Qed.
 
 HB.factory Record BijHom (S T : Bij)
   (f : el S -> el T) := { finsetsbij_hom : bijective f }.
@@ -157,6 +175,177 @@ by exists x.
 Qed.
 
 End Cardinality.
+
+
+Section Action.
+
+Variable A : Species.
+
+Section Defs.
+
+Variable U : Bij.
+Implicit Type s : {perm U}.
+
+Lemma perm_bij s : bijective s.
+Proof. by exists (s^-1)%g; [exact: permK| exact: permKV]. Qed.
+HB.instance Definition _ s := @BijHom.Build U U (s : el U -> U) (@perm_bij s).
+
+Definition actSp_fun (x : el (A U)) (s : {perm U}) := (A # s) x.
+Lemma actSp1 : actSp_fun^~ 1%g =1 id.
+Proof.
+rewrite /actSp_fun => /= x.
+have /(functor_ext_hom A) -> : (1 : {perm U})%g =1 idfun by apply: perm1.
+by rewrite functor_id.
+Qed.
+Lemma actSpM x : act_morph actSp_fun x.
+Proof.
+move=> /= s t.
+rewrite /actSp_fun -[RHS]compapp -functor_o; apply: functor_ext_hom => {}x /=.
+by rewrite permM.
+Qed.
+Canonical actSp := TotalAction actSp1 actSpM.
+
+Lemma actSpP : [acts setT, on setT | actSp].
+Proof.
+apply/subsetP => /= s _; rewrite !inE /=.
+by apply/subsetP => x _; rewrite !inE.
+Qed.
+
+Definition actSp_perm s := actSp^~ s.
+Lemma actSp_bij s : bijective (actSp_perm s).
+Proof. exact/injF_bij/act_inj. Qed.
+HB.instance Definition _ s :=
+  @BijHom.Build (A U) (A U) (actSp_perm s) (@actSp_bij s).
+
+End Defs.
+
+
+Section PermHom.
+Variables (U : Bij) (f : {hom U -> U}).
+Definition perm_hom := perm (bij_inj (BijP f)).
+Lemma perm_homE : perm_hom =1 f.
+Proof. exact: permE. Qed.
+End PermHom.
+
+
+
+Section Transport.
+
+Variables (U V : Bij) (f : {hom U -> V}).
+
+Definition perm_morph_fun (s : {perm U}) : {perm V} :=
+  perm_hom (f \o s \o (finv f)).
+Lemma perm_morph_subproof :
+  {in setT &, {morph perm_morph_fun : x y / (x * y)%g}}.
+Proof.
+rewrite /perm_morph_fun => s t _ _ /=.
+by apply/permP=> u /=; rewrite !perm_homE /= !permM /= !permE /= finvK.
+Qed.
+Canonical perm_morph := Morphism perm_morph_subproof.
+
+Lemma perm_morphE (s : {perm U}) x : perm_morph s (f x) = f (s x).
+Proof. by rewrite /= /perm_morph_fun perm_homE /= finvK. Qed.
+
+End Transport.
+
+Lemma perm_morph_ext (U V : Bij) (f g : {hom U -> V}) :
+  f =1 g -> perm_morph f =1 perm_morph g.
+Proof. by move=> eq /= s; apply/permP => v; rewrite !permE /= eq (finvE eq). Qed.
+Lemma perm_morph_id (U : Bij) : perm_morph (@idfun U) =1 idfun :> (_ -> _).
+Proof. by move => /= s; apply/permP => v; rewrite !permE /= finv_id. Qed.
+Lemma perm_morph_comp (S T U : Bij) (f : {hom S -> T}) (g : {hom T -> U}) :
+  perm_morph (g \o f) =1 perm_morph g \o perm_morph f.
+Proof.
+move=> /= s; apply/permP => v.
+by rewrite !permE /= finv_comp -perm_morphE /= finvKV.
+Qed.
+
+Lemma perm_morph_orbit (U V : Bij) (f : {hom U -> V}) x :
+  (A # f) @: orbit (actSp U) setT x = orbit (actSp V) setT ((A # f) x).
+Proof.
+apply/setP=> u; apply/imsetP/orbitP => [[y /orbitP[/= s _ <-{y} ->{u}]]|].
+  exists (perm_morph f s); first by rewrite inE.
+  rewrite /actSp_fun -[LHS]compapp -[RHS]compapp -!functor_o.
+  by apply: (functor_ext_hom A) => {}x /=; rewrite perm_morphE.
+move=> /=[s _ <-{u}].
+exists (actSp _ x (perm_morph (finv f) s)).
+  by apply/orbitP => /=; exists (perm_morph (finv f) s); first by rewrite inE.
+rewrite /= /actSp_fun -[LHS]compapp -[RHS]compapp -!functor_o.
+apply: (functor_ext_hom A) => {}x /=.
+by rewrite /perm_morph_fun permE /= finvKV finvI.
+Qed.
+
+Definition isotypes n := orbit_transversal (actSp 'I_n) setT setT.
+Definition isotype U (x : A U) :=
+  let ix := (A # enum_rankBij U) x in
+  transversal_repr ix (isotypes #|U|) (orbit (actSp 'I_#|U|) setT ix).
+Definition cardIso n := #|isotypes n|.
+
+Lemma isotypesP n :
+  is_transversal (isotypes n)
+    [set orbit (actSp 'I_n) setT x | x in setT] setT.
+Proof. exact: (transversalP (orbit_partition (actSpP _))). Qed.
+Lemma isotypesE n :
+  {in (isotypes n) &, forall x y : A 'I_n,
+        (y \in orbit (actSp 'I_n) setT x) = (x == y)}.
+Proof.
+have [_ _ + _ x xin y yin] := orbit_transversalP (actSpP 'I_n).
+by apply.
+Qed.
+Lemma isotypes_ex n (x : A 'I_n) :
+  exists s : 'S_n, actSp 'I_n x s \in isotypes n.
+Proof.
+have [_ _ _ /(_ x) []] := orbit_transversalP (actSpP 'I_n).
+  by rewrite inE.
+by move=> /= s _ HS; exists s.
+Qed.
+
+Lemma cardIsoE U :
+  #|[set orbit (actSp U) [set: {perm U}] x | x in setT]| = cardIso #|U|.
+Proof.
+rewrite [RHS](card_transversal (isotypesP _)).
+pose ff := fun (S : {set A U}) => (A # enum_rankBij U) @: S.
+rewrite -(card_imset (f := ff)); last exact/imset_inj/(bij_inj (BijP _)).
+congr #|pred_of_set _|; apply/setP => /= E.
+apply/imsetP/imsetP => /=[[F /imsetP[u _ ->{F} ->{E} /=]] | [i _ ->{E}]].
+  exists ((A # enum_rankBij U) u); first by rewrite inE.
+  exact: perm_morph_orbit.
+exists (orbit (actSp _) [set: {perm U}] ((A # finv (enum_rankBij U)) i)).
+  by apply/imsetP; exists ((A # finv (enum_rankBij U)) i).
+rewrite /ff perm_morph_orbit; congr orbit.
+rewrite -[RHS]compapp -functor_o -[LHS](@functor_id _ _ A).
+by apply: (functor_ext_hom A) => {}i; rewrite /= finvKV.
+Qed.
+
+Lemma isotype_mem U (x : A U) : isotype x \in isotypes #|U|.
+Proof.
+apply: (repr_mem_transversal (isotypesP _)); apply/imsetP.
+by exists ((A # enum_rankBij U) x).
+Qed.
+Lemma isotype_ex U (x : A U) :
+  exists f : {hom[Bij] U -> 'I_#|U|}, (A # f) x = isotype x.
+Proof.
+rewrite /isotype.
+set ix := (A # enum_rankBij U) x.
+have [_ H] := orbit_transversalP (actSpP 'I_#|U|).
+have /orbitP[/= s _] : isotype x \in orbit (actSp 'I_#|U|) setT ix.
+  by apply: (repr_mem_pblock (isotypesP _)); apply/imsetP; exists ix.
+rewrite /actSp_fun /isotype -/ix => <-.
+by exists (s \o (enum_rankBij U)); rewrite /ix functor_o.
+Qed.
+
+Lemma isotypeE U (x : A U) (f : {hom[Bij] U -> 'I_#|U|}) :
+  (A # f) x \in isotypes #|U| -> (A # f) x = isotype x.
+Proof.
+move=> H; apply/eqP; rewrite -isotypesE ?isotype_mem //.
+have [g <-] := isotype_ex x.
+apply/orbitP; exists (perm_hom (g \o (finv f))); first by rewrite inE.
+rewrite /= /actSp_fun; rewrite -[LHS]compapp -functor_o.
+apply: (functor_ext_hom A) => i /=.
+by rewrite permE /= finvK.
+Qed.
+
+End Action.
 
 
 Section Localization.
