@@ -422,6 +422,87 @@ End ZeroSpecies.
 Notation "0" := Sp0 : species_scope.
 
 
+Section ifSpecies.
+Variable (A B : Species) (cond : pred Bij).
+
+Hypothesis condP : forall U V (f : {hom[Bij] U -> V}), cond V = cond U.
+
+Local Notation ifAB c V := (if c then A V else B V).
+Definition ifSp U := ifAB (cond U) U.
+
+Section Hom.
+Variables (U V : Bij) (f : {hom[Bij] U -> V}).
+
+Definition ifSp_mor : el (ifSp U) -> el (ifSp V) :=
+  match condP f in (_ = a) return ifAB a U -> ifAB (cond V) V
+  with erefl => if cond V as b return ifAB b U -> ifAB b V
+                then A # f else B # f
+  end.
+Definition ifSp_inv : el (ifSp V) -> el (ifSp U) :=
+  match esym (condP f) in (_ = a) return ifAB a V -> ifAB (cond U) U
+  with erefl => if cond U as b return ifAB b V -> ifAB b U
+                then A # (finv f) else B # (finv f)
+  end.
+
+Lemma ifSp_morK : cancel ifSp_mor ifSp_inv.
+Proof.
+rewrite /ifSp_mor /ifSp_inv /ifSp; case:_/(condP f) => /=.
+have finvK : finv f \o f =1 idfun by apply: finvK.
+by case: (cond V) => x;
+  rewrite -[LHS]compapp -functor_o (functor_ext_hom _ _ _ finvK) functor_id.
+Qed.
+Lemma ifSp_invK : cancel ifSp_inv ifSp_mor.
+Proof.
+rewrite /ifSp_mor /ifSp_inv /ifSp; case:_/(condP f) => /=.
+have finvK : f \o finv f =1 idfun by apply: finvKV.
+by case: (cond V) => x;
+  rewrite -[LHS]compapp -functor_o (functor_ext_hom _ _ _ finvK) functor_id.
+Qed.
+Lemma ifSp_mor_bij : bijective ifSp_mor.
+Proof. exists ifSp_inv; [exact: ifSp_morK | exact: ifSp_invK]. Qed.
+Lemma ifSp_inv_bij : bijective ifSp_inv.
+Proof. exists ifSp_mor; [exact: ifSp_invK | exact: ifSp_morK]. Qed.
+HB.instance Definition _ :=
+  @BijHom.Build (ifAB (cond U) U) (ifAB (cond V) V) ifSp_mor ifSp_mor_bij.
+HB.instance Definition _ :=
+  @BijHom.Build (ifAB (cond V) V) (ifAB (cond U) U) ifSp_inv ifSp_inv_bij.
+
+End Hom.
+
+Fact ifSp_id : FunctorLaws.id ifSp_mor.
+Proof.
+move=> U; rewrite /= /ifSp_mor  /ifSp.
+by case: (cond U) (condP _) => /= C x /=;
+  rewrite (eq_irrelevance C (erefl _)) functor_id.
+Qed.
+Fact ifSp_ext : FunctorLaws.ext ifSp_mor.
+Proof.
+move=> U V f g eqfg; rewrite /= /ifSp_mor /ifSp.
+rewrite (eq_irrelevance (condP g) (condP f)).
+by move: (cond U) (cond V) (condP f) => [] [] //= C x;
+  rewrite (eq_irrelevance C (erefl _)); exact: functor_ext_hom.
+Qed.
+Fact ifSp_comp : FunctorLaws.comp ifSp_mor.
+move=> U V W f g; rewrite /= /ifSp_mor /ifSp.
+have -> : condP (ssrfun_comp__canonical__category_Hom f g) =
+            etrans (condP f) (condP g).
+  exact: eq_irrelevance.
+move: (condP f) (condP g) (etrans _ _).
+by move: (cond U) (cond V) (cond W) => [] [] [] //= C1 C2 CT x;
+  rewrite (eq_irrelevance C1 (erefl _)) (eq_irrelevance C2 (erefl _))
+    (eq_irrelevance CT (erefl _)) [LHS]functor_o.
+Qed.
+
+HB.instance Definition _ :=
+  @isFunctor.Build Bij Bij ifSp ifSp_mor ifSp_ext ifSp_id ifSp_comp.
+
+Lemma card_ifSp n :
+  cardSp ifSp n = if (cond 'I_n) then cardSp A n else cardSp B n.
+Proof. by rewrite /cardSp /= /ifSp; case: (cond _). Qed.
+
+End ifSpecies.
+
+
 Section SpDelta.
 
 Variable (cond : nat -> bool).
