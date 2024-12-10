@@ -360,6 +360,26 @@ rewrite /= /actSp_fun /=.
 by rewrite (functor_ext_hom A _ _ (perm_homE _)) functor_o /= SpfinvK.
 Qed.
 
+Lemma isotypeP U V (x : A U) (y : A V) :
+  reflect (exists f : {hom U -> V}, (A # f) x = y)
+    (existT (fun n => A 'I_n) #|U| (isotype x) ==
+     existT (fun n => A 'I_n) #|V| (isotype y)).
+Proof.
+apply (iffP idP) => [/eqP[eqcard]/eqP | [f eqy]].
+  have [fx <-] := isotype_ex x.
+  have [fy <-] := isotype_ex y.
+  move: fx fy; rewrite eqcard => fx fy.
+  rewrite -/(Tagged (fun n => A 'I_n) ((A # fx) x))
+          -/(Tagged (fun n => A 'I_n) ((A # fy) y)).
+  rewrite eq_Tagged /= => /eqP/(congr1 (A # (finv fy))).
+  rewrite SpfinvK hom_compE -functor_o => <-.
+  by exists (finv fy \o fx).
+move: (isotype_ex y) (isotype_mem y) => [fy <-]; rewrite -{y}eqy.
+rewrite hom_compE -functor_o /=.
+have eqcard := BijHom_eq_card f.
+by move: (X in A # X) x => {f fy}; rewrite -{V}eqcard => f x /isotypeE ->.
+Qed.
+
 End Action.
 
 
