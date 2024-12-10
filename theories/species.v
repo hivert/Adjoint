@@ -138,6 +138,24 @@ HB.instance Definition _ :=
 Definition Species := {functor Bij -> Bij}.
 
 
+Section SpFInv.
+Variable (A : Species) (S T : Bij) (f : {hom S -> T}).
+
+Lemma SpfinvK : cancel (A # f) (A # (finv f)).
+Proof.
+move=> x.
+have finvK : finv f \o f =1 idfun by apply: finvK.
+by rewrite hom_compE -functor_o (functor_ext_hom _ _ _ finvK) functor_id.
+Qed.
+Lemma SpfinvKV : cancel (A # (finv f)) (A # f).
+Proof.
+move=> x.
+have finvKV : f \o finv f =1 idfun by apply: finvKV.
+by rewrite hom_compE -functor_o (functor_ext_hom _ _ _ finvKV) functor_id.
+Qed.
+End SpFInv.
+
+
 Section Cardinality.
 
 Definition TinSet (T : Bij) (X : {set T}) : Bij := {x : T | x \in X} : Bij.
@@ -200,7 +218,7 @@ Qed.
 Lemma actSpM x : act_morph actSp_fun x.
 Proof.
 move=> /= s t.
-rewrite /actSp_fun -[RHS]compapp -functor_o; apply: functor_ext_hom => {}x /=.
+rewrite /actSp_fun hom_compE -functor_o; apply: functor_ext_hom => {}x /=.
 by rewrite permM.
 Qed.
 Canonical actSp := TotalAction actSp1 actSpM.
@@ -265,12 +283,12 @@ Lemma perm_morph_orbit (U V : Bij) (f : {hom U -> V}) x :
 Proof.
 apply/setP=> u; apply/imsetP/orbitP => [[y /orbitP[/= s _ <-{y} ->{u}]]|].
   exists (perm_morph f s); first by rewrite inE.
-  rewrite /actSp_fun -[LHS]compapp -[RHS]compapp -!functor_o.
+  rewrite /actSp_fun !hom_compE -!functor_o.
   by apply: (functor_ext_hom A) => {}x /=; rewrite perm_morphE.
 move=> /=[s _ <-{u}].
 exists (actSp _ x (perm_morph (finv f) s)).
   by apply/orbitP => /=; exists (perm_morph (finv f) s); first by rewrite inE.
-rewrite /= /actSp_fun -[LHS]compapp -[RHS]compapp -!functor_o.
+rewrite /= /actSp_fun !hom_compE -!functor_o.
 apply: (functor_ext_hom A) => {}x /=.
 by rewrite /perm_morph_fun permE /= finvKV finvI.
 Qed.
@@ -312,9 +330,7 @@ apply/imsetP/imsetP => /=[[F /imsetP[u _ ->{F} ->{E} /=]] | [i _ ->{E}]].
   exact: perm_morph_orbit.
 exists (orbit (actSp _) [set: {perm U}] ((A # finv (enum_rankBij U)) i)).
   by apply/imsetP; exists ((A # finv (enum_rankBij U)) i).
-rewrite /ff perm_morph_orbit; congr orbit.
-rewrite -[RHS]compapp -functor_o -[LHS](@functor_id _ _ A).
-by apply: (functor_ext_hom A) => {}i; rewrite /= finvKV.
+by rewrite /ff perm_morph_orbit SpfinvKV.
 Qed.
 
 Lemma isotype_mem U (x : A U) : isotype x \in isotypes #|U|.
@@ -340,9 +356,8 @@ Proof.
 move=> H; apply/eqP; rewrite -isotypesE ?isotype_mem //.
 have [g <-] := isotype_ex x.
 apply/orbitP; exists (perm_hom (g \o (finv f))); first by rewrite inE.
-rewrite /= /actSp_fun; rewrite -[LHS]compapp -functor_o.
-apply: (functor_ext_hom A) => i /=.
-by rewrite permE /= finvK.
+rewrite /= /actSp_fun /=.
+by rewrite (functor_ext_hom A _ _ (perm_homE _)) functor_o /= SpfinvK.
 Qed.
 
 End Action.
@@ -510,16 +525,12 @@ Definition ifSp_inv : el (ifSp V) -> el (ifSp U) :=
 Lemma ifSp_morK : cancel ifSp_mor ifSp_inv.
 Proof.
 rewrite /ifSp_mor /ifSp_inv /ifSp; case:_/(condP f) => /=.
-have finvK : finv f \o f =1 idfun by apply: finvK.
-by case: (cond V) => x;
-  rewrite -[LHS]compapp -functor_o (functor_ext_hom _ _ _ finvK) functor_id.
+by case: (cond V) => x; rewrite SpfinvK.
 Qed.
 Lemma ifSp_invK : cancel ifSp_inv ifSp_mor.
 Proof.
 rewrite /ifSp_mor /ifSp_inv /ifSp; case:_/(condP f) => /=.
-have finvK : f \o finv f =1 idfun by apply: finvKV.
-by case: (cond V) => x;
-  rewrite -[LHS]compapp -functor_o (functor_ext_hom _ _ _ finvK) functor_id.
+by case: (cond V) => x; rewrite SpfinvKV.
 Qed.
 Lemma ifSp_mor_bij : bijective ifSp_mor.
 Proof. exists ifSp_inv; [exact: ifSp_morK | exact: ifSp_invK]. Qed.
@@ -602,12 +613,7 @@ Definition sumSp_mor S T (f : {hom S -> T}) :
            end.
 Lemma sumSp_mor_bij S T (f : {hom S -> T}) : bijective (sumSp_mor f).
 Proof.
-exists (sumSp_mor (finv f)); case => [a|b] /=; congr (_ _);
-  rewrite -[LHS]compapp -functor_o.
-- by rewrite -[RHS](@functor_id _ _ A); apply/functor_ext_hom/finvK.
-- by rewrite -[RHS](@functor_id _ _ B); apply/functor_ext_hom/finvK.
-- by rewrite -[RHS](@functor_id _ _ A); apply/functor_ext_hom/finvKV.
-- by rewrite -[RHS](@functor_id _ _ B); apply/functor_ext_hom/finvKV.
+by exists (sumSp_mor (finv f)); case => [a|b] /=; rewrite ?SpfinvK ?SpfinvKV.
 Qed.
 HB.instance Definition _ S T (f : {hom S -> T}) :=
   BijHom.Build (sumSp_fun S) (sumSp_fun T) (sumSp_mor f) (sumSp_mor_bij f).
@@ -922,10 +928,10 @@ Lemma prodSp_fun_comp S T U (f : {hom S -> T}) (g : {hom T -> U}) :
   prodSp_fun g \o prodSp_fun f =1 prodSp_fun (g \o f).
 Proof.
 rewrite /prodSp_fun => [][a va b vb eq] /=; apply/eqP/eq_prodSpP; split.
-- rewrite -[_ (_ va)]compapp -functor_o /=.
+- rewrite hom_compE -functor_o /=.
   have /= -> := functor_ext_hom A _ _ (restr_comp f g (I := a)).
   by rewrite functor_o /= Tagged_SpTinSet_castE.
-- rewrite -[_ (_ vb)]compapp -functor_o /=.
+- rewrite !hom_compE -!functor_o /=.
   have /= -> := functor_ext_hom B _ _ (restr_comp f g (I := b)).
   by rewrite functor_o /= Tagged_SpTinSet_castE.
 Qed.
@@ -1111,7 +1117,7 @@ Lemma prodSp1_inv_inj : injective prodSp1_inv.
 Proof.
 rewrite /prodSp1_inv; unlock.
 have aux_lemma i : (A # toSetTV S) ((A # toSetT S) i) = i.
-  rewrite -![(A # _) _]compapp -!functor_o.
+  rewrite !hom_compE -!functor_o.
   have /= ->:= functor_ext_hom A _ _ (@toSetTK S) i.
   by rewrite NIdE !functor_id /=.
 move=> i j /eqP/eq_prodSpP [/[swap] _] /eqP.
@@ -1148,13 +1154,13 @@ Fact prodSp1V_natural A : naturality A (A * 1) (prodSp1V A).
 Proof.
 move=> S T h x /=.
 apply/eqP/eq_prodSpP; split => /=.
-  rewrite /prodSp1_inv; unlock; rewrite /= -![(A # _) _]compapp -!functor_o /=.
+  rewrite /prodSp1_inv; unlock; rewrite /= !hom_compE -!functor_o /=.
   have /= -> := functor_ext_hom A _ _ (restr_hom_setTE h).
   by rewrite functor_o /= Tagged_SpTinSet_castE.
 have eq0 : h @: (setb (prodSp1_inv x)) = setb (prodSp1_inv ((A # h) x)).
   by rewrite /prodSp1_inv; unlock; rewrite /= imset0.
 have /= <- := Tagged_SpTinSet_castE eq0 (A := 1).
-rewrite -[(1 # _) _]compapp -functor_o.
+rewrite [(1 # _) _]hom_compE -functor_o.
 apply/eqP; rewrite eq_Tagged /=; apply/eqP.
 exact: deltaSpE.
 Qed.
