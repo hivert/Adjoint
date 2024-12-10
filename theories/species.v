@@ -65,7 +65,7 @@ Hint Resolve BijP : core.
 
 Section Homs.
 
-Variable (S T : Bij) (f : {hom[Bij] S -> T}).
+Variable (S T : Bij) (f : {hom S -> T}).
 
 Lemma hom_is_isom :
   { finv | bijective finv & (cancel finv f * cancel f finv)%type }.
@@ -121,7 +121,7 @@ HB.instance Definition _ := isHom.Build _ S T f finsetsbij_hom.
 HB.instance Definition _ := isIsom.Build _ S T f (finv_bij f) (finvK f) (finvKV f).
 HB.end.
 
-Lemma BijHom_eq_card (S T : Bij) (f : {hom[Bij] S -> T}) : #|S| = #|T|.
+Lemma BijHom_eq_card (S T : Bij) (f : {hom S -> T}) : #|S| = #|T|.
 Proof. exact: (bij_eq_card (isHom_inhom f)). Qed.
 
 
@@ -151,7 +151,7 @@ Qed.
 
 HB.instance Definition _ (S : Bij) :=
   BijHom.Build _ _ (@enum_rank S : el S -> el ('I_#|S| : Bij)) (@enum_rank_bij S).
-Definition enum_rankBij (S : Bij) : {hom[Bij] S -> 'I_#|S|} :=
+Definition enum_rankBij (S : Bij) : {hom S -> 'I_#|S|} :=
   @enum_rank S : el S -> el ('I_#|S| : Bij).
 
 Definition cardSp (A : Species) (n : nat) := #|A 'I_n|.
@@ -323,7 +323,7 @@ apply: (repr_mem_transversal (isotypesP _)); apply/imsetP.
 by exists ((A # enum_rankBij U) x).
 Qed.
 Lemma isotype_ex U (x : A U) :
-  exists f : {hom[Bij] U -> 'I_#|U|}, (A # f) x = isotype x.
+  exists f : {hom U -> 'I_#|U|}, (A # f) x = isotype x.
 Proof.
 rewrite /isotype.
 set ix := (A # enum_rankBij U) x.
@@ -334,7 +334,7 @@ rewrite /actSp_fun /isotype -/ix => <-.
 by exists (s \o (enum_rankBij U)); rewrite /ix functor_o.
 Qed.
 
-Lemma isotypeE U (x : A U) (f : {hom[Bij] U -> 'I_#|U|}) :
+Lemma isotypeE U (x : A U) (f : {hom U -> 'I_#|U|}) :
   (A # f) x \in isotypes #|U| -> (A # f) x = isotype x.
 Proof.
 move=> H; apply/eqP; rewrite -isotypesE ?isotype_mem //.
@@ -409,8 +409,7 @@ End Localization.
 Section ZeroSpecies.
 
 Definition Sp0_fun := fun _ : Bij => voidB.
-Definition Sp0_mor (S T : Bij) (f : {hom[Bij] S -> T}) :
-  {hom[Bij] voidB -> voidB} := idfun.
+Definition Sp0_mor (S T : Bij) (f : {hom S -> T}) : {hom voidB -> voidB} := idfun.
 HB.instance Definition _ :=
   @isFunctor.Build Bij Bij Sp0_fun Sp0_mor
     (fun _ _ _ _ _ => frefl _) (fun _ => frefl _) (fun _ _ _ _ _ => frefl _).
@@ -423,15 +422,18 @@ Notation "0" := Sp0 : species_scope.
 
 
 Section ifSpecies.
-Variable (A B : Species) (cond : pred Bij).
+Variable (A B : Species) (condn : pred nat).
+Implicit Type (U V W : Bij).
 
-Hypothesis condP : forall U V (f : {hom[Bij] U -> V}), cond V = cond U.
+Let cond U := condn #|U|.
+Lemma condP U V (f : {hom U -> V}) : cond V = cond U.
+Proof. by rewrite /cond (BijHom_eq_card f). Qed.
 
 Local Notation ifAB c V := (if c then A V else B V).
 Definition ifSp U := ifAB (cond U) U.
 
 Section Hom.
-Variables (U V : Bij) (f : {hom[Bij] U -> V}).
+Variables (U V : Bij) (f : {hom U -> V}).
 
 Definition ifSp_mor : el (ifSp U) -> el (ifSp V) :=
   match condP f in (_ = a) return ifAB a U -> ifAB (cond V) V
@@ -507,13 +509,13 @@ Section SpDelta.
 
 Variable (cond : nat -> bool).
 Definition SpDelta_fun := fun S : Bij => if cond #|S| then unitB else voidB.
-Lemma SpDelta_funE (S T : Bij) (f : {hom[Bij] S -> T}) :
+Lemma SpDelta_funE (S T : Bij) (f : {hom S -> T}) :
   SpDelta_fun S = SpDelta_fun T.
 Proof. by rewrite /SpDelta_fun (BijHom_eq_card f). Qed.
 Lemma SpDelta_fun_uniq (S : Bij) (x y : SpDelta_fun S) : x = y.
 Proof. by move: x y; rewrite /SpDelta_fun; case: cond => - [] []. Qed.
-Definition SpDelta_mor (S T : Bij) (f : {hom[Bij] S -> T}) :
-  {hom[Bij] SpDelta_fun S -> SpDelta_fun T} :=
+Definition SpDelta_mor (S T : Bij) (f : {hom S -> T}) :
+  {hom SpDelta_fun S -> SpDelta_fun T} :=
   eq_rect _ (fun x => {hom x -> SpDelta_fun T}) idfun _ (esym (SpDelta_funE f)).
 Fact SpDelta_ext : FunctorLaws.ext SpDelta_mor.
 Proof. by move=> /= S T f g _ x; apply: SpDelta_fun_uniq. Qed.
@@ -547,13 +549,13 @@ Proof. by apply: fintype_le1P; rewrite cardSpE card_SpDelta; case c. Qed.
 Section SetSpecies.
 
 Definition setSp_fun (S : Bij) := unitB.
-Lemma setSp_funE (S T : Bij) (f : {hom[Bij] S -> T}) :
+Lemma setSp_funE (S T : Bij) (f : {hom S -> T}) :
   setSp_fun S = setSp_fun T.
 Proof. by []. Qed.
 Lemma setSp_fun_uniq (S : Bij) (x y : setSp_fun S) : x = y.
 Proof. by move: x y; rewrite /setSp_fun => - [] []. Qed.
-Definition setSp_mor (S T : Bij) (f : {hom[Bij] S -> T}) :
-  {hom[Bij] setSp_fun S -> setSp_fun T} :=
+Definition setSp_mor (S T : Bij) (f : {hom S -> T}) :
+  {hom setSp_fun S -> setSp_fun T} :=
   eq_rect _ (fun x => {hom x -> setSp_fun T}) idfun _ (esym (setSp_funE f)).
 Fact setSp_ext : FunctorLaws.ext setSp_mor.
 Proof. by move=> /= S T f g _ x; apply: setSp_fun_uniq. Qed.
@@ -574,16 +576,16 @@ End SetSpecies.
 Section SubsetSpecies.
 
 Definition subsetSp_fun (S : Bij) : Bij := {set S}.
-Definition subsetSp_mor S T (f : {hom[Bij] S -> T}) :
+Definition subsetSp_mor S T (f : {hom S -> T}) :
   el (subsetSp_fun S) -> el (subsetSp_fun T) := fun X => f @: X.
 
-Lemma subsetSp_mor_bij S T (f : {hom[Bij] S -> T}) : bijective (subsetSp_mor f).
+Lemma subsetSp_mor_bij S T (f : {hom S -> T}) : bijective (subsetSp_mor f).
 Proof.
 by exists (subsetSp_mor (finv f)) => X;
   rewrite /subsetSp_mor -imset_comp -[RHS]imset_id; apply: eq_imset;
   [exact: finvK | exact: finvKV].
 Qed.
-HB.instance Definition _ S T (f : {hom[Bij] S -> T}) :=
+HB.instance Definition _ S T (f : {hom S -> T}) :=
   BijHom.Build (subsetSp_fun S) (subsetSp_fun T)
     (subsetSp_mor f) (subsetSp_mor_bij f).
 Fact subsetSp_ext : FunctorLaws.ext subsetSp_mor.
@@ -610,13 +612,13 @@ Section SumSpecies.
 Variable A B : Species.
 
 Definition sumSp_fun S : Bij := (A S + B S)%type.
-Definition sumSp_mor S T (f : {hom[Bij] S -> T}) :
+Definition sumSp_mor S T (f : {hom S -> T}) :
   el (sumSp_fun S) -> el (sumSp_fun T) :=
   fun x => match x with
            | inl a => inl ((A # f) a)
            | inr b => inr ((B # f) b)
            end.
-Lemma sumSp_mor_bij S T (f : {hom[Bij] S -> T}) : bijective (sumSp_mor f).
+Lemma sumSp_mor_bij S T (f : {hom S -> T}) : bijective (sumSp_mor f).
 Proof.
 exists (sumSp_mor (finv f)); case => [a|b] /=; congr (_ _);
   rewrite -[LHS]compapp -functor_o.
@@ -625,7 +627,7 @@ exists (sumSp_mor (finv f)); case => [a|b] /=; congr (_ _);
 - by rewrite -[RHS](@functor_id _ _ A); apply/functor_ext_hom/finvKV.
 - by rewrite -[RHS](@functor_id _ _ B); apply/functor_ext_hom/finvKV.
 Qed.
-HB.instance Definition _ S T (f : {hom[Bij] S -> T}) :=
+HB.instance Definition _ S T (f : {hom S -> T}) :=
   BijHom.Build (sumSp_fun S) (sumSp_fun T) (sumSp_mor f) (sumSp_mor_bij f).
 Fact sumSp_ext : FunctorLaws.ext sumSp_mor.
 Proof. by move=> S T f g eq [a|b] /=; congr (_ _); apply: functor_ext_hom. Qed.
@@ -918,11 +920,11 @@ Qed.
 End Elements.
 
 
-Lemma prodSp_mor_subproof S T (f : {hom[Bij] S -> T}) (x : prodSpT S) :
+Lemma prodSp_mor_subproof S T (f : {hom S -> T}) (x : prodSpT S) :
   f @: seta x ==  ~: f @: setb x.
 Proof. by rewrite (eqP (prodsp_dijs x)) (imsetCE _ (BijP f)). Qed.
 
-Definition prodSp_fun S T (f : {hom[Bij] S -> T}) (x : el (prodSpT S : Bij))
+Definition prodSp_fun S T (f : {hom S -> T}) (x : el (prodSpT S : Bij))
   : el (prodSpT T : Bij)
   := MkProdSp ((A # restr_hom _ f) (vala x)) ((B # restr_hom _ f) (valb x))
        (prodSp_mor_subproof f x).
@@ -934,7 +936,7 @@ move=> [a va b vb eq] /=; apply/eqP/eq_prodSpP; split.
 - have /= -> := functor_ext_hom B _ _ (restr_id (I := b)).
   by rewrite /= Tagged_SpTinSet_castE.
 Qed.
-Lemma prodSp_fun_comp S T U (f : {hom[Bij] S -> T}) (g : {hom[Bij] T -> U}) :
+Lemma prodSp_fun_comp S T U (f : {hom S -> T}) (g : {hom T -> U}) :
   prodSp_fun g \o prodSp_fun f =1 prodSp_fun (g \o f).
 Proof.
 rewrite /prodSp_fun => [][a va b vb eq] /=; apply/eqP/eq_prodSpP; split.
@@ -945,7 +947,7 @@ rewrite /prodSp_fun => [][a va b vb eq] /=; apply/eqP/eq_prodSpP; split.
   have /= -> := functor_ext_hom B _ _ (restr_comp f g (I := b)).
   by rewrite functor_o /= Tagged_SpTinSet_castE.
 Qed.
-Lemma prodSp_fun_ext S T (f g : {hom[Bij] S -> T}) :
+Lemma prodSp_fun_ext S T (f g : {hom S -> T}) :
   f =1 g -> prodSp_fun f =1 prodSp_fun g.
 Proof.
 rewrite /prodSp_fun => eqfg [a va b vb eq] /=; apply/eqP/eq_prodSpP; split.
@@ -955,7 +957,7 @@ rewrite /prodSp_fun => eqfg [a va b vb eq] /=; apply/eqP/eq_prodSpP; split.
   by rewrite functor_o /= Tagged_SpTinSet_castE.
 Qed.
 
-Lemma prodSp_fun_bij S T (f : {hom[Bij] S -> T}) : bijective (prodSp_fun f).
+Lemma prodSp_fun_bij S T (f : {hom S -> T}) : bijective (prodSp_fun f).
 Proof.
 exists (prodSp_fun (finv f)) => x; rewrite -[LHS]compapp prodSp_fun_comp.
 - have /prodSp_fun_ext -> : finv f \o f =1 idfun by move=> y /=; rewrite finvK.
@@ -963,9 +965,9 @@ exists (prodSp_fun (finv f)) => x; rewrite -[LHS]compapp prodSp_fun_comp.
 - have /prodSp_fun_ext -> : f \o finv f =1 idfun by move=> y /=; rewrite finvKV.
   by rewrite prodSp_fun_id.
 Qed.
-HB.instance Definition _ S T (f : {hom[Bij] S -> T}) :=
+HB.instance Definition _ S T (f : {hom S -> T}) :=
   BijHom.Build (prodSpT S) (prodSpT T) (prodSp_fun f) (prodSp_fun_bij f).
-Definition prodSp_mor S T (f : {hom[Bij] S -> T}) : {hom _ -> _} := prodSp_fun f.
+Definition prodSp_mor S T (f : {hom S -> T}) : {hom _ -> _} := prodSp_fun f.
 Fact prodSp_ext : FunctorLaws.ext prodSp_mor.
 Proof. exact: prodSp_fun_ext. Qed.
 Fact prodSp_id : FunctorLaws.id prodSp_mor.
