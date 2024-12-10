@@ -421,8 +421,69 @@ End ZeroSpecies.
 Notation "0" := Sp0 : species_scope.
 
 
+Section SetSpecies.
+
+Definition setSp_fun (S : Bij) := unitB.
+Lemma setSp_funE (S T : Bij) (f : {hom S -> T}) :
+  setSp_fun S = setSp_fun T.
+Proof. by []. Qed.
+Lemma setSp_fun_uniq (S : Bij) (x y : setSp_fun S) : x = y.
+Proof. by move: x y; rewrite /setSp_fun => - [] []. Qed.
+Definition setSp_mor (S T : Bij) (f : {hom S -> T}) :
+  {hom setSp_fun S -> setSp_fun T} :=
+  eq_rect _ (fun x => {hom x -> setSp_fun T}) idfun _ (esym (setSp_funE f)).
+Fact setSp_ext : FunctorLaws.ext setSp_mor.
+Proof. by move=> /= S T f g _ x; apply: setSp_fun_uniq. Qed.
+Fact setSp_id : FunctorLaws.id setSp_mor.
+Proof. move=> /= a x; apply: setSp_fun_uniq. Qed.
+Fact setSp_comp  : FunctorLaws.comp setSp_mor.
+Proof. by move=> /= a b c f g x; apply: setSp_fun_uniq. Qed.
+HB.instance Definition _ := @isFunctor.Build Bij Bij setSp_fun setSp_mor
+                              setSp_ext setSp_id setSp_comp.
+Definition setSp : Species := setSp_fun.
+
+Lemma card_setSp n : cardSp setSp n = 1%N.
+Proof. by rewrite /cardSp /= /setSp_fun /= card_unit. Qed.
+
+End SetSpecies.
+
+
+Section SubsetSpecies.
+
+Definition subsetSp_fun (S : Bij) : Bij := {set S}.
+Definition subsetSp_mor S T (f : {hom S -> T}) :
+  el (subsetSp_fun S) -> el (subsetSp_fun T) := fun X => f @: X.
+
+Lemma subsetSp_mor_bij S T (f : {hom S -> T}) : bijective (subsetSp_mor f).
+Proof.
+by exists (subsetSp_mor (finv f)) => X;
+  rewrite /subsetSp_mor -imset_comp -[RHS]imset_id; apply: eq_imset;
+  [exact: finvK | exact: finvKV].
+Qed.
+HB.instance Definition _ S T (f : {hom S -> T}) :=
+  BijHom.Build (subsetSp_fun S) (subsetSp_fun T)
+    (subsetSp_mor f) (subsetSp_mor_bij f).
+Fact subsetSp_ext : FunctorLaws.ext subsetSp_mor.
+Proof. by move=> S T f g eq X /=; rewrite /subsetSp_mor /=; apply: eq_imset. Qed.
+Fact subsetSp_id : FunctorLaws.id subsetSp_mor.
+Proof. by move=> S X; apply: imset_id. Qed.
+Fact subsetSp_comp  : FunctorLaws.comp subsetSp_mor.
+Proof. by move=> S T U f g X; rewrite /= /subsetSp_mor -imset_comp. Qed.
+HB.instance Definition _ :=
+  @isFunctor.Build Bij Bij subsetSp_fun subsetSp_mor
+    subsetSp_ext subsetSp_id subsetSp_comp.
+Definition subsetSp : Species := subsetSp_fun.
+
+Lemma card_subsetSp0n n : cardSp subsetSp n = (2 ^ n)%N.
+Proof.
+by rewrite /cardSp -cardsT /subsetSp_fun -powersetT card_powerset cardsT card_ord.
+Qed.
+
+End SubsetSpecies.
+
+
 Section ifSpecies.
-Variable (A B : Species) (condn : pred nat).
+Variable  (condn : pred nat) (A B : Species).
 Implicit Type (U V W : Bij).
 
 Let cond U := condn #|U|.
@@ -505,106 +566,27 @@ Proof. by rewrite /cardSp /= /ifSp; case: (cond _). Qed.
 End ifSpecies.
 
 
-Section SpDelta.
+Section DeltaSpecies.
 
 Variable (cond : nat -> bool).
-Definition SpDelta_fun := fun S : Bij => if cond #|S| then unitB else voidB.
-Lemma SpDelta_funE (S T : Bij) (f : {hom S -> T}) :
-  SpDelta_fun S = SpDelta_fun T.
-Proof. by rewrite /SpDelta_fun (BijHom_eq_card f). Qed.
-Lemma SpDelta_fun_uniq (S : Bij) (x y : SpDelta_fun S) : x = y.
-Proof. by move: x y; rewrite /SpDelta_fun; case: cond => - [] []. Qed.
-Definition SpDelta_mor (S T : Bij) (f : {hom S -> T}) :
-  {hom SpDelta_fun S -> SpDelta_fun T} :=
-  eq_rect _ (fun x => {hom x -> SpDelta_fun T}) idfun _ (esym (SpDelta_funE f)).
-Fact SpDelta_ext : FunctorLaws.ext SpDelta_mor.
-Proof. by move=> /= S T f g _ x; apply: SpDelta_fun_uniq. Qed.
-Fact SpDelta_id : FunctorLaws.id SpDelta_mor.
-Proof. move=> /= a x; apply: SpDelta_fun_uniq. Qed.
-Fact SpDelta_comp  : FunctorLaws.comp SpDelta_mor.
-Proof. by move=> /= a b c f g x; apply: SpDelta_fun_uniq. Qed.
-HB.instance Definition _ := @isFunctor.Build Bij Bij SpDelta_fun SpDelta_mor
-                              SpDelta_ext SpDelta_id SpDelta_comp.
-Definition SpDelta : Species := SpDelta_fun.
+Definition deltaSp : Species := ifSp cond setSp 0.
 
-Lemma card_SpDelta n : cardSp SpDelta n = cond n.
-Proof.
-rewrite /cardSp /= /SpDelta_fun /= card_ord.
-by case: cond; rewrite ?card_unit ?card_void.
-Qed.
+Lemma card_deltaSp n : cardSp deltaSp n = cond n.
+Proof. by rewrite card_ifSp cardSp0 card_setSp card_ord; case: cond. Qed.
 
-End SpDelta.
-Notation "1" := (SpDelta (fun n => n == 0%N)) : species_scope.
-Notation "\X" := (SpDelta (fun n => n == 1%N)) : species_scope.
+End DeltaSpecies.
+Notation "1" := (deltaSp (fun n => n == 0%N)) : species_scope.
+Notation "\X" := (deltaSp (fun n => n == 1%N)) : species_scope.
 
 Lemma cardSp1 n : cardSp 1 n = (n == 0%N).
-Proof. exact: card_SpDelta. Qed.
+Proof. exact: card_deltaSp. Qed.
 Lemma cardSpX n : cardSp \X n = (n == 1%N).
-Proof. exact: card_SpDelta. Qed.
+Proof. exact: card_deltaSp. Qed.
 
-Lemma SpDeltaE c S (x : SpDelta c S) : all_equal_to x.
-Proof. by apply: fintype_le1P; rewrite cardSpE card_SpDelta; case c. Qed.
-
-
-Section SetSpecies.
-
-Definition setSp_fun (S : Bij) := unitB.
-Lemma setSp_funE (S T : Bij) (f : {hom S -> T}) :
-  setSp_fun S = setSp_fun T.
-Proof. by []. Qed.
-Lemma setSp_fun_uniq (S : Bij) (x y : setSp_fun S) : x = y.
-Proof. by move: x y; rewrite /setSp_fun => - [] []. Qed.
-Definition setSp_mor (S T : Bij) (f : {hom S -> T}) :
-  {hom setSp_fun S -> setSp_fun T} :=
-  eq_rect _ (fun x => {hom x -> setSp_fun T}) idfun _ (esym (setSp_funE f)).
-Fact setSp_ext : FunctorLaws.ext setSp_mor.
-Proof. by move=> /= S T f g _ x; apply: setSp_fun_uniq. Qed.
-Fact setSp_id : FunctorLaws.id setSp_mor.
-Proof. move=> /= a x; apply: setSp_fun_uniq. Qed.
-Fact setSp_comp  : FunctorLaws.comp setSp_mor.
-Proof. by move=> /= a b c f g x; apply: setSp_fun_uniq. Qed.
-HB.instance Definition _ := @isFunctor.Build Bij Bij setSp_fun setSp_mor
-                              setSp_ext setSp_id setSp_comp.
-Definition setSp : Species := setSp_fun.
-
-Lemma card_setSp n : cardSp setSp n = 1%N.
-Proof. by rewrite /cardSp /= /setSp_fun /= card_unit. Qed.
-
-End SetSpecies.
+Lemma deltaSpE c S (x : deltaSp c S) : all_equal_to x.
+Proof. by apply: fintype_le1P; rewrite cardSpE card_deltaSp; case c. Qed.
 
 
-Section SubsetSpecies.
-
-Definition subsetSp_fun (S : Bij) : Bij := {set S}.
-Definition subsetSp_mor S T (f : {hom S -> T}) :
-  el (subsetSp_fun S) -> el (subsetSp_fun T) := fun X => f @: X.
-
-Lemma subsetSp_mor_bij S T (f : {hom S -> T}) : bijective (subsetSp_mor f).
-Proof.
-by exists (subsetSp_mor (finv f)) => X;
-  rewrite /subsetSp_mor -imset_comp -[RHS]imset_id; apply: eq_imset;
-  [exact: finvK | exact: finvKV].
-Qed.
-HB.instance Definition _ S T (f : {hom S -> T}) :=
-  BijHom.Build (subsetSp_fun S) (subsetSp_fun T)
-    (subsetSp_mor f) (subsetSp_mor_bij f).
-Fact subsetSp_ext : FunctorLaws.ext subsetSp_mor.
-Proof. by move=> S T f g eq X /=; rewrite /subsetSp_mor /=; apply: eq_imset. Qed.
-Fact subsetSp_id : FunctorLaws.id subsetSp_mor.
-Proof. by move=> S X; apply: imset_id. Qed.
-Fact subsetSp_comp  : FunctorLaws.comp subsetSp_mor.
-Proof. by move=> S T U f g X; rewrite /= /subsetSp_mor -imset_comp. Qed.
-HB.instance Definition _ :=
-  @isFunctor.Build Bij Bij subsetSp_fun subsetSp_mor
-    subsetSp_ext subsetSp_id subsetSp_comp.
-Definition subsetSp : Species := subsetSp_fun.
-
-Lemma card_subsetSp0n n : cardSp subsetSp n = (2 ^ n)%N.
-Proof.
-by rewrite /cardSp -cardsT /subsetSp_fun -powersetT card_powerset cardsT card_ord.
-Qed.
-
-End SubsetSpecies.
 
 
 Section SumSpecies.
@@ -1109,10 +1091,8 @@ End ProdSpeciesZero.
 Section ProdSpeciesOne.
 
 Lemma appSpSet1_card T (S : {set T}) : appSpSet 1 S -> #|S| = 0%N.
-Proof.
-rewrite /appSpSet /SpDelta /SpDelta_fun /= /SpDelta_fun card_TinSet.
-by case eqP.
-Qed.
+Proof. by rewrite /appSpSet /deltaSp /= /ifSp card_TinSet; case eqP. Qed.
+
 
 Section Mor.
 Variable (A : Species).
@@ -1122,7 +1102,7 @@ Definition prodSp1_inv_def : el (A S) -> el ((A * 1) S).
 move=> x.
 pose a : A {x : S | x \in setT} := (A # toSetT S) x.
 have b : 1 {x : S | x \in set0}.
-  rewrite /SpDelta /= /SpDelta_fun card_TinSet cards0 eqxx.
+  rewrite /deltaSp /= /ifSp card_TinSet cards0 eqxx.
   exact tt.
 by apply: (MkProdSp a b _); rewrite setC0.
 Defined.
@@ -1176,7 +1156,7 @@ have eq0 : h @: (setb (prodSp1_inv x)) = setb (prodSp1_inv ((A # h) x)).
 have /= <- := Tagged_SpTinSet_castE eq0 (A := 1).
 rewrite -[(1 # _) _]compapp -functor_o.
 apply/eqP; rewrite eq_Tagged /=; apply/eqP.
-exact: SpDeltaE.
+exact: deltaSpE.
 Qed.
 Fact prodSp1_natural A : naturality (A * 1) A (prodSp1 A).
 Proof. exact: (natural_inv (@prodSp1V_natural A)). Qed.
