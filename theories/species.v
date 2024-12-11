@@ -447,17 +447,17 @@ End Action.
 
 Section NaturalTransport.
 
-Lemma transport_orbit (A B : Species) (U : Bij) (f : {hom A U -> B U}) :
+Lemma transport_orbit (A B : Species) (U : Bij) (f : A U -> B U) :
   (forall a (s : {perm U}), actSp B U (f a) s = f (actSp A U a s)) ->
   forall x, f @: orbit (actSp A U) setT x = orbit (actSp B U) setT (f x).
 Proof.
-move=> natf x.
+move=> fnat x.
 apply/setP => b; apply/imsetP/orbitP => [[a' /orbitP[/= s _ {a'}<-{b}->]] |].
   exists s; first by rewrite inE.
-  exact: natf.
+  exact: fnat.
 move=> [/= s _ {b}<-]; exists (actSp A _ x s).
   by apply/orbitP; exists s; first by rewrite inE.
-exact: natf.
+exact: fnat.
 Qed.
 
 Variables (A B : Species) (U : Bij) (f : {hom A U -> B U}).
@@ -848,7 +848,8 @@ Proof.
 rewrite cardiso_ifSp card_ord.
 by case: cond; rewrite ?cardiso_setSp ?cardiso_Sp0.
 Qed.
-
+Lemma deltaSpE U (x : deltaSp U) : all_equal_to x.
+Proof. by apply: fintype_le1P; rewrite cardSpE card_deltaSp; case cond. Qed.
 
 End DeltaSpecies.
 Notation "1" := (deltaSp (fun n => n == 0%N)) : species_scope.
@@ -858,9 +859,6 @@ Lemma cardSp1 n : cardSp 1 n = (n == 0%N).
 Proof. exact: card_deltaSp. Qed.
 Lemma cardSpX n : cardSp \X n = (n == 1%N).
 Proof. exact: card_deltaSp. Qed.
-
-Lemma deltaSpE c S (x : deltaSp c S) : all_equal_to x.
-Proof. by apply: fintype_le1P; rewrite cardSpE card_deltaSp; case c. Qed.
 
 Lemma cardiso_Sp1 n : cardiso 1 n = (n == 0%N).
 Proof. exact: cardiso_deltaSp. Qed.
@@ -901,6 +899,34 @@ Notation "f + g" := (sumSp f g) : species_scope.
 
 Lemma card_sumSp A B n : cardSp (A + B) n = (cardSp A n + cardSp B n)%N.
 Proof. by rewrite /sumSp /sumSp_fun /= /cardSp /= card_sum. Qed.
+
+Lemma cardiso_sumSp A B n : cardiso (A + B) n = (cardiso A n + cardiso B n)%N.
+Proof.
+rewrite -!cardiso_ordE.
+pose fA (C : {set A 'I_n}) := (inl @: C) : {set ((A + B)%species 'I_n)}.
+have fA_inj : injective fA by apply: imset_inj => x y [].
+pose fB (C : {set B 'I_n}) := (inr @: C) : {set ((A + B)%species 'I_n)}.
+have fB_inj : injective fB by apply: imset_inj => x y [].
+rewrite -(card_imset _ fA_inj) -(card_imset _ fB_inj) -cardsUI.
+rewrite [X in (_ + #|pred_of_set X|)%N](_ : _ = set0) ?cards0 ?addn0; first last.
+  apply: disjoint_setI0; rewrite disjoint_subset; apply/subsetP => x.
+  rewrite inE => /imsetP[/= a Ha {x}->]; apply/negP => /imsetP[/= b _].
+  move: Ha => /imsetP[x _ {a}->] eq.
+  suff /imsetP[y _] : inl x \in fB b by [].
+  rewrite -{}eq mem_imset; last by move=> u v [].
+  exact: orbit_refl.
+congr #|pred_of_set _|.
+apply/setP => /= S; rewrite !inE.
+apply/imsetP/orP => [[[a|b] _ {S}->] | [] /imsetP[T /imsetP[x _ {T}->] {S}->]].
+- left; apply/imsetP; exists (orbit (actSp A  'I_n) setT a).
+    by apply/imsetP; exists a.
+  by rewrite -[LHS]transport_orbit.
+- right; apply/imsetP; exists (orbit (actSp B  'I_n) setT b).
+    by apply/imsetP; exists b.
+  by rewrite -[LHS]transport_orbit.
+- by exists (inl x) => //; rewrite -[RHS]transport_orbit.
+- by exists (inr x) => //; rewrite -[RHS]transport_orbit.
+Qed.
 
 
 Section SumSpeciesCommutative.
