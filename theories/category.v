@@ -526,15 +526,15 @@ case: phi => [t [[]]] /=; rewrite /naturality /= => nat_t.
 exact: nat_t a b h (f x).
 Qed.
 
-Definition eq_nattrans (phi psi : F ~> G) :=
+Definition eq_nattrans (phi psi : F ~~> G) :=
   forall a : C, (phi a =1 psi a :> (_ -> _)).
 Notation "p =%= q" := (eq_nattrans p q).
 
-Lemma eq_nattrans_refl (phi : F ~> G) : phi =%= phi.
+Lemma eq_nattrans_refl (phi : F ~~> G) : phi =%= phi.
 Proof. by []. Qed.
-Lemma eq_nattrans_sym (phi psi : F ~> G) : phi =%= psi -> psi =%= phi.
+Lemma eq_nattrans_sym (phi psi : F ~~> G) : phi =%= psi -> psi =%= phi.
 Proof. by move=> eq a x /[!eq]. Qed.
-Lemma eq_nattrans_trans (phi psi ksi : F ~> G) :
+Lemma eq_nattrans_trans (phi psi ksi : F ~~> G) :
   phi =%= psi -> psi =%= ksi -> phi =%= ksi.
 Proof. by move=> eqp eqk a x /[!eqp] /[!eqk]. Qed.
 

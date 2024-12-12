@@ -208,6 +208,12 @@ move=> x.
 have finvKV : f \o finv f =1 idfun by apply: finvKV.
 by rewrite hom_compE -functor_o (functor_ext_hom _ _ _ finvKV) functor_id.
 Qed.
+Lemma SpfinvE : A # (finv f) =1 finv (A # f).
+Proof.
+move=> x; apply: (bij_inj (BijP (A # f))).
+by rewrite SpfinvKV finvKV.
+Qed.
+
 End SpFInv.
 
 
@@ -331,9 +337,13 @@ move=> /= s; apply/permP => v.
 by rewrite !permE /= finv_comp -perm_morphE /= finvKV.
 Qed.
 
-Lemma perm_morph_orbit U V (f : {hom U -> V}) x :
-  (A # f) @: orbit (actSp U) setT x = orbit (actSp V) setT ((A # f) x).
+Definition isoclass U (x : A U) : {set A U} := orbit (actSp U) setT x.
+Definition isoclasses U : {set {set A U}} := [set isoclass x | x in [set: A U]].
+
+Lemma morph_isoclass U V (f : {hom U -> V}) x :
+  (A # f) @: isoclass x = isoclass ((A # f) x).
 Proof.
+(* TODO : this is very similar to transport_orbit, can it be merged ? *)
 apply/setP=> u; apply/imsetP/orbitP => [[y /orbitP[/= s _ {y}<- {u}->]]|].
   exists (perm_morph f s); first by rewrite inE.
   rewrite /actSp_fun !hom_compE -!functor_o.
@@ -346,18 +356,16 @@ apply: (functor_ext_hom A) => {}x /=.
 by rewrite /perm_morph_fun permE /= finvKV finvI.
 Qed.
 
-Definition isoclasses U : {set {set A U}} :=
-  [set orbit (actSp U) setT x | x in [set: A U]].
 Lemma isoclassesE U V (f : {hom U -> V}) :
-  [set [set (A # f) x | x in (S : {set _})] | S in isoclasses U] = isoclasses V.
+  [set (A # f) @: (S : {set _}) | S in isoclasses U] = isoclasses V.
 Proof.
 apply/setP => /= E.
 apply/imsetP/imsetP => /=[[F /imsetP[u _ {F}-> {E}-> /=]] | [i _ {E}->]].
   exists ((A # f) u); first by rewrite inE.
-  exact: perm_morph_orbit.
+  exact: morph_isoclass.
 exists (orbit (actSp _) [set: {perm U}] ((A # finv f) i)).
   by apply/imsetP; exists ((A # finv f) i).
-by rewrite perm_morph_orbit SpfinvKV.
+by rewrite morph_isoclass SpfinvKV.
 Qed.
 Lemma card_isoclassesE U V (f : {hom U -> V}) : #|isoclasses U| = #|isoclasses V|.
 Proof.
@@ -371,13 +379,10 @@ Definition isotype U (x : A U) :=
   transversal_repr ix (isotypes #|U|) (orbit (actSp 'I_#|U|) setT ix).
 Definition cardiso n := #|isotypes n|.
 
-Lemma isotypesP n :
-  is_transversal (isotypes n)
-    [set orbit (actSp 'I_n) setT x | x in setT] setT.
+Lemma isotypesP n : is_transversal (isotypes n) (isoclasses 'I_n) setT.
 Proof. exact: (transversalP (orbit_partition (actSpP _))). Qed.
 Lemma isotypesE n :
-  {in (isotypes n) &, forall x y : A 'I_n,
-        (y \in orbit (actSp 'I_n) setT x) = (x == y)}.
+  {in (isotypes n) &, forall x y : A 'I_n, (y \in isoclass x) = (x == y)}.
 Proof.
 have [_ _ + _ x xin y yin] := orbit_transversalP (actSpP 'I_n).
 by apply.
@@ -447,9 +452,9 @@ End Action.
 
 Section NaturalTransport.
 
-Lemma transport_orbit (A B : Species) (U : Bij) (f : A U -> B U) :
+Lemma nattransp_orbit (A B : Species) (U : Bij) (f : A U -> B U) :
   (forall a (s : {perm U}), actSp B U (f a) s = f (actSp A U a s)) ->
-  forall x, f @: orbit (actSp A U) setT x = orbit (actSp B U) setT (f x).
+  forall x : A U, f @: isoclass x = isoclass (f x).
 Proof.
 move=> fnat x.
 apply/setP => b; apply/imsetP/orbitP => [[a' /orbitP[/= s _ {a'}<-{b}->]] |].
@@ -463,16 +468,16 @@ Qed.
 Variables (A B : Species) (U : Bij) (f : {hom A U -> B U}).
 Hypothesis fnat : forall a (s : {perm U}), actSp B U (f a) s = f (actSp A U a s).
 
-Lemma transport_isoclasses :
+Lemma nattransp_isoclasses :
   [set f @: (C : {set _}) | C in isoclasses A U] = isoclasses B U.
 Proof.
 apply/setP => /= T.
 apply/imsetP/imsetP => /=[[S /imsetP[a _ {S}-> {T}-> /=]] | [b _ {T}->]].
   exists (f a); first by rewrite inE.
-  exact: transport_orbit.
+  exact: nattransp_orbit.
 exists (finv f @: orbit (actSp B U) setT b).
   apply/imsetP; exists (finv f b); first by rewrite inE.
-  apply: transport_orbit => a s /=.
+  apply: nattransp_orbit => a s /=.
   by apply: (bij_inj (BijP f)); rewrite -fnat !finvKV.
 apply/setP => b'; apply/orbitP/imsetP => [[/= s _ {b'}<-]|].
   exists (finv f (actSp_fun b s)); last by rewrite finvKV.
@@ -483,9 +488,9 @@ exists s; first by rewrite inE.
 by rewrite finvKV.
 Qed.
 
-Lemma transport_cardiso : #|isoclasses A U| = #|isoclasses B U|.
+Lemma nattransp_cardiso : #|isoclasses A U| = #|isoclasses B U|.
 Proof.
-rewrite -transport_isoclasses [RHS]card_imset //.
+rewrite -nattransp_isoclasses [RHS]card_imset //.
 exact/imset_inj/(bij_inj (BijP _)).
 Qed.
 
@@ -496,6 +501,37 @@ Section IsoSpecies.
 
 Variables (A B : Species) (F : A ~> B).
 
+Definition isoSpinv : B ~~> A := fun U => finv (F U).
+Lemma isoSpinv_natural : naturality B A isoSpinv.
+Proof.
+rewrite /isoSpinv => U V h x /=.
+apply: (can_inj (finvKV (A # h))); rewrite finvK.
+rewrite hom_compE -finv_comp.
+apply: (bij_inj (BijP (F V \o A # h))).
+by rewrite -[LHS](natural F U V h) [LHS]/= !finvKV.
+Qed.
+HB.instance Definition _ :=
+  @isNatural.Build Bij Bij B A isoSpinv isoSpinv_natural.
+
+Lemma isoSpK : isoSpinv \v F =%= NId A.
+Proof. by move=> U x /=; rewrite finvK. Qed.
+Lemma isoSpKV : F \v isoSpinv =%= NId B.
+Proof. by move=> U x /=; rewrite finvKV. Qed.
+
+Lemma isoSpinvrE (G : B ~~> A) :
+  (forall U, (G U) \o (F U) =1 idfun) -> G =%= isoSpinv.
+Proof.
+move=> H U b; rewrite /isoSpinv.
+by rewrite -{1}(finvKV (F U) b) hom_compE H.
+Qed.
+Lemma isoSpinvlE (G : B ~~> A) :
+  (forall U, (F U) \o (G U) =1 idfun) -> G =%= isoSpinv.
+Proof.
+move=> H U b; rewrite /isoSpinv.
+apply: (bij_inj (BijP (F U))).
+by rewrite hom_compE H finvKV.
+Qed.
+
 Lemma card_SpE : cardSp A =1 cardSp B.
 Proof. by move=> U; apply: BijHom_eq_card (F 'I_U). Qed.
 
@@ -504,10 +540,16 @@ Proof.
 move=> n; rewrite -!cardiso_ordE.
 pose ff := fun (S : {set A _}) => F 'I_n @: S.
 rewrite -(card_imset (f := ff)); last exact/imset_inj/(bij_inj (BijP _)).
-by rewrite transport_isoclasses // => a s; exact: (natural F).
+by rewrite nattransp_isoclasses // => a s; exact: (natural F).
 Qed.
 
 End IsoSpecies.
+
+Lemma isoSpinvK (A B : Species) (F : A ~> B) : isoSpinv (isoSpinv F) =%= F.
+Proof. by move=> U x; rewrite /isoSpinv /= /isoSpinv /= finvI.  Qed.
+Lemma isoSpinv_vcomp (A B C : Species) (F : A ~> B) (G : B ~> C) :
+  isoSpinv (G \v F) =%= (isoSpinv F) \v (isoSpinv G).
+Proof. by move=> U x /=; rewrite finv_comp. Qed.
 
 
 Section IdSpecies.
@@ -516,8 +558,7 @@ Definition idSp : Species := FId.
 Lemma card_idSp n : cardSp idSp n = n.
 Proof. exact: card_ord. Qed.
 
-Lemma orbit_idSp (U : Bij) (u : U) :
-  orbit (actSp idSp U) [set: {perm U}] u = [set: U].
+Lemma isoclass_idSp (U : Bij) (u : U) : isoclass (A := idSp) u = [set: U].
 Proof.
 apply/setP => /= v; rewrite !inE; apply/orbitP.
 exists (tperm u v); first by rewrite inE.
@@ -532,8 +573,8 @@ case: n => [/=|n].
 rewrite [RHS](_ : _ = 1%N) //=.
 rewrite -[RHS](cards1 [set: idSp 'I_n.+1]); congr #|pred_of_set _|.
 apply/setP => /= S; rewrite !inE.
-apply/imsetP/eqP => [[i _ {S}->] | {S}->]; first by rewrite orbit_idSp.
-by exists ord0; rewrite ?inE // orbit_idSp.
+apply/imsetP/eqP => [[i _ {S}->] | {S}->]; first by rewrite isoclass_idSp.
+by exists ord0; rewrite ?inE // isoclass_idSp.
 Qed.
 
 End IdSpecies.
@@ -576,26 +617,18 @@ HB.instance Definition _ := @isFunctor.Build Bij Bij setTB setTB_mor
 Definition SpSetT : Species := setTB.
 
 Definition toSetT : FId ~~> SpSetT := toSetT_fun.
-Definition toSetTV : SpSetT ~~> FId := toSetT_inv.
 Lemma toSetT_natural : naturality FId SpSetT toSetT.
-Proof. by []. Qed.
-Lemma toSetTV_natural : naturality SpSetT FId toSetTV.
 Proof. by []. Qed.
 HB.instance Definition _ :=
   @isNatural.Build Bij Bij FId SpSetT toSetT toSetT_natural.
-HB.instance Definition _ :=
-  @isNatural.Build Bij Bij SpSetT FId toSetTV toSetTV_natural.
-
-Lemma toSetTK : toSetTV \v toSetT =%= NId FId.
-Proof. by move=> S x /=; rewrite toSetT_funK. Qed.
-Lemma toSetTVK : toSetT \v toSetTV =%= NId setTB.
-Proof. by move=> S x /=; rewrite toSetT_invK. Qed.
+Lemma toSetT_invE : isoSpinv toSetT =%= toSetT_inv.
+Proof. by apply: eq_nattrans_sym; apply: isoSpinvrE => U; apply: toSetT_funK. Qed.
 
 Lemma card_SpSetT n : cardSp SpSetT n = n.
 Proof. by rewrite /cardSp (BijHom_eq_card (@toSetT_inv _)) card_ord. Qed.
 
 Lemma cardiso_SpSetT n : cardiso SpSetT n = (n != 0).
-Proof. by rewrite (cardiso_SpE toSetTV) cardiso_idSp. Qed.
+Proof. by rewrite (cardiso_SpE (isoSpinv toSetT)) cardiso_idSp. Qed.
 
 End Localization.
 
@@ -608,6 +641,7 @@ HB.instance Definition _ :=
   @isFunctor.Build Bij Bij Sp0_fun Sp0_mor
     (fun _ _ _ _ _ => frefl _) (fun _ => frefl _) (fun _ _ _ _ _ => frefl _).
 Definition Sp0 : Species := Sp0_fun.
+
 Lemma cardSp0 n : cardSp Sp0 n = 0%N.
 Proof. by rewrite /cardSp /= card_void. Qed.
 
@@ -644,8 +678,7 @@ Definition setSp : Species := setSp_fun.
 Lemma card_setSp n : cardSp setSp n = 1%N.
 Proof. by rewrite /cardSp /= /setSp_fun /= card_unit. Qed.
 
-Lemma orbit_setSp (U : Bij) i :
-  orbit (actSp setSp U) [set: {perm U}] i = [set: unit].
+Lemma isoclass_setSp (U : Bij) (i : setSp U) : isoclass i = [set: unit].
 Proof.
 apply/setP => [[]] /[!inE]; apply/orbitP; exists 1%g; first by rewrite inE.
 by case: (actSp _ _ _ _).
@@ -656,8 +689,8 @@ Proof.
 rewrite -cardiso_ordE.
 rewrite -[RHS](cards1 [set: setSp 'I_n.+1]); congr #|pred_of_set _|.
 apply/setP => /= S; rewrite !inE /setSp_fun /unitB.
-apply/imsetP/eqP => [[i _ {S}->] | {S}->]; first by rewrite orbit_setSp.
-by exists tt; rewrite ?inE // orbit_setSp.
+apply/imsetP/eqP => [[i _ {S}->] | {S}->]; first by rewrite isoclass_setSp.
+by exists tt; rewrite ?inE // isoclass_setSp.
 Qed.
 
 End SetSpecies.
@@ -694,8 +727,8 @@ Proof.
 by rewrite /cardSp -cardsT /subsetSp_fun -powersetT card_powerset cardsT card_ord.
 Qed.
 
-Lemma orbit_subsetSpE (U : Bij) (F : {set U}) :
-  orbit (actSp subsetSp U) [set: {perm U}] F = [set X : {set U} | #|X| == #|F|].
+Lemma isoclass_subsetSpE (U : Bij) (F : {set U}) :
+  isoclass (A := subsetSp) F = [set X : {set U} | #|X| == #|F|].
 Proof.
 apply/setP => E /[!inE]; apply/orbitP/eqP => [[/= s _ {E}<-] |].
   exact/card_imset/perm_inj.
@@ -716,10 +749,10 @@ have <- : #|[set [set X : {set 'I_n} | #|X| == k] | k : 'I_n.+1]| = n.+1.
   by rewrite !cardltset eqxx => /esym/eqP; apply: val_inj.
 congr #|pred_of_set _|; apply/setP => /= E.
 apply/imsetP/imsetP => /=[[F _ {E}->] | [u _ {E}->]].
-  exists (inord #|F|); rewrite //= inordK ?orbit_subsetSpE //.
+  exists (inord #|F|); rewrite //= inordK ?isoclass_subsetSpE //.
   by rewrite ltnS -[X in _ <= X]card_ord -cardsT subset_leq_card.
 exists [set k : 'I_n | k < u] => //.
-by rewrite orbit_subsetSpE cardltset.
+by rewrite isoclass_subsetSpE cardltset.
 Qed.
 
 End SubsetSpecies.
@@ -828,9 +861,9 @@ Lemma cardiso_ifSp n :
 Proof.
 case: (boolP (cond 'I_n)) => Hcond; rewrite -!cardiso_ordE.
 - have [f Hf] := ifSpT Hcond.
-  by rewrite -(transport_cardiso (f := f)) // => a s /=; rewrite Hf.
+  by rewrite -(nattransp_cardiso (f := f)) // => a s /=; rewrite Hf.
 - have [f Hf] := ifSpF Hcond.
-  by rewrite -(transport_cardiso (f := f)) // => a s /=; rewrite Hf.
+  by rewrite -(nattransp_cardiso (f := f)) // => a s /=; rewrite Hf.
 Qed.
 
 End ifSpecies.
@@ -920,12 +953,12 @@ apply/setP => /= S; rewrite !inE.
 apply/imsetP/orP => [[[a|b] _ {S}->] | [] /imsetP[T /imsetP[x _ {T}->] {S}->]].
 - left; apply/imsetP; exists (orbit (actSp A  'I_n) setT a).
     by apply/imsetP; exists a.
-  by rewrite -[LHS]transport_orbit.
+  by rewrite -[LHS]nattransp_orbit.
 - right; apply/imsetP; exists (orbit (actSp B  'I_n) setT b).
     by apply/imsetP; exists b.
-  by rewrite -[LHS]transport_orbit.
-- by exists (inl x) => //; rewrite -[RHS]transport_orbit.
-- by exists (inr x) => //; rewrite -[RHS]transport_orbit.
+  by rewrite -[LHS]nattransp_orbit.
+- by exists (inl x) => //; rewrite -[RHS]nattransp_orbit.
+- by exists (inr x) => //; rewrite -[RHS]nattransp_orbit.
 Qed.
 
 
@@ -964,14 +997,14 @@ Variable (S : Bij).
 Definition sumSp0_fun : (el ((A + 0) S)) -> (el (A S)) :=
   fun x => match x with inl a => a | inr b => match b with end end.
 Definition sumSp0_inv : (el (A S)) -> (el ((A + 0) S)) := fun a => inl a.
-Let sumSp0_funK : cancel sumSp0_fun sumSp0_inv.
+Fact sumSp0_funK : cancel sumSp0_fun sumSp0_inv.
 Proof. by case => [|[]]. Qed.
-Let sumSp0_invK : cancel sumSp0_inv sumSp0_fun.
+Fact sumSp0_invK : cancel sumSp0_inv sumSp0_fun.
 Proof. by []. Qed.
 Fact sumSp0_fun_bij : bijective sumSp0_fun.
-Proof. by exists sumSp0_inv. Qed.
+Proof. by exists sumSp0_inv; [exact: sumSp0_funK | exact: sumSp0_invK]. Qed.
 Fact sumSp0_inv_bij : bijective sumSp0_inv.
-Proof. by exists sumSp0_fun. Qed.
+Proof. by exists sumSp0_fun; [exact: sumSp0_invK | exact: sumSp0_funK]. Qed.
 HB.instance Definition _ :=
   @BijHom.Build ((A + 0) S) (A S) sumSp0_fun sumSp0_fun_bij.
 HB.instance Definition _ :=
@@ -979,29 +1012,14 @@ HB.instance Definition _ :=
 
 End Mor.
 Definition sumSp0  : A + 0 ~~> A := @sumSp0_fun.
-Definition sumSp0V : A ~~> A + 0 := @sumSp0_inv.
 
 Fact sumSp0_natural : naturality (A + 0) A sumSp0.
 Proof. by move=> S V h []. Qed.
-Fact sumSp0V_natural : naturality A (A + 0) sumSp0V.
-Proof. by []. Qed.
 HB.instance Definition _ :=
   @isNatural.Build Bij Bij (A + 0) A sumSp0 sumSp0_natural.
-HB.instance Definition _ :=
-  @isNatural.Build Bij Bij A (A + 0) sumSp0V sumSp0V_natural.
 
-Lemma sumSp0K : sumSp0V \v sumSp0 =%= NId (A + 0).
-Proof. by move=> S []. Qed.
-Lemma sumSp0VK : sumSp0 \v sumSp0V =%= NId A.
-Proof. by []. Qed.
-
-Definition Sum0Sp : 0 + A ~> A := sumSp0 \v (sumSpC 0 A).
-Definition Sum0SpV : A ~> 0 + A := (sumSpC A 0) \v sumSp0V.
-
-Lemma Sum0SpK : Sum0SpV \v Sum0Sp =%= NId (0 + A).
-Proof. by move=> S []. Qed.
-Lemma Sum0SpVK : Sum0Sp \v Sum0SpV =%= NId A.
-Proof. by []. Qed.
+Lemma sumSp0_invE : isoSpinv sumSp0 =%= sumSp0_inv.
+Proof. by apply: eq_nattrans_sym; apply: isoSpinvrE => U; apply: sumSp0_funK. Qed.
 
 End SumSpeciesZero.
 
@@ -1023,14 +1041,14 @@ Definition sumSpA_inv : el ((A + B + C) S) -> el ((A + (B + C)) S) :=
            | inl (inr b) => inr (inl b)
            | inr a => inr (inr a)
            end.
-Let sumSpA_funK : cancel sumSpA_fun sumSpA_inv.
+Fact sumSpA_funK : cancel sumSpA_fun sumSpA_inv.
 Proof. by case => [|[]]. Qed.
-Let sumSpA_invK : cancel sumSpA_inv sumSpA_fun.
+Fact sumSpA_invK : cancel sumSpA_inv sumSpA_fun.
 Proof. by case => [[]|]. Qed.
 Fact sumSpA_fun_bij : bijective sumSpA_fun.
-Proof. by exists sumSpA_inv. Qed.
+Proof. by exists sumSpA_inv; [exact sumSpA_funK | exact: sumSpA_invK]. Qed.
 Fact sumSpA_inv_bij : bijective sumSpA_inv.
-Proof. by exists sumSpA_fun. Qed.
+Proof. by exists sumSpA_fun; [exact sumSpA_invK | exact: sumSpA_funK]. Qed.
 HB.instance Definition _ :=
   @BijHom.Build ((A + (B + C)) S) ((A + B + C) S) sumSpA_fun sumSpA_fun_bij.
 HB.instance Definition _ :=
@@ -1049,12 +1067,51 @@ HB.instance Definition _ :=
 HB.instance Definition _ :=
   @isNatural.Build Bij Bij (A + B + C) (A + (B + C)) sumSpAV sumSpAV_natural.
 
-Lemma sumSpAK : sumSpAV \v sumSpA =%= NId (A + (B + C)).
-Proof. by move=> S [|[]]. Qed.
-Lemma sumSpAVK : sumSpA \v sumSpAV =%= NId (A + B + C).
-Proof. by move=> S [[]|]. Qed.
+Lemma sumSpAVE : sumSpAV =%= isoSpinv sumSpA.
+Proof. by apply isoSpinvrE => U x /=; rewrite sumSpA_funK. Qed.
 
 End SumSpeciesAssociative.
+
+
+Section SumNatTransf.
+
+Variable (A1 A2 B1 B2 : Species) (tA : A1 ~> A2) (tB : B1 ~> B2).
+
+Section Defs.
+Variable (U : Bij).
+
+Definition sumSpTr_fun (x : el ((A1 + B1)%species U)) : el ((A2 + B2)%species U) :=
+  match x with
+  | inl a => inl (tA U a)
+  | inr b => inr (tB U b)
+  end.
+Definition sumSpTr_inv (x : el ((A2 + B2)%species U)) : el ((A1 + B1)%species U) :=
+  match x with
+  | inl a => inl (finv (tA U) a)
+  | inr b => inr (finv (tB U) b)
+  end.
+Lemma sumSpTr_funK : cancel sumSpTr_fun sumSpTr_inv.
+Proof. by case=> [] x /=; rewrite finvK. Qed.
+Lemma sumSpTr_invK : cancel sumSpTr_inv sumSpTr_fun.
+Proof. by case=> [] x /=; rewrite finvKV. Qed.
+Fact sumSpTr_fun_bij : bijective sumSpTr_fun.
+Proof. by exists sumSpTr_inv; [exact sumSpTr_funK | exact sumSpTr_invK]. Qed.
+HB.instance Definition _ :=
+  BijHom.Build ((A1 + B1)%species U) ((A2 + B2)%species U)
+    sumSpTr_fun sumSpTr_fun_bij.
+End Defs.
+
+Definition sumSpTr : (A1 + B1) ~~> (A2 + B2) := @sumSpTr_fun.
+Fact sumSpTr_natural : naturality (A1 + B1) (A2 + B2) sumSpTr.
+Proof. by move=> S V h [a|b] /=; rewrite !hom_compE natural. Qed.
+HB.instance Definition _ :=
+  @isNatural.Build Bij Bij (A1 + B1) (A2 + B2) sumSpTr sumSpTr_natural.
+
+End SumNatTransf.
+
+Lemma sumSpTr_invE (A1 A2 B1 B2 : Species) (tA : A1 ~> A2) (tB : B1 ~> B2) :
+  isoSpinv (sumSpTr tA tB) =%= sumSpTr (isoSpinv tA) (isoSpinv tB).
+Proof. by apply: eq_nattrans_sym; apply: isoSpinvrE => U [] x /= /[!finvK]. Qed.
 
 
 Section Restriction.
@@ -1341,6 +1398,8 @@ Proof.
 move=> S [a va b vb eq]; rewrite /= /prodSpC_fun /=.
 by congr MkProdSp; apply: bool_irrelevance.
 Qed.
+Lemma prodSpC_invE A B : isoSpinv (prodSpC A B) =%= prodSpC B A.
+Proof. by apply: eq_nattrans_sym; apply: isoSpinvrE; apply: prodSpCK. Qed.
 
 End ProdSpeciesCommutative.
 
@@ -1371,19 +1430,21 @@ HB.instance Definition _ :=
 
 End Mor.
 Definition prodSp0  : A * 0 ~~> 0 := @prodSp0_fun.
-Definition prodSp0V : 0 ~~> A * 0 := @prodSp0_inv.
 
 Fact prodSp0_natural : naturality (A * 0) 0 prodSp0.
 Proof. by move=> S V h []. Qed.
-Fact prodSp0V_natural : naturality 0 (A * 0) prodSp0V.
-Proof. by move=> S V h []. Qed.
 HB.instance Definition _ :=
   @isNatural.Build Bij Bij (A * 0) 0 prodSp0 prodSp0_natural.
-HB.instance Definition _ :=
-  @isNatural.Build Bij Bij 0 (A * 0) prodSp0V prodSp0V_natural.
+
+Lemma prodSp0_invE : isoSpinv prodSp0 =%= prodSp0_inv.
+Proof. by apply: eq_nattrans_sym; apply: isoSpinvrE => U; apply: prodSp0_funK. Qed.
 
 Definition prod0Sp : 0 * A ~> 0 := prodSp0 \v (prodSpC 0 A).
-Definition Prod0SpV : 0 ~> 0 * A := (prodSpC A 0) \v prodSp0V.
+Lemma prod0Sp_invE : isoSpinv prod0Sp =%= (prodSpC A 0) \v isoSpinv prodSp0.
+Proof.
+apply: (eq_nattrans_trans (isoSpinv_vcomp _ _)) => U x /=.
+by rewrite prodSpC_invE.
+Qed.
 
 End ProdSpeciesZero.
 
@@ -1393,9 +1454,9 @@ Section ProdSpeciesOne.
 Lemma appSpSet1_card V (S : {set V}) : appSpSet 1 S -> #|S| = 0%N.
 Proof. by rewrite /appSpSet /deltaSp /= /ifSp card_TinSet; case eqP. Qed.
 
+Variable (A : Species).
 
 Section Mor.
-Variable (A : Species).
 Variable (S : Bij).
 
 Definition prodSp1_inv_def : el (A S) -> el ((A * 1) S).
@@ -1410,13 +1471,9 @@ Definition prodSp1_inv := locked prodSp1_inv_def.
 Lemma prodSp1_inv_inj : injective prodSp1_inv.
 Proof.
 rewrite /prodSp1_inv; unlock.
-have aux_lemma i : (A # toSetTV S) ((A # toSetT S) i) = i.
-  rewrite !hom_compE -!functor_o.
-  have /= ->:= functor_ext_hom A _ _ (@toSetTK S) i.
-  by rewrite NIdE !functor_id /=.
 move=> i j /eqP/eq_prodSpP [/[swap] _] /eqP.
-rewrite !eq_Tagged => /eqP /(congr1 (A # toSetTV S)) /=.
-by rewrite !aux_lemma.
+rewrite !eq_Tagged => /eqP /(congr1 (A # finv (toSetT S))) /=.
+by rewrite !SpfinvK.
 Qed.
 Lemma prodSp1_inv_bij : bijective prodSp1_inv.
 Proof.
@@ -1430,21 +1487,21 @@ by rewrite !muln0.
 Qed.
 HB.instance Definition _ :=
   @BijHom.Build (A S) ((A * 1) S) prodSp1_inv prodSp1_inv_bij.
-Definition prodSp1_hom : {hom (A * 1) S -> A S} := inv_hom prodSp1_inv.
+Definition prodSp1_hom : {hom (A * 1) S -> A S} := finv prodSp1_inv.
 Lemma prodSp1_homK : cancel prodSp1_hom prodSp1_inv.
-Proof. exact: inv_homK. Qed.
+Proof. exact: finvKV. Qed.
 Lemma prodSp1_invK : cancel prodSp1_inv prodSp1_hom.
-Proof. exact: isom_invK. Qed.
+Proof. exact: finvK. Qed.
 End Mor.
-Definition prodSp1V (A : Species) : A ~~> A * 1 := @prodSp1_inv A.
-Definition prodSp1 (A : Species) : A * 1 ~~> A := @prodSp1_hom A.
+Definition prodSp1 : A * 1 ~~> A := @prodSp1_hom.
+Definition prodSp1V : A ~~> A * 1 := @prodSp1_inv.
 
 Lemma restr_hom_setTE (U V : Bij) (f : {hom U -> V}) :
   restr_hom setT f \o toSetT U
   =1 cast_TinSet (esym (imsetT (BijP f))) \o (toSetT V \o f).
 Proof. by move=> x; apply val_inj; rewrite cast_TinSetE. Qed.
 
-Fact prodSp1V_natural A : naturality A (A * 1) (prodSp1V A).
+Fact prodSp1V_natural : naturality A (A * 1) prodSp1V.
 Proof.
 move=> S V h x /=.
 apply/eqP/eq_prodSpP; split => /=.
@@ -1458,26 +1515,24 @@ rewrite [(1 # _) _]hom_compE -functor_o.
 apply/eqP; rewrite eq_Tagged /=; apply/eqP.
 exact: deltaSpE.
 Qed.
-Fact prodSp1_natural A : naturality (A * 1) A (prodSp1 A).
-Proof. exact: (natural_inv (@prodSp1V_natural A)). Qed.
 
-HB.instance Definition _ A :=
-  @isNatural.Build Bij Bij A (A * 1) (@prodSp1V A) (@prodSp1V_natural A).
-HB.instance Definition _ A :=
-  @isNatural.Build Bij Bij (A * 1) A (@prodSp1 A) (@prodSp1_natural A).
+Fact prodSp1_natural : naturality (A * 1) A prodSp1.
+Proof. exact: (natural_inv prodSp1V_natural). Qed.
 
-Lemma prodSp1K A : prodSp1V A \v prodSp1 A =%= NId (A * 1).
-Proof. exact: prodSp1_homK. Qed.
-Lemma prodSp1KV A : prodSp1 A \v prodSp1V A =%= NId A.
-Proof. exact: prodSp1_invK. Qed.
+HB.instance Definition _ :=
+  @isNatural.Build Bij Bij A (A * 1) prodSp1V prodSp1V_natural.
+HB.instance Definition _ :=
+  @isNatural.Build Bij Bij (A * 1) A prodSp1 prodSp1_natural.
 
-Definition prod1Sp A : 1 * A ~> A := prodSp1 A \v prodSpC 1 A.
-Definition prod1SpV A : A ~> 1 * A := prodSpC A 1 \v prodSp1V A.
+Lemma prodSp1_invE : isoSpinv prodSp1 =%= prodSp1V.
+Proof. by apply: eq_nattrans_sym; apply: isoSpinvrE => U; apply: prodSp1_homK. Qed.
 
-Lemma prod1SpK A : prod1SpV A \v prod1Sp A =%= NId (1 * A).
-Proof. by move=> U x; rewrite /= prodSp1_homK prodSpC_funK. Qed.
-Lemma prod1SpKV A : prod1Sp A \v prod1SpV A =%= NId A.
-Proof. by move=> U x; rewrite /= prodSpC_funK prodSp1_invK. Qed.
+Definition prod1Sp : 1 * A ~> A := prodSp1 \v prodSpC 1 A.
+Lemma prod1Sp_invE : isoSpinv prod1Sp =%= (prodSpC A 1) \v isoSpinv prodSp1.
+Proof.
+apply: (eq_nattrans_trans (isoSpinv_vcomp _ _)) => U x /=.
+by rewrite prodSpC_invE.
+Qed.
 
 End ProdSpeciesOne.
 
@@ -1503,14 +1558,14 @@ exact (inl (valb b)).
 exact (inr (valb c)).
 Defined.
 
-Let prodSpDl_funK : cancel prodSpDl_fun prodSpDl_inv.
+Definition prodSpDl_funK : cancel prodSpDl_fun prodSpDl_inv.
 Proof. by case => [a Aa b []]. Qed.
-Let prodSpDl_invK : cancel prodSpDl_inv prodSpDl_fun.
+Definition prodSpDl_invK : cancel prodSpDl_inv prodSpDl_fun.
 Proof. by case => [][]/=. Qed.
 Fact prodSpDl_fun_bij : bijective prodSpDl_fun.
-Proof. by exists prodSpDl_inv. Qed.
+Proof. by exists prodSpDl_inv; [exact: prodSpDl_funK | exact: prodSpDl_invK]. Qed.
 Fact prodSpDl_inv_bij : bijective prodSpDl_inv.
-Proof. by exists prodSpDl_fun. Qed.
+Proof. by exists prodSpDl_fun; [exact: prodSpDl_invK | exact: prodSpDl_funK]. Qed.
 HB.instance Definition _ :=
   @BijHom.Build ((A * (B + C)) S) ((A * B + A * C) S) prodSpDl_fun prodSpDl_fun_bij.
 HB.instance Definition _ :=
@@ -1534,13 +1589,21 @@ HB.instance Definition _ :=
 HB.instance Definition _ :=
   @isNatural.Build Bij Bij (A * B + A * C) (A * (B + C)) prodSpDlV prodSpDlV_natural.
 
-Lemma prodSpDlK : prodSpDlV \v prodSpDl =%= NId (A * (B + C)).
-Proof. by move=> S [a Aa b []]. Qed.
-Lemma prodSpDlVK : prodSpDl \v prodSpDlV =%= NId (A * B + A * C).
-Proof. by move=> S [][]. Qed.
+Lemma prodSpDl_invE : isoSpinv prodSpDl =%= prodSpDlV.
+Proof. by apply: eq_nattrans_sym; apply: isoSpinvrE => U; apply: prodSpDl_funK. Qed.
 
 End ProdSumSpeciesDistributive.
-(** TODO right distributivity over addition *)
 
+Definition prodSpDr A B C : (B + C) * A ~> B * A + C * A :=
+  sumSpTr (prodSpC A B) (prodSpC A C) \v prodSpDl A B C \v prodSpC (B + C) A.
+Lemma prodSpDr_invE A B C :
+  isoSpinv (prodSpDr A B C) =%=
+    prodSpC A (B + C) \v prodSpDlV A B C \v sumSpTr (prodSpC B A) (prodSpC C A).
+Proof.
+move=> U x; rewrite isoSpinv_vcomp /= prodSpC_invE /= isoSpinv_vcomp /=.
+rewrite prodSpDl_invE /= !sumSpTr_invE /=.
+(* Missing congruence lemma for sumSpTr here *)
+by case: x => [a|b] /=; rewrite prodSpC_invE.
+Qed.
 
 (** TODO associativity of product *)
