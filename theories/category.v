@@ -299,13 +299,13 @@ End ismorphism_lemmas.
 Module FunctorLaws.
 Section def.
 Variable (C D : category).
-Variable (F : C -> D) (actm : forall a b, {hom a -> b} -> {hom F a -> F b}).
+Variable (F : C -> D) (actm : forall a b, {hom a -> b} -> el (F a) -> el (F b)).
 Definition ext := forall a b (f g : {hom a -> b}),
     f =1 g -> actm f =1 actm g.
 Definition id := forall a,
     actm [hom idfun] =1 [hom idfun] :> {hom F a -> F a}.
 Definition comp := forall a b c (g : {hom b -> c}) (h : {hom a -> b}),
-    actm [hom g \o h] =1 [hom actm g \o actm h].
+    actm [hom g \o h] =1 actm g \o actm h.
 End def.
 End FunctorLaws.
 
