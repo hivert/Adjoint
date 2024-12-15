@@ -143,7 +143,11 @@ Notation Bij := FinBijCat.cat.
 
 Lemma BijP (U V : Bij) (f : {hom U -> V}) : bijective f.
 Proof. exact: (isHom_inhom f). Qed.
-Hint Resolve BijP : core.
+Lemma Bij_injP (U V : Bij) (f : {hom U -> V}) : injective f.
+Proof. exact: bij_inj (BijP f). Qed.
+Arguments Bij_injP {U V} (f).
+Hint Resolve BijP Bij_injP : core.
+
 
 Section Homs.
 
@@ -184,19 +188,20 @@ End Homs.
 
 Lemma finvI (U V : Bij) (f : {hom U -> V}) : finv (finv f) =1 f.
 Proof.
-move => x /=; apply (bij_inj (BijP (finv f))).
+move => x /=; apply: (Bij_injP (finv f)).
 by rewrite finvKV [RHS]finvK.
 Qed.
 Lemma finv_id (U : Bij) : finv (@idfun U) =1 idfun.
-Proof. by move=> x /=; apply (bij_inj (BijP idfun)); rewrite finvK. Qed.
+Proof.
+by move=> x /=; apply (Bij_injP idfun); rewrite finvK. Qed.
 Lemma finvE (U V : Bij) (f g : {hom U -> V}) :
   f =1 g -> finv f =1 finv g.
-Proof. by move=> eq x; apply (bij_inj (BijP f)); rewrite finvKV eq finvKV. Qed.
+Proof. by move=> eq x; apply (Bij_injP f); rewrite finvKV eq finvKV. Qed.
 Lemma finv_comp (U V W : Bij) (f : {hom U -> V}) (g : {hom V -> W}) :
   finv (g \o f) =1 (finv f) \o (finv g).
 Proof.
 move=> x /=.
-apply (bij_inj (BijP f)); apply (bij_inj (BijP g)).
+apply (Bij_injP f); apply (Bij_injP g).
 by rewrite -[LHS]compapp !finvKV.
 Qed.
 
@@ -271,7 +276,7 @@ Let restrK : cancel restr restr_inv.
 Proof.
 move=> /= x; rewrite /restr /restr_inv /=.
 case: (restr_inv_spec _) => x0 /= /eqP/(congr1 val)/=.
-by move/(bij_inj (BijP f)) => eq; exact: val_inj.
+by move/Bij_injP; exact: val_inj.
 Qed.
 Let restrKV : cancel restr_inv restr.
 Proof.
@@ -316,7 +321,7 @@ by rewrite hom_compE -functor_o (functor_ext_hom _ _ _ finvKV) functor_id.
 Qed.
 Lemma SpfinvE : A # (finv f) =1 finv (A # f).
 Proof.
-move=> x; apply: (bij_inj (BijP (A # f))).
+move=> x; apply: (Bij_injP (A # f)).
 by rewrite SpfinvKV finvKV.
 Qed.
 
@@ -376,7 +381,7 @@ End Defs.
 
 Section PermHom.
 Variables (U : Bij) (f : {hom U -> U}).
-Definition perm_hom := perm (bij_inj (BijP f)).
+Definition perm_hom := perm (Bij_injP f).
 Lemma perm_homE : perm_hom =1 f.
 Proof. exact: permE. Qed.
 End PermHom.
@@ -419,7 +424,7 @@ Definition isoclasses U : {set {set A U}} := [set isoclass x | x in [set: A U]].
 Lemma morph_isoclass U V (f : {hom U -> V}) x :
   (A # f) @: isoclass x = isoclass ((A # f) x).
 Proof.
-(* TODO : this is very similar to transport_orbit, can it be merged ? *)
+(* TODO : this is very similar to nattransp_isoclass, can it be merged ? *)
 apply/setP=> u; apply/imsetP/orbitP => [[y /orbitP[/= s _ {y}<- {u}->]]|].
   exists (perm_morph f s); first by rewrite inE.
   rewrite /actSp_fun !hom_compE -!functor_o.
@@ -446,7 +451,7 @@ Qed.
 Lemma card_isoclassesE U V (f : {hom U -> V}) : #|isoclasses U| = #|isoclasses V|.
 Proof.
 rewrite -(isoclassesE f) [RHS]card_imset //.
-exact: (imset_inj (bij_inj (BijP _))).
+exact: (imset_inj (Bij_injP _)).
 Qed.
 
 Definition isotypes n := orbit_transversal (actSp 'I_n) setT setT.
@@ -526,7 +531,7 @@ End Action.
 
 Section NaturalTransport.
 
-Lemma nattransp_orbit (A B : Species) (U : Bij) (f : A U -> B U) :
+Lemma nattransp_isoclass (A B : Species) (U : Bij) (f : A U -> B U) :
   (forall a (s : {perm U}), actSp B U (f a) s = f (actSp A U a s)) ->
   forall x : A U, f @: isoclass x = isoclass (f x).
 Proof.
@@ -548,14 +553,14 @@ Proof.
 apply/setP => /= T.
 apply/imsetP/imsetP => /=[[S /imsetP[a _ {S}-> {T}-> /=]] | [b _ {T}->]].
   exists (f a); first by rewrite inE.
-  exact: nattransp_orbit.
+  exact: nattransp_isoclass.
 exists (finv f @: orbit (actSp B U) setT b).
   apply/imsetP; exists (finv f b); first by rewrite inE.
-  apply: nattransp_orbit => a s /=.
-  by apply: (bij_inj (BijP f)); rewrite -fnat !finvKV.
+  apply: nattransp_isoclass => a s /=.
+  by apply: (Bij_injP f); rewrite -fnat !finvKV.
 apply/setP => b'; apply/orbitP/imsetP => [[/= s _ {b'}<-]|].
   exists (finv f (actSp_fun b s)); last by rewrite finvKV.
-  rewrite (mem_imset _ _ (bij_inj (BijP _))).
+  rewrite mem_imset //.
   by apply/orbitP; exists s; first by rewrite inE.
 move=> [a /imsetP[b'' /orbitP [/= s _ {b''}<- {a}-> {b'}->]]].
 exists s; first by rewrite inE.
@@ -565,7 +570,7 @@ Qed.
 Lemma nattransp_cardiso : #|isoclasses A U| = #|isoclasses B U|.
 Proof.
 rewrite -nattransp_isoclasses [RHS]card_imset //.
-exact/imset_inj/(bij_inj (BijP _)).
+exact : imset_inj.
 Qed.
 
 End NaturalTransport.
@@ -581,7 +586,7 @@ Proof.
 rewrite /isoSpinv => U V h x /=.
 apply: (can_inj (finvKV (A # h))); rewrite finvK.
 rewrite hom_compE -finv_comp.
-apply: (bij_inj (BijP (F V \o A # h))).
+apply: (Bij_injP (F V \o A # h)).
 by rewrite -[LHS](natural F U V h) [LHS]/= !finvKV.
 Qed.
 HB.instance Definition _ :=
@@ -602,7 +607,7 @@ Lemma isoSpinvlE (G : B ~~> A) :
   (forall U, (F U) \o (G U) =1 idfun) -> G =%= isoSpinv.
 Proof.
 move=> H U b; rewrite /isoSpinv.
-apply: (bij_inj (BijP (F U))).
+apply: (Bij_injP (F U)).
 by rewrite hom_compE H finvKV.
 Qed.
 
@@ -613,7 +618,7 @@ Lemma cardiso_SpE : cardiso A =1 cardiso B.
 Proof.
 move=> n; rewrite -!cardiso_ordE.
 pose ff := fun (S : {set A _}) => F 'I_n @: S.
-rewrite -(card_imset (f := ff)); last exact/imset_inj/(bij_inj (BijP _)).
+rewrite -(card_imset (f := ff)); last exact: imset_inj.
 by rewrite nattransp_isoclasses // => a s; exact: (natural F).
 Qed.
 
@@ -1173,12 +1178,12 @@ apply/setP => /= S; rewrite !inE.
 apply/imsetP/orP => [[[a|b] _ {S}->] | [] /imsetP[T /imsetP[x _ {T}->] {S}->]].
 - left; apply/imsetP; exists (orbit (actSp A  'I_n) setT a).
     by apply/imsetP; exists a.
-  by rewrite -[LHS]nattransp_orbit.
+  by rewrite -[LHS]nattransp_isoclass.
 - right; apply/imsetP; exists (orbit (actSp B  'I_n) setT b).
     by apply/imsetP; exists b.
-  by rewrite -[LHS]nattransp_orbit.
-- by exists (inl x) => //; rewrite -[RHS]nattransp_orbit.
-- by exists (inr x) => //; rewrite -[RHS]nattransp_orbit.
+  by rewrite -[LHS]nattransp_isoclass.
+- by exists (inl x) => //; rewrite -[RHS]nattransp_isoclass.
+- by exists (inr x) => //; rewrite -[RHS]nattransp_isoclass.
 Qed.
 
 
@@ -1364,7 +1369,7 @@ Lemma prodSp_mor_subproof U V (f : {hom U -> V}) (x : el (prodSpT U)) :
   part2 setT (tag ((SpInSet A # f) (val x).1)) (tag ((SpInSet B # f) (val x).2)).
 Proof.
 case: x => -/=[[a xa][b xb] /= Hp2].
-by rewrite -(imsetT (BijP f)) part2_imset //; exact: (bij_inj (BijP f)).
+by rewrite -(imsetT (BijP f)) part2_imset.
 Qed.
 Definition prodSp_mor U V (f : {hom U -> V})
   (x : el (prodSpT U)) : el (prodSpT V) :=
@@ -1697,14 +1702,13 @@ Lemma upT_setT : upT setT = S.
 Proof. by rewrite -setC0 upT_setC /upT imset0 setD0. Qed.
 
 Variable (T : {set TinSet S}).
-Let up_fun (x : TinSet T) := \val (\val x).
-Fact up_funP (x : TinSet T) : (up_fun x) \in upT T.
+Fact up_subproof (x : TinSet T) : \val (\val x) \in upT T.
 Proof.
-rewrite /up_fun mem_imset; last exact: val_inj.
+rewrite mem_imset; last exact: val_inj.
 exact: TinSetP.
 Qed.
 Definition up (x : el (TinSet T)) : el (TinSet (upT T)) :=
-  exist _ (up_fun x) (up_funP x).
+  exist _ (val (val x)) (up_subproof x).
 Fact up_bij : bijective up.
 Proof.
 apply: inj_card_bij; first by move=> x y [] /val_inj/val_inj.
@@ -1712,18 +1716,31 @@ by rewrite !card_TinSet card_imset //; apply: val_inj.
 Qed.
 HB.instance Definition _ :=
   @BijHom.Build (TinSet T) (TinSet (upT T)) up up_bij.
-Definition upSp (A : Species) : {hom A (TinSet T) -> A (TinSet (upT T))} := A # up.
 End UpSpecies.
+Arguments up {U S T}.
 
 Section UpSpeciesInSet.
 Variable (A : Species) (U : Bij) (S : {set U}).
 
 Definition upSpInSet (x : SpInSet A (TinSet S)) : SpInSet A U :=
-  let (E, y) := x in (existT _ (upT E) (upSp _ _ y)).
+  let (E, y) := x in (existT _ (upT E) ((A # up) y)).
 Lemma tag_upSpInSet x : tag (upSpInSet x) = upT (tag x).
 Proof. by rewrite /upSpInSet; case: x. Qed.
 
 End UpSpeciesInSet.
+
+Lemma SpInSet_up (A : Species) (U V : Bij) (h : {hom U -> V}) (E : {set U})
+  (x : SpInSet A (TinSet E)) :
+  (SpInSet A # h) (upSpInSet x) = upSpInSet ((SpInSet A # (restr_hom E h)) x).
+Proof.
+case: x => [SE xSE] /=.
+apply eqSpInSet => /=; split => [|eqtag].
+  by rewrite /upT -!imset_comp; apply eq_imset.
+rewrite eq_Tagged /=; apply/eqP.
+rewrite [RHS]hom_compE [LHS]hom_compE -!functor_o hom_compE -!functor_o /=.
+apply: (functor_ext_hom A) => {xSE}x /=.
+by apply val_inj; rewrite /= val_cast_TinSet /=.
+Qed.
 
 
 Section DownSpecies.
@@ -1756,8 +1773,6 @@ by rewrite card_TinSet cardsT card_TinSet.
 Qed.
 HB.instance Definition _ :=
   @BijHom.Build (TinSet T) (TinSet downT) down down_bij.
-Definition downSp (A : Species) : {hom A (TinSet T) -> A (TinSet downT)} := A # down.
-
 End DownSpecies.
 
 Section DownSpeciesInSet.
@@ -1766,7 +1781,7 @@ Hypothesis tX : tag x \subset S.
 
 Definition downSpInSet : SpInSet A (TinSet S).
 case: x tX => [/= T y TsubS].
-apply (existT _ (downT TsubS) (downSp TsubS A y)).
+apply (existT _ (downT TsubS) ((A # (down TsubS)) y)).
 Defined.
 Lemma tag_downSpInSet : tag downSpInSet = downT tX.
 Proof. by rewrite /downSpInSet; case: x tX. Qed.
@@ -1775,26 +1790,13 @@ Proof.
 rewrite /upSpInSet /downSpInSet.
 case: x tX => [/= E y] ty.
 apply eqSpInSet => /=; split => [|eqtag]; first exact: downTK.
-rewrite eq_Tagged /= /upSp /downSp; apply/eqP.
+rewrite eq_Tagged /=; apply/eqP.
 do 2 rewrite hom_compE -functor_o /=.
 rewrite -[RHS](@functor_id _ _ A) /=; apply: (functor_ext_hom A) => {}y.
 by apply val_inj; rewrite val_cast_TinSet.
 Qed.
 
 End DownSpeciesInSet.
-
-Lemma SpInSet_up (A : Species) (U V : Bij) (h : {hom U -> V}) (E : {set U})
-  (x : SpInSet A (TinSet E)) :
-  (SpInSet A # h) (upSpInSet x) = upSpInSet ((SpInSet A # (restr_hom E h)) x).
-Proof.
-case: x => [SE xSE] /=.
-apply eqSpInSet => /=; split => [|eqtag].
-  by rewrite /upT -!imset_comp; apply eq_imset.
-rewrite eq_Tagged /= /upSp /=; apply/eqP.
-rewrite [RHS]hom_compE [LHS]hom_compE -!functor_o hom_compE -!functor_o /=.
-apply: (functor_ext_hom A) => {xSE}x /=.
-by apply val_inj; rewrite /= val_cast_TinSet /=.
-Qed.
 
 
 Section ProdSpeciesA3.
@@ -1813,9 +1815,10 @@ Qed.
 Lemma part3_imset U V (W X Y : {set U}) (f : {hom U -> V}) :
   part3 (f @: W) (f @: X) (f @: Y) = part3 W X Y.
 Proof.
-have finj := bij_inj (BijP f).
+have finj := Bij_injP f.
 rewrite /part3 !(imset_disjoint finj).
-by rewrite -!imsetU -(inj_eq (imset_inj finj)) (imsetT (BijP f)).
+rewrite -!imsetU -(inj_eq (imset_inj finj)).
+by rewrite (imsetT (BijP f)).
 Qed.
 Lemma part23 U (W X Y Z : {set U}) :
   part2 setT W Z -> part2 Z X Y -> part3 W X Y.
