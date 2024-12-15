@@ -66,6 +66,13 @@ Qed.
 
 End SSRCompl.
 
+Lemma card_preim (I J : finType) (f : I -> J) (E : {set I}) :
+  #|E| = \sum_(j : J) #|[set x in E | f x == j]|.
+Proof.
+rewrite -sum1_card (partition_big f xpredT) //=; apply eq_bigr => j _.
+by rewrite -sum1_card; apply eq_bigl => i /[!inE].
+Qed.
+
 Lemma card_eq_imset_permP (U : finType) (E F : {set U}) :
   reflect (exists s : {perm U}, [set s x | x in E] = F) (#|E| == #|F|).
 Proof.
@@ -1411,34 +1418,29 @@ HB.instance Definition _ :=
 
 Definition prodSp : Species := prodSpT.
 
-
 Lemma card_prodSp n :
   cardSp prodSp n = \sum_(i < n.+1) 'C(n, i) * (cardSp A i) * (cardSp B (n - i)).
 Proof.
 rewrite {1}/cardSp; rewrite -(card_imset predT val_inj) /= imset_val_sub.
-rewrite -sum1_card.
-rewrite -[LHS]big_enum [LHS](partition_big (fun p => tag p.1) xpredT) //=.
-have cardle (S : {set 'I_n}) : #|S| < n.+1.
+have cardle (E : {set 'I_n}) : #|E| < n.+1.
   rewrite ltnS -[X in _ <= X](card_ord n).
   exact/subset_leq_card/subset_predT.
-pose cardS S := Ordinal (cardle S).
-rewrite -[LHS]big_enum [LHS](partition_big cardS xpredT) //=; apply eq_bigr => i _.
-rewrite big_enum_cond /=.
-under eq_bigl => S do rewrite -val_eqE /=.
-rewrite {cardS cardle} -[X in 'C(X, i)](card_ord n) -card_draws.
-rewrite -sum1_card !big_distrl /=.
-apply esym; under eq_bigl => S do rewrite inE.
-apply eq_bigr => S /eqP eq_card.
-rewrite mul1n big_enum_cond /= sum1dep_card /=.
+pose cardS E := Ordinal (cardle E).
+rewrite [LHS](card_preim (fun p => tag p.1)) /=.
+rewrite [LHS](partition_big (fun E : {set 'I_n} => cardS E) xpredT) //=.
+apply eq_bigr => i _.
+rewrite -[X in 'C(X, i)](card_ord n) -card_draws -sum1_card !big_distrl /=.
+apply: eq_big => [E | E /eqP/(congr1 val) /= eq_card].
+  by rewrite inE -val_eqE /=.
 rewrite [[set _ | _ ]](_ : _ =
-  setX [set p : (SpInSet A 'I_n) | tag p == S]
-       [set p : (SpInSet B 'I_n) | tag p == ~: S]); first last.
+  setX [set p : (SpInSet A 'I_n) | tag p == E]
+       [set p : (SpInSet B 'I_n) | tag p == ~: E]); first last.
   apply/setP => -[a b]; rewrite !inE andbC; case: eqP => //= -> {a}.
   by rewrite part2C part2TE.
-rewrite [RHS]cardsX -!card_SpInSet eq_card; congr (_ * (cardSp _ _)).
+rewrite mul1n [LHS]cardsX -!card_SpInSet eq_card; congr (_ * (cardSp _ _)).
 rewrite -[X in X - i]card_ord.
-have:= (cardsCs S); rewrite eq_card => ->.
-exact/subKn/subset_leq_card/subset_predT.
+have:= (cardsCs E); rewrite -eq_card => ->.
+exact/esym/subKn/subset_leq_card/subset_predT.
 Qed.
 
 End ProductSpecies.
