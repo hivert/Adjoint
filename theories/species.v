@@ -1797,7 +1797,6 @@ by apply val_inj; rewrite /= val_cast_TinSet /=.
 Qed.
 
 
-(** TODO associativity of product *)
 Section ProdSpeciesA3.
 
 Variable (A B C : Species).

@@ -1695,9 +1695,12 @@ End HomRingFreeLModuleFunctor.
 (** HB incompatible Forgetful functor SemiRings -> Monoids *)
 Module ForgetSemiRings_to_Monoids.
 
+Definition multMon_mor (R S : semiRingType) (f : {rmorphism R -> S}) :=
+      (fun x : el (multMon R : Monoids) => to_multMon (f (val x)) :
+         el (multMon S : Monoids)).
 HB.instance Definition _ (R S : semiRingType) (f : {rmorphism R -> S}) :=
   @isHom.Build Monoids (multMon R : Monoids) (multMon S : Monoids)
-    (multMon_mor f : (_ : Monoids) -> _) (multMon_mor_monmorphism f).
+    (multMon_mor f) (multMon_mor_monmorphism f).
 Definition functor_multMon_fun (R : SemiRings) : Monoids := multMon R.
 Fact multMon_ext : FunctorLaws.ext multMon_mor.
 Proof. by move=> /= a b f g eq y; rewrite /multMon_mor /= eq. Qed.
@@ -1732,7 +1735,7 @@ Definition functorCom : {functor ComSemiRings -> ComMonoids} :=
   functor_multComMon_fun.
 
 End ForgetSemiRings_to_Monoids.
-
+Notation multMon_mor := ForgetSemiRings_to_Monoids.multMon_mor.
 Notation forget_SemiRings_to_Monoids := ForgetSemiRings_to_Monoids.functor.
 Lemma forget_SemiRings_to_MonoidsE a b (f : {hom[SemiRings] a -> b}) :
   forget_SemiRings_to_Monoids # f = multMon_mor f :> (_ -> _).
