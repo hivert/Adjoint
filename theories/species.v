@@ -244,17 +244,17 @@ End FunctorBij.
 Section TypeInSet.
 Variable (U : Bij) (S : {set U}).
 
-Definition TinSet : Bij := {x : U | x \in S} : Bij.
-Lemma TinSetP (x : TinSet) : val x \in S.
+Definition TSet : Bij := {x : U | x \in S} : Bij.
+Lemma TSetP (x : TSet) : val x \in S.
 Proof. by case: x. Qed.
-Lemma imset_val_TinSet : [set \val x | x : TinSet] = S.
+Lemma imset_val_TSet : [set \val x | x : TSet] = S.
 Proof.
 apply/setP => x; apply/imsetP/idP => [[/= [y y_in_S] _ ->] // | x_in_S].
 by exists (exist _ x x_in_S).
 Qed.
-Lemma card_TinSet : #|TinSet| = #|S|.
+Lemma card_TSet : #|TSet| = #|S|.
 Proof.
-by rewrite -[LHS](card_imset _ val_inj) imset_val_TinSet.
+by rewrite -[LHS](card_imset _ val_inj) imset_val_TSet.
 Qed.
 
 End TypeInSet.
@@ -264,12 +264,12 @@ Section Restriction.
 
 Variable (U V : Bij) (I : {set U}) (f : {hom U -> V}).
 
-Fact restr_subproof (x : TinSet I) : f (\val x) \in (f @: I).
+Fact restr_subproof (x : TSet I) : f (\val x) \in (f @: I).
 Proof. by case: x => x Px /=; apply: imset_f. Qed.
-Definition restr (x : el (TinSet I)) : el (TinSet (f @: I)) :=
+Definition restr (x : el (TSet I)) : el (TSet (f @: I)) :=
   exist _ (f (\val x)) (restr_subproof x).
 
-Fact restr_inv_spec (y : TinSet (f @: I)) : { x : TinSet I | restr x == y }.
+Fact restr_inv_spec (y : TSet (f @: I)) : { x : TSet I | restr x == y }.
 Proof.
 case: y => /= [y Py].
 case: (pickP (fun x : U => (x \in I) && (f x == y))) =>
@@ -293,7 +293,7 @@ Qed.
 Fact restr_bij : bijective restr.
 Proof. by exists restr_inv. Qed.
 HB.instance Definition _ := BijHom.Build _ _ restr restr_bij.
-Definition restr_hom : {hom[Bij] TinSet I -> TinSet (f @: I)} := restr.
+Definition restr_hom : {hom[Bij] TSet I -> TSet (f @: I)} := restr.
 
 Lemma val_restrE x : \val (restr x) = f (\val x).
 Proof. by []. Qed.
@@ -425,7 +425,7 @@ move=> /= s; apply/permP => v.
 by rewrite !permE /= finv_comp -perm_morphE /= finvKV.
 Qed.
 
-Definition isoclass U (x : A U) : {set A U} := orbit (actSp U) setT x.
+Notation isoclass x := (orbit (actSp _) setT x).
 Definition isoclasses U : {set {set A U}} := [set isoclass x | x in [set: A U]].
 
 Lemma morph_isoclass U V (f : {hom U -> V}) x :
@@ -444,7 +444,7 @@ apply: (functor_ext_hom A) => {}x /=.
 by rewrite /perm_morph_fun permE /= finvKV finvI.
 Qed.
 
-Lemma isoclassesE U V (f : {hom U -> V}) :
+Lemma imset_isoclasses U V (f : {hom U -> V}) :
   [set (A # f) @: (S : {set _}) | S in isoclasses U] = isoclasses V.
 Proof.
 apply/setP => /= E.
@@ -457,44 +457,46 @@ by rewrite morph_isoclass SpfinvKV.
 Qed.
 Lemma card_isoclassesE U V (f : {hom U -> V}) : #|isoclasses U| = #|isoclasses V|.
 Proof.
-rewrite -(isoclassesE f) [RHS]card_imset //.
+rewrite -(imset_isoclasses f) [RHS]card_imset //.
 exact: (imset_inj (Bij_injP _)).
 Qed.
 
-Definition isotypes n := orbit_transversal (actSp 'I_n) setT setT.
-Definition isotype U (x : A U) :=
-  let ix := (A # @enum_rank U) x in
-  transversal_repr ix (isotypes #|U|) (orbit (actSp 'I_#|U|) setT ix).
-Definition cardiso n := #|isotypes n|.
+Definition isoreprs U := orbit_transversal (actSp U) setT setT.
+Definition isorepr U (x : A U) :=
+  transversal_repr x (isoreprs U) (orbit (actSp U) setT x).
 
-Lemma isotypesP n : is_transversal (isotypes n) (isoclasses 'I_n) setT.
+Definition isotype U (x : A U) := isorepr ((A # @enum_rank U) x).
+Definition cardiso n := #|isoreprs 'I_n|.
+
+Lemma isotypesP U : is_transversal (isoreprs U) (isoclasses U) setT.
 Proof. exact: (transversalP (orbit_partition (actSpP _))). Qed.
-Lemma isotypesE n :
-  {in (isotypes n) &, forall x y : A 'I_n, (y \in isoclass x) = (x == y)}.
+Lemma isoreprsE U :
+  {in (isoreprs U) &, forall x y : A U, (y \in isoclass x) = (x == y)}.
 Proof.
-have [_ _ + _ x xin y yin] := orbit_transversalP (actSpP 'I_n).
+have [_ _ + _ x xin y yin] := orbit_transversalP (actSpP U).
 by apply.
 Qed.
-Lemma isotypes_ex n (x : A 'I_n) :
-  exists s : 'S_n, actSp 'I_n x s \in isotypes n.
+Lemma isoreprs_ex U (x : A U) : exists s : {perm U}, actSp U x s \in isoreprs U.
 Proof.
-have [_ _ _ /(_ x) []] := orbit_transversalP (actSpP 'I_n).
+have [_ _ _ /(_ x) []] := orbit_transversalP (actSpP U).
   by rewrite inE.
 by move=> /= s _ HS; exists s.
 Qed.
-
-Lemma cardisoE U : #|isoclasses U| = cardiso #|U|.
+Lemma isorepr_mem U (x : A U) : isorepr x \in isoreprs U.
 Proof.
-by rewrite [RHS](card_transversal (isotypesP _)) (card_isoclassesE (@enum_rank U)).
+apply: (repr_mem_transversal (isotypesP _)); rewrite -/(isoclass x).
+by apply/imsetP; exists x.
 Qed.
+
+Lemma card_isoreprE U : #|isoreprs U| = #|isoclasses U|.
+Proof. exact (card_transversal (isotypesP U)). Qed.
+Lemma cardisoE U : #|isoclasses U| = cardiso #|U|.
+Proof. by rewrite /cardiso card_isoreprE (card_isoclassesE (@enum_rank U)). Qed.
 Lemma cardiso_ordE n : #|isoclasses 'I_n| = cardiso n.
 Proof. by rewrite cardisoE card_ord. Qed.
 
-Lemma isotype_mem U (x : A U) : isotype x \in isotypes #|U|.
-Proof.
-apply: (repr_mem_transversal (isotypesP _)); apply/imsetP.
-by exists ((A # @enum_rank U) x).
-Qed.
+Lemma isotype_mem U (x : A U) : isotype x \in isoreprs 'I_#|U|.
+Proof. exact: isorepr_mem. Qed.
 Lemma isotype_ex U (x : A U) :
   exists f : {hom U -> 'I_#|U|}, (A # f) x = isotype x.
 Proof.
@@ -508,9 +510,9 @@ by exists (s \o (@enum_rank U)); rewrite /ix functor_o.
 Qed.
 
 Lemma isotypeE U (x : A U) (f : {hom U -> 'I_#|U|}) :
-  (A # f) x \in isotypes #|U| -> (A # f) x = isotype x.
+  (A # f) x \in isoreprs 'I_#|U| -> (A # f) x = isotype x.
 Proof.
-move=> H; apply/eqP; rewrite -isotypesE ?isotype_mem //.
+move=> H; apply/eqP; rewrite -isoreprsE ?isotype_mem //.
 have [g <-] := isotype_ex x.
 apply/orbitP; exists (perm_hom (g \o (finv f))); first by rewrite inE.
 rewrite /= /actSp_fun /=.
@@ -534,6 +536,7 @@ by move: (BijHom_eq_card f) (X in A # X) x => {f fy V}<- f x /isotypeE ->.
 Qed.
 
 End Action.
+Notation isoclass x := (orbit (actSp _ _) setT x).
 
 
 Section NaturalTransport.
@@ -644,7 +647,7 @@ Definition idSp : Species := FId.
 Lemma card_idSp n : cardSp idSp n = n.
 Proof. exact: card_ord. Qed.
 
-Lemma isoclass_idSp (U : Bij) (u : U) : isoclass (A := idSp) u = [set: U].
+Lemma isoclass_idSp (U : Bij) (u : U) : isoclass (u : idSp U) = [set: U].
 Proof.
 apply/setP => /= v; rewrite !inE; apply/orbitP.
 exists (tperm u v); first by rewrite inE.
@@ -671,91 +674,91 @@ Section Cast.
 Variable (U : Bij).
 Implicit Types (I J : {set U}).
 
-Definition cast_TinSet I J (eq : I = J) (y : el (TinSet I)) : el (TinSet J) :=
-  ecast X (TinSet X) eq y.
+Definition cast_TSet I J (eq : I = J) (y : el (TSet I)) : el (TSet J) :=
+  ecast X (TSet X) eq y.
 
-Lemma val_cast_TinSet I J (eq : I = J) y : \val (cast_TinSet eq y) = \val y.
-Proof. by rewrite /cast_TinSet; case: y => [x Hx] /=; case:_/eq. Qed.
+Lemma val_cast_TSet I J (eq : I = J) y : \val (cast_TSet eq y) = \val y.
+Proof. by rewrite /cast_TSet; case: y => [x Hx] /=; case:_/eq. Qed.
 
-Lemma cast_TinSetK I J (eqIJ : I = J) :
-  cancel (cast_TinSet eqIJ) (cast_TinSet (esym eqIJ)).
-Proof. by rewrite /cast_TinSet; subst J => /=. Qed.
-Lemma cast_TinSetKV I J (eqIJ : I = J) :
-  cancel (cast_TinSet (esym eqIJ)) (cast_TinSet eqIJ).
-Proof. by rewrite /cast_TinSet; subst J => /=. Qed.
-Fact cast_TinSet_bij I J (eqIJ : I = J) : bijective (cast_TinSet eqIJ).
+Lemma cast_TSetK I J (eqIJ : I = J) :
+  cancel (cast_TSet eqIJ) (cast_TSet (esym eqIJ)).
+Proof. by rewrite /cast_TSet; subst J => /=. Qed.
+Lemma cast_TSetKV I J (eqIJ : I = J) :
+  cancel (cast_TSet (esym eqIJ)) (cast_TSet eqIJ).
+Proof. by rewrite /cast_TSet; subst J => /=. Qed.
+Fact cast_TSet_bij I J (eqIJ : I = J) : bijective (cast_TSet eqIJ).
 Proof.
-by exists (cast_TinSet (esym eqIJ)); [exact: cast_TinSetK | exact: cast_TinSetKV].
+by exists (cast_TSet (esym eqIJ)); [exact: cast_TSetK | exact: cast_TSetKV].
 Qed.
 HB.instance Definition _ I J (eqIJ : I = J) :=
-  BijHom.Build _ _ (cast_TinSet eqIJ) (cast_TinSet_bij eqIJ).
+  BijHom.Build _ _ (cast_TSet eqIJ) (cast_TSet_bij eqIJ).
 
-Lemma cast_TinSetE I J (eq1 eq2 : I = J) : cast_TinSet eq1 =1 cast_TinSet eq2.
-Proof. by move=> x; apply: val_inj; rewrite !val_cast_TinSet. Qed.
-Lemma cast_TinSet_id I (eqI : I = I) : cast_TinSet eqI =1 idfun.
-Proof. by move=> x; apply: val_inj; rewrite !val_cast_TinSet. Qed.
-Lemma cast_TinSet_comp I J K (eqIJ : I = J) (eqJK : J = K) :
-  cast_TinSet eqJK \o cast_TinSet eqIJ =1 cast_TinSet (etrans eqIJ eqJK).
-Proof. by move=> x; apply: val_inj; rewrite !val_cast_TinSet. Qed.
+Lemma cast_TSetE I J (eq1 eq2 : I = J) : cast_TSet eq1 =1 cast_TSet eq2.
+Proof. by move=> x; apply: val_inj; rewrite !val_cast_TSet. Qed.
+Lemma cast_TSet_id I (eqI : I = I) : cast_TSet eqI =1 idfun.
+Proof. by move=> x; apply: val_inj; rewrite !val_cast_TSet. Qed.
+Lemma cast_TSet_comp I J K (eqIJ : I = J) (eqJK : J = K) :
+  cast_TSet eqJK \o cast_TSet eqIJ =1 cast_TSet (etrans eqIJ eqJK).
+Proof. by move=> x; apply: val_inj; rewrite !val_cast_TSet. Qed.
 
-Lemma Tagged_TinSet_castE I J (eqIJ : I = J) (x : TinSet I) :
-  Tagged (@TinSet U) x = Tagged (@TinSet U) (ecast X (TinSet X) eqIJ x).
+Lemma Tagged_TSet_castE I J (eqIJ : I = J) (x : TSet I) :
+  Tagged (@TSet U) x = Tagged (@TSet U) (ecast X (TSet X) eqIJ x).
 Proof. by move: x; subst I. Qed.
 
 End Cast.
 
-Lemma Tagged_SpTinSet_castE (V : Bij) (I J : {set V}) (eq : I = J) (A : Species) x :
-  Tagged (fun U => A (TinSet U)) ((A # cast_TinSet eq) x) =
-    Tagged (fun U => A (TinSet U)) x.
+Lemma Tagged_SpTSet_castE (V : Bij) (I J : {set V}) (eq : I = J) (A : Species) x :
+  Tagged (fun U => A (TSet U)) ((A # cast_TSet eq) x) =
+    Tagged (fun U => A (TSet U)) x.
 Proof.
 subst I => /=.
-have /functor_ext_hom -> /= : cast_TinSet (erefl J) =1 idfun by [].
+have /functor_ext_hom -> /= : cast_TSet (erefl J) =1 idfun by [].
 by rewrite functor_id_hom.
 Qed.
 
 Lemma restr_id (U : Bij) (I : {set U}) :
-  restr_hom I [hom idfun] =1 cast_TinSet (esym (imset_id I)).
-Proof. by move=> x /=; apply val_inj; rewrite val_cast_TinSet. Qed.
+  restr_hom I [hom idfun] =1 cast_TSet (esym (imset_id I)).
+Proof. by move=> x /=; apply val_inj; rewrite val_cast_TSet. Qed.
 Lemma restr_comp (U V W : Bij) (f : {hom U -> V}) (g : {hom V -> W}) (I : {set U}) :
   restr_hom _ g \o restr_hom I f
-  =1 cast_TinSet (imset_comp g f I) \o restr_hom _ (g \o f).
-Proof. by move => x /=; apply val_inj; rewrite val_cast_TinSet !val_restrE. Qed.
+  =1 cast_TSet (imset_comp g f I) \o restr_hom _ (g \o f).
+Proof. by move => x /=; apply val_inj; rewrite val_cast_TSet !val_restrE. Qed.
 Lemma restr_ext (U V : Bij) (f g : {hom U -> V}) (I : {set U}) (eq_fg : f =1 g) :
-  restr_hom I f =1 cast_TinSet (eq_imset _ (fsym eq_fg)) \o (restr_hom I g).
-Proof. by move => x /=; apply val_inj; rewrite !val_cast_TinSet !val_restrE. Qed.
+  restr_hom I f =1 cast_TSet (eq_imset _ (fsym eq_fg)) \o (restr_hom I g).
+Proof. by move => x /=; apply val_inj; rewrite !val_cast_TSet !val_restrE. Qed.
 
 
-Section SpInSet.
+Section SpSet.
 
 Variable (A : Species).
 Implicit Types (U V : Bij).
 
-Definition SpInSet U : Bij := { I : {set U} & A (TinSet I) }.
+Definition SpSet U : Bij := { I : {set U} & A (TSet I) }.
 
-Lemma eqSpInSet U (x y : SpInSet U) :
+Lemma eqSpSet U (x y : SpSet U) :
   x = y <->
     ((tag x = tag y) /\
        (let (E, xx) := x in let (F, yy) := y in forall eqtag : E = F,
-          Tagged (fun G => A (TinSet G)) ((A # cast_TinSet eqtag) xx) ==
-            Tagged (fun G => A (TinSet G)) yy)).
+          Tagged (fun G => A (TSet G)) ((A # cast_TSet eqtag) xx) ==
+            Tagged (fun G => A (TSet G)) yy)).
 Proof.
 split => [eqxy|].
   subst y; split => //.
   case: x => [E x] eqE /=; rewrite eq_Tagged /=; apply/eqP.
   rewrite -[RHS](@functor_id _ _ A) /=; apply: (functor_ext_hom A) => {}x.
-  by apply val_inj; rewrite val_cast_TinSet.
+  by apply val_inj; rewrite val_cast_TSet.
 case: x y => /= [E x][F y] /= [eqEF eq]; subst F; apply/eqP.
 rewrite -!/(Tagged _ _) -(eqP (eq _)) eq_Tagged /=; apply/eqP.
 rewrite -[LHS](@functor_id _ _ A) /=; apply: (functor_ext_hom A) => {eq}x.
-by apply val_inj; rewrite val_cast_TinSet.
+by apply val_inj; rewrite val_cast_TSet.
 Qed.
 
-Lemma card_SpInSet (V : Bij) (U : {set V}) :
-  cardSp A #|U| = #|[set p : SpInSet V | tag p == U]|.
+Lemma card_SpSet (V : Bij) (U : {set V}) :
+  cardSp A #|U| = #|[set p : SpSet V | tag p == U]|.
 Proof.
-rewrite -(card_TinSet U) -cardSpE.
-pose totag (x : A (TinSet U)) : SpInSet V :=
-  Tagged (fun U : {set V} => A (TinSet U)) x.
+rewrite -(card_TSet U) -cardSpE.
+pose totag (x : A (TSet U)) : SpSet V :=
+  Tagged (fun U : {set V} => A (TSet U)) x.
 have totag_inj : injective totag.
   by rewrite /totag=> x y /eqP /[!eq_Tagged] /= /eqP.
 rewrite -(card_imset _ totag_inj); congr #|pred_of_set _|.
@@ -764,57 +767,57 @@ move: x => [S x /[!inE] /= /eqP U_eq_S]; subst S.
 by exists x.
 Qed.
 
-Definition SpInSet_mor U V (f : {hom U -> V}) (x : el (SpInSet U)) : SpInSet V :=
+Definition SpSet_mor U V (f : {hom U -> V}) (x : el (SpSet U)) : SpSet V :=
   let (S, v) := x in existT _ [set f u | u in S] ((A # restr_hom S f) v).
 
-Fact SpInSet_id : FunctorLaws.id SpInSet_mor.
+Fact SpSet_id : FunctorLaws.id SpSet_mor.
 Proof.
-rewrite /SpInSet_mor => U -[/= S x] /=; apply/eqP.
-rewrite -!/(Tagged _ _) -(Tagged_SpTinSet_castE (imset_id _)) eq_Tagged.
+rewrite /SpSet_mor => U -[/= S x] /=; apply/eqP.
+rewrite -!/(Tagged _ _) -(Tagged_SpTSet_castE (imset_id _)) eq_Tagged.
 rewrite (functor_ext_hom A _ _ (@restr_id _ S)) hom_compE -functor_o.
 set Fid := (F in A # F).
 suff /(functor_ext_hom A) -> : Fid =1 idfun by rewrite functor_id.
-rewrite /Fid /= /cast_TinSet /= => {}x /=.
-by rewrite -!/(cast_TinSet _ _) cast_TinSetKV.
+rewrite /Fid /= /cast_TSet /= => {}x /=.
+by rewrite -!/(cast_TSet _ _) cast_TSetKV.
 Qed.
-Fact SpInSet_ext : FunctorLaws.ext SpInSet_mor.
+Fact SpSet_ext : FunctorLaws.ext SpSet_mor.
 Proof.
-rewrite /SpInSet_mor => U V f g H -[/= S x] /=.
+rewrite /SpSet_mor => U V f g H -[/= S x] /=.
 rewrite -!/(Tagged _ _) (functor_ext_hom A _ _ (restr_ext H)).
-rewrite -(Tagged_SpTinSet_castE (eq_imset _ H)) hom_compE -functor_o.
+rewrite -(Tagged_SpTSet_castE (eq_imset _ H)) hom_compE -functor_o.
 apply/eqP; rewrite -tag_eqE /tag_eq eqxx /=.
 set F := (F in A # F).
 suff /(functor_ext_hom A) -> : F =1 (restr_hom S g) by rewrite tagged_asE.
 rewrite {}/F /= => {}x.
-by apply: val_inj; rewrite !val_cast_TinSet.
+by apply: val_inj; rewrite !val_cast_TSet.
 Qed.
-Fact SpInSet_comp : FunctorLaws.comp SpInSet_mor.
+Fact SpSet_comp : FunctorLaws.comp SpSet_mor.
 Proof.
-rewrite /SpInSet_mor => U V W g f -[/= S x] /=; apply/eqP.
+rewrite /SpSet_mor => U V W g f -[/= S x] /=; apply/eqP.
 rewrite hom_compE -functor_o.
 rewrite (functor_ext_hom A _ _ (restr_comp _ _ (I := S))) /=.
-rewrite -!/(Tagged _ _) -(Tagged_SpTinSet_castE (imset_comp g f _)).
+rewrite -!/(Tagged _ _) -(Tagged_SpTSet_castE (imset_comp g f _)).
 rewrite -tag_eqE /tag_eq /= eqxx /= tagged_asE.
 rewrite hom_compE -functor_o; apply/eqP.
 exact: (functor_ext_hom A).
 Qed.
-Fact SpInSet_bij U V (f : {hom U -> V}) : bijective (SpInSet_mor f).
-Proof. exact: (functor_bij SpInSet_ext SpInSet_id SpInSet_comp). Qed.
+Fact SpSet_bij U V (f : {hom U -> V}) : bijective (SpSet_mor f).
+Proof. exact: (functor_bij SpSet_ext SpSet_id SpSet_comp). Qed.
 HB.instance Definition _ U V (f : {hom U -> V}) :=
-  BijHom.Build (SpInSet U) (SpInSet V)
-    (SpInSet_mor f : el (SpInSet U) -> (SpInSet V)) (SpInSet_bij f).
-HB.instance Definition _ := @isFunctor.Build Bij Bij SpInSet SpInSet_mor
-                              SpInSet_ext SpInSet_id SpInSet_comp.
+  BijHom.Build (SpSet U) (SpSet V)
+    (SpSet_mor f : el (SpSet U) -> (SpSet V)) (SpSet_bij f).
+HB.instance Definition _ := @isFunctor.Build Bij Bij SpSet SpSet_mor
+                              SpSet_ext SpSet_id SpSet_comp.
 
-Lemma tag_SpInSet U V (f : {hom U -> V}) x : tag ((SpInSet # f) x) = f @: (tag x).
+Lemma tag_SpSet U V (f : {hom U -> V}) x : tag ((SpSet # f) x) = f @: (tag x).
 Proof. by case: x => [/= S x]. Qed.
 
-End SpInSet.
+End SpSet.
 
 
 Section Localization.
 
-Definition setTB (U : Bij) : Bij := TinSet [set: U] : Bij.
+Definition setTB (U : Bij) : Bij := TSet [set: U] : Bij.
 
 Section Defs.
 Variable (U : Bij).
@@ -960,7 +963,7 @@ by rewrite /cardSp -cardsT /subsetSp_fun -powersetT card_powerset cardsT card_or
 Qed.
 
 Lemma isoclass_subsetSpE (U : Bij) (F : {set U}) :
-  isoclass (A := subsetSp) F = [set X : {set U} | #|X| == #|F|].
+  isoclass (F : subsetSp U) = [set X : {set U} | #|X| == #|F|].
 Proof.
 apply/setP => E /[!inE]; apply/orbitP/eqP => [[/= s _ {E}<-] |].
   exact/card_imset/perm_inj.
@@ -1370,17 +1373,17 @@ by rewrite setUC setUCr eqxx /= disjoint_sym -subsets_disjoint subxx.
 Qed.
 
 Definition prodSpT (U : Bij) : Bij :=
-  { p : SpInSet A U * SpInSet B U | part2 setT (tag p.1) (tag p.2) }.
+  { p : SpSet A U * SpSet B U | part2 setT (tag p.1) (tag p.2) }.
 
 Lemma prodSp_mor_subproof U V (f : {hom U -> V}) (x : el (prodSpT U)) :
-  part2 setT (tag ((SpInSet A # f) (val x).1)) (tag ((SpInSet B # f) (val x).2)).
+  part2 setT (tag ((SpSet A # f) (val x).1)) (tag ((SpSet B # f) (val x).2)).
 Proof.
 case: x => -/=[[a xa][b xb] /= Hp2].
 by rewrite -(imsetT (BijP f)) part2_imset.
 Qed.
 Definition prodSp_mor U V (f : {hom U -> V})
   (x : el (prodSpT U)) : el (prodSpT V) :=
-  exist _ ((SpInSet A # f) (val x).1, (SpInSet B # f) (val x).2)
+  exist _ ((SpSet A # f) (val x).1, (SpSet B # f) (val x).2)
     (prodSp_mor_subproof f x).
 
 Lemma eq_prodSpP U (x y : prodSpT U) :
@@ -1406,7 +1409,7 @@ Qed.
 Lemma prodSp_ext : FunctorLaws.ext prodSp_mor.
 Proof.
 rewrite /prodSp_mor => U V f g eqfg /= -[[xa xb] /= Hp2].
-by apply/eq_prodSpP; rewrite /= !(functor_ext_hom (SpInSet _) _ _ eqfg).
+by apply/eq_prodSpP; rewrite /= !(functor_ext_hom (SpSet _) _ _ eqfg).
 Qed.
 Lemma prodSp_mor_bij U V (f : {hom U -> V}) : bijective (prodSp_mor f).
 Proof. exact: (functor_bij prodSp_ext prodSp_id prodSp_comp). Qed.
@@ -1433,11 +1436,11 @@ rewrite -[X in 'C(X, i)](card_ord n) -card_draws -sum1_card !big_distrl /=.
 apply: eq_big => [E | E /eqP/(congr1 val) /= eq_card].
   by rewrite inE -val_eqE /=.
 rewrite [[set _ | _ ]](_ : _ =
-  setX [set p : (SpInSet A 'I_n) | tag p == E]
-       [set p : (SpInSet B 'I_n) | tag p == ~: E]); first last.
+  setX [set p : (SpSet A 'I_n) | tag p == E]
+       [set p : (SpSet B 'I_n) | tag p == ~: E]); first last.
   apply/setP => -[a b]; rewrite !inE andbC; case: eqP => //= -> {a}.
   by rewrite part2C part2TE.
-rewrite mul1n [LHS]cardsX -!card_SpInSet eq_card; congr (_ * (cardSp _ _)).
+rewrite mul1n [LHS]cardsX -!card_SpSet eq_card; congr (_ * (cardSp _ _)).
 rewrite -[X in X - i]card_ord.
 have:= (cardsCs E); rewrite -eq_card => ->.
 exact/esym/subKn/subset_leq_card/subset_predT.
@@ -1526,8 +1529,8 @@ End ProdSpeciesZero.
 
 Section ProdSpeciesOne.
 
-Lemma appSpSet1_card V (S : {set V}) : 1 (TinSet S) -> #|S| = 0%N.
-Proof. by rewrite /deltaSp /= /ifSp card_TinSet; case eqP. Qed.
+Lemma appSpSet1_card V (S : {set V}) : 1 (TSet S) -> #|S| = 0%N.
+Proof. by rewrite /deltaSp /= /ifSp card_TSet; case eqP. Qed.
 
 Variable (A : Species).
 
@@ -1538,7 +1541,7 @@ Definition prodSp1_inv_def : el (A U) -> el ((A * 1) U).
 move=> x.
 pose a : A {x : U | x \in setT} := (A # toSetT U) x.
 have b : 1 {x : U | x \in set0}.
-  by rewrite /deltaSp /= /ifSp card_TinSet cards0 eqxx; exact tt.
+  by rewrite /deltaSp /= /ifSp card_TSet cards0 eqxx; exact tt.
 apply: (exist _ (existT _ [set: U] a, existT _ set0 b) _).
 by rewrite /= part2TE setC0.
 Defined.
@@ -1574,8 +1577,8 @@ Definition prodSp1V : A ~~> A * 1 := @prodSp1_inv.
 
 Lemma restr_hom_setTE (U V : Bij) (f : {hom U -> V}) :
   restr_hom setT f \o toSetT U
-  =1 cast_TinSet (esym (imsetT (BijP f))) \o (toSetT V \o f).
-Proof. by move=> x; apply val_inj; rewrite val_cast_TinSet. Qed.
+  =1 cast_TSet (esym (imsetT (BijP f))) \o (toSetT V \o f).
+Proof. by move=> x; apply val_inj; rewrite val_cast_TSet. Qed.
 
 Fact prodSp1V_natural : naturality A (A * 1) prodSp1V.
 Proof.
@@ -1583,10 +1586,10 @@ move=> U V h x /=; apply: eq_prodSpP.
   rewrite /= /prodSp1_inv; unlock; rewrite /prodSp1_inv_def /=.
   rewrite /= !hom_compE -!functor_o /=.
   have /= -> := functor_ext_hom A _ _ (restr_hom_setTE h).
-  by rewrite functor_o /= -/(Tagged _ _) Tagged_SpTinSet_castE.
+  by rewrite functor_o /= -/(Tagged _ _) Tagged_SpTSet_castE.
 rewrite /prodSp1_inv -!lock /= -!/(Tagged _ _).
 move: (eq_rect_r _ _) => HL; move: (eq_rect_r _ _) => HR.
-rewrite -(Tagged_SpTinSet_castE (imset0 h) (A := 1)).
+rewrite -(Tagged_SpTSet_castE (imset0 h) (A := 1)).
 rewrite [(1 # _) _]hom_compE -functor_o.
 apply/eqP; rewrite eq_Tagged /=; apply/eqP.
 exact: deltaSpE.
@@ -1679,7 +1682,7 @@ Qed.
 Section UpSpecies.
 
 Variables (U : Bij) (S : {set U}).
-Implicit Type (T : {set TinSet S}).
+Implicit Type (T : {set TSet S}).
 
 Definition upT T := [set \val x | x in T].
 Lemma upT_subset T : upT T \subset S.
@@ -1703,45 +1706,45 @@ Qed.
 Lemma upT_setT : upT setT = S.
 Proof. by rewrite -setC0 upT_setC /upT imset0 setD0. Qed.
 
-Variable (T : {set TinSet S}).
-Fact up_subproof (x : TinSet T) : \val (\val x) \in upT T.
+Variable (T : {set TSet S}).
+Fact up_subproof (x : TSet T) : \val (\val x) \in upT T.
 Proof.
 rewrite mem_imset; last exact: val_inj.
-exact: TinSetP.
+exact: TSetP.
 Qed.
-Definition up (x : el (TinSet T)) : el (TinSet (upT T)) :=
+Definition up (x : el (TSet T)) : el (TSet (upT T)) :=
   exist _ (val (val x)) (up_subproof x).
 Fact up_bij : bijective up.
 Proof.
 apply: inj_card_bij; first by move=> x y [] /val_inj/val_inj.
-by rewrite !card_TinSet card_imset //; apply: val_inj.
+by rewrite !card_TSet card_imset //; apply: val_inj.
 Qed.
 HB.instance Definition _ :=
-  @BijHom.Build (TinSet T) (TinSet (upT T)) up up_bij.
+  @BijHom.Build (TSet T) (TSet (upT T)) up up_bij.
 End UpSpecies.
 Arguments up {U S T}.
 
 Section UpSpeciesInSet.
 Variable (A : Species) (U : Bij) (S : {set U}).
 
-Definition upSpInSet (x : SpInSet A (TinSet S)) : SpInSet A U :=
+Definition upSpSet (x : SpSet A (TSet S)) : SpSet A U :=
   let (E, y) := x in (existT _ (upT E) ((A # up) y)).
-Lemma tag_upSpInSet x : tag (upSpInSet x) = upT (tag x).
-Proof. by rewrite /upSpInSet; case: x. Qed.
+Lemma tag_upSpSet x : tag (upSpSet x) = upT (tag x).
+Proof. by rewrite /upSpSet; case: x. Qed.
 
 End UpSpeciesInSet.
 
-Lemma SpInSet_up (A : Species) (U V : Bij) (h : {hom U -> V}) (E : {set U})
-  (x : SpInSet A (TinSet E)) :
-  (SpInSet A # h) (upSpInSet x) = upSpInSet ((SpInSet A # (restr_hom E h)) x).
+Lemma SpSet_up (A : Species) (U V : Bij) (h : {hom U -> V}) (E : {set U})
+  (x : SpSet A (TSet E)) :
+  (SpSet A # h) (upSpSet x) = upSpSet ((SpSet A # (restr_hom E h)) x).
 Proof.
 case: x => [SE xSE] /=.
-apply eqSpInSet => /=; split => [|eqtag].
+apply eqSpSet => /=; split => [|eqtag].
   by rewrite /upT -!imset_comp; apply eq_imset.
 rewrite eq_Tagged /=; apply/eqP.
 rewrite [RHS]hom_compE [LHS]hom_compE -!functor_o hom_compE -!functor_o /=.
 apply: (functor_ext_hom A) => {xSE}x /=.
-by apply val_inj; rewrite /= val_cast_TinSet /=.
+by apply val_inj; rewrite /= val_cast_TSet /=.
 Qed.
 
 
@@ -1749,11 +1752,11 @@ Section DownSpecies.
 
 Variables (U : Bij) (S T : {set U}).
 Hypothesis (TsubS : T \subset S).
-Fact down_subproof (x : TinSet T) : val x \in S.
-Proof. exact/(subsetP TsubS)/TinSetP. Qed.
-Definition down_fun (x : TinSet T) : (TinSet S) :=
+Fact down_subproof (x : TSet T) : val x \in S.
+Proof. exact/(subsetP TsubS)/TSetP. Qed.
+Definition down_fun (x : TSet T) : (TSet S) :=
   exist _ (\val x) (down_subproof x).
-Definition downT := [set down_fun x | x in [set: TinSet T]].
+Definition downT := [set down_fun x | x in [set: TSet T]].
 
 Lemma downTK : upT downT = T.
 Proof.
@@ -1763,39 +1766,39 @@ by exists (exist _ u uinT).
 Qed.
 Lemma down_fun_inj : injective down_fun.
 Proof. by move=> [x px][y py] /= [eqxy]; apply: val_inj => /=. Qed.
-Fact down_fun_in (x : TinSet T) : down_fun x \in down_fun @: setT.
+Fact down_fun_in (x : TSet T) : down_fun x \in down_fun @: setT.
 Proof. by rewrite (mem_imset _ _ down_fun_inj). Qed.
-Definition down (x : el (TinSet T)) : el (TinSet downT) :=
+Definition down (x : el (TSet T)) : el (TSet downT) :=
   exist _ (down_fun x) (down_fun_in x).
 Fact down_bij : bijective down.
 Proof.
 apply: inj_card_bij; first by move=> [x px] [y py] [eq]; apply val_inj.
-rewrite card_TinSet (card_imset _ down_fun_inj).
-by rewrite card_TinSet cardsT card_TinSet.
+rewrite card_TSet (card_imset _ down_fun_inj).
+by rewrite card_TSet cardsT card_TSet.
 Qed.
 HB.instance Definition _ :=
-  @BijHom.Build (TinSet T) (TinSet downT) down down_bij.
+  @BijHom.Build (TSet T) (TSet downT) down down_bij.
 End DownSpecies.
 
 Section DownSpeciesInSet.
-Variable (A : Species) (U : Bij) (S : {set U}) (x : SpInSet A U).
+Variable (A : Species) (U : Bij) (S : {set U}) (x : SpSet A U).
 Hypothesis tX : tag x \subset S.
 
-Definition downSpInSet : SpInSet A (TinSet S).
+Definition downSpSet : SpSet A (TSet S).
 case: x tX => [/= T y TsubS].
 apply (existT _ (downT TsubS) ((A # (down TsubS)) y)).
 Defined.
-Lemma tag_downSpInSet : tag downSpInSet = downT tX.
-Proof. by rewrite /downSpInSet; case: x tX. Qed.
-Lemma downSpInSetK : upSpInSet downSpInSet = x.
+Lemma tag_downSpSet : tag downSpSet = downT tX.
+Proof. by rewrite /downSpSet; case: x tX. Qed.
+Lemma downSpSetK : upSpSet downSpSet = x.
 Proof.
-rewrite /upSpInSet /downSpInSet.
+rewrite /upSpSet /downSpSet.
 case: x tX => [/= E y] ty.
-apply eqSpInSet => /=; split => [|eqtag]; first exact: downTK.
+apply eqSpSet => /=; split => [|eqtag]; first exact: downTK.
 rewrite eq_Tagged /=; apply/eqP.
 do 2 rewrite hom_compE -functor_o /=.
 rewrite -[RHS](@functor_id _ _ A) /=; apply: (functor_ext_hom A) => {}y.
-by apply val_inj; rewrite val_cast_TinSet.
+by apply val_inj; rewrite val_cast_TSet.
 Qed.
 
 End DownSpeciesInSet.
@@ -1831,12 +1834,12 @@ by rewrite !(disjointWr _ dWZ) // eqZ ?subsetUr ?subsetUl.
 Qed.
 
 Definition prodSp3T U : Bij :=
-  { p : SpInSet A U * SpInSet B U * SpInSet C U |
+  { p : SpSet A U * SpSet B U * SpSet C U |
     part3 (tag p.1.1) (tag p.1.2) (tag p.2) }.
 Definition prodSp3_mor U V (f : {hom U -> V}) : el (prodSp3T U) -> el (prodSp3T V).
 move=> /= [[[a b] c] /= p3].
-exists ((SpInSet A # f) a, (SpInSet B # f) b, (SpInSet C # f) c) => /=.
-by rewrite /SpInSet_mor /= !tag_SpInSet part3_imset.
+exists ((SpSet A # f) a, (SpSet B # f) b, (SpSet C # f) c) => /=.
+by rewrite /SpSet_mor /= !tag_SpSet part3_imset.
 Defined.
 
 Fact prodSp3_id : FunctorLaws.id prodSp3_mor.
@@ -1868,20 +1871,20 @@ Variable (U : Bij).
 
 Definition prodSpA3_fun : el ((A * (B * C)) U) -> el (prodSp3 U).
 move=> [[/= xA [/= V ]]] [[xSB xSC]] /= BC_SC UA_V.
-exists (xA, upSpInSet xSB, upSpInSet xSC).
-rewrite /= !tag_upSpInSet; apply: (part23 UA_V).
+exists (xA, upSpSet xSB, upSpSet xSC).
+rewrite /= !tag_upSpSet; apply: (part23 UA_V).
 by rewrite -{1}(upT_setT V) /upT (part2_imset _ _ _ val_inj).
 Defined.
 Definition prodSpA3_inv : el (prodSp3 U) -> el ((A * (B * C)) U).
 move=> [/=[[a b]c] /=] p3.
-have bc : (B * C)%species (TinSet (tag b :|: tag c)).
-  pose xb := downSpInSet (subsetUl (tag b) (tag c)).
-  pose xc := downSpInSet (subsetUr (tag b) (tag c)).
+have bc : (B * C)%species (TSet (tag b :|: tag c)).
+  pose xb := downSpSet (subsetUl (tag b) (tag c)).
+  pose xc := downSpSet (subsetUr (tag b) (tag c)).
   exists (xb, xc) => /=.
-  rewrite -(part2_imset _ _ _ val_inj) /= /xb /xc !tag_downSpInSet /=.
+  rewrite -(part2_imset _ _ _ val_inj) /= /xb /xc !tag_downSpSet /=.
   rewrite /downT -!imset_comp !(eq_imset (g := val)) //.
   move: p3 => /and4P[/eqP SU dab dac dbc].
-  by rewrite !imsetTE /= !imset_val_TinSet /part2 eqxx /=.
+  by rewrite !imsetTE /= !imset_val_TSet /part2 eqxx /=.
 exists (a, existT _ (tag b :|: tag c) bc) => /=.
 move: p3 => /and4P[/eqP SU dab dac dbc].
 rewrite /part2 setUA SU eqxx /=.
@@ -1895,50 +1898,50 @@ move=> [[/= xA [/= V ]]] [[xSB xSC]] /= BC_V UA_V /=.
 move: (eq_ind _ _ _ _ _) => H2.
 apply val_inj => /=; apply/eqP; rewrite xpair_eqE eqxx /=.
 have eqtag :
-  [set x | (x \in tag (upSpInSet xSB)) || (x \in tag (upSpInSet xSC))] = V.
-  rewrite !tag_upSpInSet.
+  [set x | (x \in tag (upSpSet xSB)) || (x \in tag (upSpSet xSC))] = V.
+  rewrite !tag_upSpSet.
   move: BC_V => /andP[/eqP + _] => /(congr1 (@upT _ _)).
   rewrite upT_setU upT_setT=> {9}->.
   by apply/setP => x; rewrite !inE.
-rewrite -!/(Tagged _ _) -(Tagged_SpTinSet_castE eqtag (A := B * C)) eq_Tagged /=.
+rewrite -!/(Tagged _ _) -(Tagged_SpTSet_castE eqtag (A := B * C)) eq_Tagged /=.
 rewrite -(inj_eq val_inj) /= xpair_eqE /=; apply/andP.
-split; apply/eqP; apply eqSpInSet => /=; split.
-- rewrite tag_SpInSet tag_downSpInSet /downT -imset_comp.
+split; apply/eqP; apply eqSpSet => /=; split.
+- rewrite tag_SpSet tag_downSpSet /downT -imset_comp.
   case: xSB {H2} eqtag BC_V => /= SB _ eqtag _.
   apply/setP => u; apply/imsetP/idP => [[[u' u'in _ {u}->]] /= | uinSB].
     have:= u'in => /imsetP [/= [u uinV] Hin equ']; subst u'.
     move: Hin; congr (_ \in SB); apply: val_inj => /=.
-    by rewrite val_cast_TinSet.
+    by rewrite val_cast_TSet.
   have Hupu : val u \in upT SB by rewrite /upT (mem_imset _ _ val_inj).
   exists (exist _ (val u) Hupu); first by rewrite inE.
   rewrite /=; apply val_inj => /=.
-  by rewrite val_cast_TinSet.
+  by rewrite val_cast_TSet.
 - case: xSB {H2} eqtag BC_V => /= SB b eqtag _ eqtag1.
   rewrite eq_Tagged /=; apply/eqP.
   repeat rewrite hom_compE -!functor_o /=.
   rewrite -[RHS](@functor_id _ _ B); apply: (functor_ext_hom B) => {}b /=.
-  by repeat (apply val_inj; rewrite val_cast_TinSet /=).
-- rewrite tag_SpInSet tag_downSpInSet /downT -imset_comp.
+  by repeat (apply val_inj; rewrite val_cast_TSet /=).
+- rewrite tag_SpSet tag_downSpSet /downT -imset_comp.
   case: xSC {H2} eqtag BC_V => /= SC _ eqtag _.
   apply/setP => u; apply/imsetP/idP => [[[u' u'in _ {u}->]] /= | uinSB].
     have:= u'in => /imsetP [/= [u uinV] Hin equ']; subst u'.
     move: Hin; congr (_ \in SC); apply: val_inj => /=.
-    by rewrite val_cast_TinSet.
+    by rewrite val_cast_TSet.
   have Hupu : val u \in upT SC by rewrite /upT (mem_imset _ _ val_inj).
   exists (exist _ (val u) Hupu); first by rewrite inE.
   rewrite /=; apply val_inj => /=.
-  by rewrite val_cast_TinSet.
+  by rewrite val_cast_TSet.
 - case: xSC {H2} eqtag BC_V => /= SC c eqtag _ eqtag1.
   rewrite eq_Tagged /=; apply/eqP.
   repeat rewrite hom_compE -!functor_o /=.
   rewrite -[RHS](@functor_id _ _ C); apply: (functor_ext_hom C) => {}c /=.
-  by repeat (apply val_inj; rewrite val_cast_TinSet /=).
+  by repeat (apply val_inj; rewrite val_cast_TSet /=).
 Qed.
 Fact prodSpA3KV : cancel prodSpA3_inv prodSpA3_fun.
 Proof.
 move=> [/=[[a b]c] /=] p3; move: (eq_ind_r _ _ _) => HL.
 apply val_inj => /= {p3 HL}; apply/eqP.
-by repeat (rewrite xpair_eqE; apply/andP; split) => //; rewrite downSpInSetK.
+by repeat (rewrite xpair_eqE; apply/andP; split) => //; rewrite downSpSetK.
 Qed.
 Fact prodSpA3_fun_bij : bijective prodSpA3_fun.
 Proof. by exists prodSpA3_inv; [exact: prodSpA3K | exact: prodSpA3KV]. Qed.
@@ -1953,7 +1956,7 @@ Fact prodSpA3_natural : naturality (A * (B * C)) prodSp3 prodSpA3.
 Proof.
 move=> U V h [[/= xA [/= E ]]] [[xSB xSC]] /= BC_E UA_E /=.
 apply: val_inj => /= {UA_E}; apply/eqP.
-by rewrite !xpair_eqE !SpInSet_up !eqxx.
+by rewrite !xpair_eqE !SpSet_up !eqxx.
 Qed.
 HB.instance Definition _ :=
   @isNatural.Build Bij Bij (A * (B * C)) prodSp3 prodSpA3 prodSpA3_natural.
