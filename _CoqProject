@@ -8,4 +8,6 @@ theories/msetcompl.v
 theories/algcompl.v
 theories/category.v
 theories/algcat.v
-theories/species.v
+theories/species/species.v
+theories/species/sum.v
+theories/species/prod.v
