@@ -133,7 +133,7 @@ Qed.
 End PermExtd.
 
 
-Section PermGlue.
+Section PermutationGlue.
 Variable (U : finType) (E1 E2 F1 F2 : {set U}) (s1 s2 : {perm U}).
 Hypothesis HE : E1 = ~: E2.
 Hypothesis HF : F1 = ~: F2.
@@ -161,7 +161,7 @@ case: (boolP (u1 \in F1)) => uin1; case: (boolP (u2 \in F1)) => uin2.
 Qed.
 Definition glue_perm : {perm U} := perm glue_perm_inj.
 
-End PermGlue.
+End PermutationGlue.
 
 
 Section Cast.
@@ -193,12 +193,12 @@ End MapValSub.
 
 Module FinBijCat.
 
-Fact idfun_is_bjective T : bijective (@idfun T).
+Fact idfun_is_bijective T : bijective (@idfun T).
 Proof. by exists idfun. Qed.
 
 HB.instance Definition _ :=
   isCategory.Build finType (fun T : finType => T)
-    (fun (a b : finType) (f : a -> b) => bijective f) idfun_is_bjective
+    (fun (a b : finType) (f : a -> b) => bijective f) idfun_is_bijective
     (fun (a b c : finType) (f : a -> b) (g : b -> c)
          (fb : bijective f) (gb : bijective g) => bij_comp gb fb).
 Definition cat : category :=  finType.
@@ -288,6 +288,29 @@ HB.instance Definition _ i j (eq : i = j) :=
   @BijHom.Build 'I_i 'I_j (cast_ord eq : el ('I_i : Bij) -> el ('I_j : Bij))
     (cast_ord_bij eq).
 
+(** Factory failed attempt
+HB.factory Record mkFunctor (T : Bij -> Bij)
+  (F : forall (U V : Bij) (f : {hom U -> V}), el (T U) -> el (T V)) := {
+    fext : FunctorLaws.ext F;
+    fid : FunctorLaws.id F;
+    fcomp : FunctorLaws.comp F
+}.
+HB.builders Context T F of mkFunctor T F.
+Fact functor_bij (U V : Bij) (f : {hom U -> V}) : bijective (F U V f).
+Proof.
+by exists (F V U (finv f)) => x;
+  rewrite -(compapp (F _ _ _) (F _ _ _) x) -fcomp -[RHS]fid;
+  apply fext => {}x; rewrite /= ?finvK ?finvKV.
+Qed.
+HB.instance Definition _ U V (f : {hom U -> V}) :=
+  BijHom.Build (T U) (T V)
+    (F U V f : el (T U) -> (T V)) (functor_bij f).
+HB.instance Definition _ :=
+  isFunctor.Build Bij Bij T fext fid fcomp.
+
+HB.end.
+*)
+
 
 Section FunctorBij.
 
@@ -305,6 +328,7 @@ by exists (F (finv f)) => x;
 Qed.
 
 End FunctorBij.
+
 
 Section TypeInSet.
 Variable (U : Bij) (S : {set U}).
@@ -886,11 +910,10 @@ rewrite -tag_eqE /tag_eq /= eqxx /= tagged_asE.
 rewrite hom_compE -functor_o; apply/eqP.
 exact: (functor_ext_hom A).
 Qed.
-Fact SpSet_bij U V (f : {hom U -> V}) : bijective (SpSet_mor f).
-Proof. exact: (functor_bij SpSet_ext SpSet_id SpSet_comp). Qed.
 HB.instance Definition _ U V (f : {hom U -> V}) :=
   BijHom.Build (SpSet U) (SpSet V)
-    (SpSet_mor f : el (SpSet U) -> (SpSet V)) (SpSet_bij f).
+    (SpSet_mor f : el (SpSet U) -> (SpSet V))
+    (functor_bij SpSet_ext SpSet_id SpSet_comp f).
 HB.instance Definition _ :=
   isFunctor.Build Bij Bij SpSet SpSet_ext SpSet_id SpSet_comp.
 
@@ -924,11 +947,10 @@ Proof.
 move=> U V W g f x; apply val_inj => /=.
 exact: (functor_o (F := SpSet) g f).
 Qed.
-Fact SpSetC_bij U V (f : {hom U -> V}) : bijective (SpSetC_mor f).
-Proof. exact: (functor_bij SpSetC_ext SpSetC_id SpSetC_comp). Qed.
 HB.instance Definition _ U V (f : {hom U -> V}) :=
   BijHom.Build (SpSetC U) (SpSetC V)
-    (SpSetC_mor f : el (SpSetC U) -> (SpSetC V)) (SpSetC_bij f).
+    (SpSetC_mor f : el (SpSetC U) -> (SpSetC V))
+    (functor_bij SpSetC_ext SpSetC_id SpSetC_comp f).
 HB.instance Definition _ :=
   isFunctor.Build Bij Bij SpSetC SpSetC_ext SpSetC_id SpSetC_comp.
 

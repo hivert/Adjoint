@@ -12,13 +12,14 @@ Local Open Scope category_scope.
 Local Open Scope species_scope.
 
 
+(** The sum of two species *)
 Section SumSpecies.
 
 Variable A B : Species.
 
-Definition sumSp_fun U : Bij := (A U + B U)%type.
+Definition sumSpT U : Bij := (A U + B U)%type.
 Definition sumSp_mor U V (f : {hom U -> V}) :
-  el (sumSp_fun U) -> el (sumSp_fun V) :=
+  el (sumSpT U) -> el (sumSpT V) :=
   fun x => match x with
            | inl a => inl ((A # f) a)
            | inr b => inr ((B # f) b)
@@ -28,7 +29,7 @@ Proof.
 by exists (sumSp_mor (finv f)); case => [a|b] /=; rewrite ?SpfinvK ?SpfinvKV.
 Qed.
 HB.instance Definition _ U V (f : {hom U -> V}) :=
-  BijHom.Build (sumSp_fun U) (sumSp_fun V) (sumSp_mor f) (sumSp_mor_bij f).
+  BijHom.Build (sumSpT U) (sumSpT V) (sumSp_mor f) (sumSp_mor_bij f).
 Fact sumSp_ext : FunctorLaws.ext sumSp_mor.
 Proof. by move=> U V f g eq [a|b] /=; congr (_ _); apply: functor_ext_hom. Qed.
 Fact sumSp_id : FunctorLaws.id sumSp_mor.
@@ -36,15 +37,15 @@ Proof. by move=> U [a|b] /=; rewrite functor_id. Qed.
 Fact sumSp_comp  : FunctorLaws.comp sumSp_mor.
 Proof. by move=> U V W f g [a|b]; rewrite /= functor_o. Qed.
 HB.instance Definition _ :=
-  isFunctor.Build Bij Bij sumSp_fun sumSp_ext sumSp_id sumSp_comp.
-Definition sumSp : Species := sumSp_fun.
+  isFunctor.Build Bij Bij sumSpT sumSp_ext sumSp_id sumSp_comp.
+Definition sumSp : Species := sumSpT.
 
 End SumSpecies.
 
 Notation "f + g" := (sumSp f g) : species_scope.
 
 Lemma card_sumSp A B n : cardSp (A + B) n = (cardSp A n + cardSp B n)%N.
-Proof. by rewrite /sumSp /sumSp_fun /= /cardSp /= card_sum. Qed.
+Proof. by rewrite /sumSp /sumSpT /= /cardSp /= card_sum. Qed.
 
 Lemma cardiso_sumSp A B n : cardiso (A + B) n = (cardiso A n + cardiso B n)%N.
 Proof.
@@ -64,9 +65,9 @@ rewrite [X in (_ + #|pred_of_set X|)%N](_ : _ = set0) ?cards0 ?addn0; first last
 congr #|pred_of_set _|.
 apply/setP => /= S; rewrite !inE.
 apply/imsetP/orP => [[[a|b] _ {S}->] | [] /imsetP[T /imsetP[x _ {T}->] {S}->]].
-- left; apply/imsetP; exists (orbit (actSp A  'I_n) setT a); first exact: imset_f.
+- left; apply/imsetP; exists (orbit (actSp A 'I_n) setT a); first exact: imset_f.
   by rewrite -[LHS]nattransp_isoclass.
-- right; apply/imsetP; exists (orbit (actSp B  'I_n) setT b); first exact: imset_f.
+- right; apply/imsetP; exists (orbit (actSp B 'I_n) setT b); first exact: imset_f.
   by rewrite -[LHS]nattransp_isoclass.
 - by exists (inl x) => //; rewrite -[RHS]nattransp_isoclass.
 - by exists (inr x) => //; rewrite -[RHS]nattransp_isoclass.
@@ -86,15 +87,14 @@ Fact sumSpC_bij A B U : bijective (@sumSpC_fun A B U).
 Proof. by exists (sumSpC_fun (U := U)); exact: sumSpC_funK. Qed.
 HB.instance Definition _ A B U :=
   @BijHom.Build ((A + B) U) ((B + A) U) (@sumSpC_fun A B U) (@sumSpC_bij A B U).
-Definition sumSpC A B : A + B ~~> B + A := @sumSpC_fun A B.
+Definition sumSpC {A B : Species} : A + B ~~> B + A := @sumSpC_fun A B.
 
-Fact sumSpC_natural A B : naturality (A + B) (B + A) (sumSpC A B).
+Fact sumSpC_natural A B : naturality (A + B) (B + A) sumSpC.
 Proof. by move=> U V h []. Qed.
 HB.instance Definition _ A B :=
-  @isNatural.Build Bij Bij (A + B) (B + A)
-    (sumSpC A B) (@sumSpC_natural A B).
+  @isNatural.Build Bij Bij (A + B) (B + A) sumSpC (@sumSpC_natural A B).
 
-Lemma sumSpCK A B : sumSpC B A \v sumSpC A B =%= NId (A + B).
+Lemma sumSpCK A B : sumSpC \v sumSpC =%= NId (A + B).
 Proof. by move=> U []. Qed.
 
 End SumSpeciesCommutative.
@@ -122,7 +122,7 @@ HB.instance Definition _ :=
   @BijHom.Build (A U) ((A + 0) U) sumSp0_inv sumSp0_inv_bij.
 
 End Mor.
-Definition sumSp0  : A + 0 ~~> A := @sumSp0_fun.
+Definition sumSp0 : A + 0 ~~> A := @sumSp0_fun.
 
 Fact sumSp0_natural : naturality (A + 0) A sumSp0.
 Proof. by move=> U V h []. Qed.
@@ -133,6 +133,8 @@ Lemma sumSp0_invE : isoSpinv sumSp0 =%= sumSp0_inv.
 Proof. by apply: eq_nattrans_sym; apply: isoSpinvrE => U; apply: sumSp0_funK. Qed.
 
 End SumSpeciesZero.
+
+Definition sum0Sp A : 0 + A ~> A := sumSp0 A \v sumSpC.
 
 
 Section SumSpeciesAssociative.
@@ -184,6 +186,7 @@ Proof. by apply isoSpinvrE => U x /=; rewrite sumSpA_funK. Qed.
 End SumSpeciesAssociative.
 
 
+(** The sum of two natural transformations *)
 Section SumNatTransf.
 
 Variable (A1 A2 B1 B2 : Species) (tA : A1 ~> A2) (tB : B1 ~> B2).
@@ -191,12 +194,12 @@ Variable (A1 A2 B1 B2 : Species) (tA : A1 ~> A2) (tB : B1 ~> B2).
 Section Defs.
 Variable (U : Bij).
 
-Definition sumSpTr_fun (x : el ((A1 + B1)%Sp U)) : el ((A2 + B2)%Sp U) :=
+Definition sumSpTr_fun (x : el ((A1 + B1) U)) : el ((A2 + B2) U) :=
   match x with
   | inl a => inl (tA U a)
   | inr b => inr (tB U b)
   end.
-Definition sumSpTr_inv (x : el ((A2 + B2)%Sp U)) : el ((A1 + B1)%Sp U) :=
+Definition sumSpTr_inv (x : el ((A2 + B2) U)) : el ((A1 + B1) U) :=
   match x with
   | inl a => inl (finv (tA U) a)
   | inr b => inr (finv (tB U) b)
@@ -208,8 +211,7 @@ Proof. by case=> [] x /=; rewrite finvKV. Qed.
 Fact sumSpTr_fun_bij : bijective sumSpTr_fun.
 Proof. by exists sumSpTr_inv; [exact sumSpTr_funK | exact sumSpTr_invK]. Qed.
 HB.instance Definition _ :=
-  BijHom.Build ((A1 + B1)%Sp U) ((A2 + B2)%Sp U)
-    sumSpTr_fun sumSpTr_fun_bij.
+  BijHom.Build ((A1 + B1) U) ((A2 + B2) U) sumSpTr_fun sumSpTr_fun_bij.
 End Defs.
 
 Definition sumSpTr : A1 + B1 ~~> A2 + B2 := @sumSpTr_fun.

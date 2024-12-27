@@ -166,7 +166,7 @@ End Defs.
 Lemma diffProdl_inj : injective diffProdl.
 Proof.
 rewrite /diffProdl => [][/= [[Ea xa] [Eb xb]] /= p2x].
-move=>               [/= [[Fa ya] [Fb yb]] /= p2y] /eqP.
+move=>                  [/= [[Fa ya] [Fb yb]] /= p2y] /eqP.
 rewrite -eq_prodSpE => /= /andP[/eqP + /eqP]; rewrite !eqSpSet /=.
 move=> [eqEFa] /(_ eqEFa); rewrite !eq_Tagged /= => /eqP.
 rewrite hom_compE -functor_o /= => eqa.
@@ -175,18 +175,18 @@ rewrite hom_compE -functor_o /= => eqb.
 apply: val_inj => /= {p2x p2y}.
 apply/eqP; rewrite xpair_eqE; apply/andP;
   split; apply/eqP; rewrite !eqSpSet /=; split.
-- move: eqEFa {eqa}; rewrite /UIn => /setP eqa.
+- move: {eqa eqEFb eqb Fb yb} eqEFa; rewrite /UIn => /setP eqa.
   apply/setP => u; move/(_ (Some u)) : eqa.
   by rewrite !inE !(mem_imset _ _ (@Some_inj U)) !Some_eq_NoneF /=.
-- move=> eqtag; rewrite !eq_Tagged /=.
+- move=> {eqEFb eqb Fb yb} eqtag; rewrite !eq_Tagged /=.
   apply/eqP/(Bij_injP (A # toUIn (S:=Fa))); rewrite -{}eqa /=.
   rewrite !hom_compE -functor_o; apply: functor_ext_hom => {}xa.
   apply val_inj; rewrite /= !val_cast_TSet /=.
   by case: xa => [xa|]; rewrite //= !val_cast_TSet.
-- move: eqEFb {eqb}; rewrite /UIn => /setP eqb.
+- move: eqEFb {eqb eqEFa eqa Fa ya}; rewrite /UIn => /setP eqb.
   apply/setP => u; move/(_ (Some u)) : eqb.
   by rewrite !(mem_imset _ _ (@Some_inj U)).
-- move=> eqtag; rewrite !eq_Tagged /=.
+- move=> {eqEFa eqa Fa ya} eqtag; rewrite !eq_Tagged /=.
   apply/eqP/(Bij_injP (B # toUOut (S:=Fb))); rewrite -{}eqb /=.
   rewrite !hom_compE -functor_o; apply: functor_ext_hom => {}xb.
   by apply val_inj; rewrite /= !val_cast_TSet.
@@ -199,7 +199,7 @@ Lemma diffProdl_natural (A B : Species) (U V : Bij) (f : {hom U -> V}) :
 Proof.
 move=> [/= [[Sx x][Sy y]] /= p2].
 apply: val_inj => /=; apply/eqP; rewrite xpair_eqE; apply/andP;
-split; apply/eqP; rewrite !eqSpSet /=; split.
+  split; apply/eqP; rewrite !eqSpSet /=; split.
 - rewrite {Sy y p2} /UIn /= imsetU imset_set1 /=; congr (_ |: _).
   by rewrite -!imset_comp; apply eq_imset => u.
 - move=> {Sy y p2} eqtag; rewrite !eq_Tagged /=; apply/eqP.
@@ -254,7 +254,7 @@ Definition diffProd_fun
   end.
 Fact diffProd_inj : injective diffProd_fun.
 Proof.
-rewrite /diffProd_fun => [][]x []y.
+rewrite /diffProd_fun => [[]x []y].
 - by move/diffProdl_inj ->.
 - by move=> eq; have:= diffProdlNP x; rewrite {}eq diffProdrP.
 - by move=> eq; have:= diffProdrNP x; rewrite {}eq diffProdlP.
@@ -262,9 +262,8 @@ rewrite /diffProd_fun => [][]x []y.
 Qed.
 Fact diffProd_bij : bijective diffProd_fun.
 Proof.
-apply (inj_card_bij diffProd_inj).
-rewrite leq_eqVlt; apply/orP; left; apply/eqP.
-rewrite card_sum !cardSpE !card_prodSp card_diffSp card_prodSp.
+apply/(inj_card_bij diffProd_inj)/eq_leq.
+rewrite card_sum !cardSpE !card_prodSp card_diffSp card_prodSp; move: #|U| => n.
 rewrite big_nat_recl //= bin0 mul1n subn0.
 under eq_bigr => i _ do rewrite binS !mulnDl subSS.
 under [X in _ = (X + _)%N]eq_bigr => i _ do rewrite card_diffSp.

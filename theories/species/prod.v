@@ -29,9 +29,8 @@ Qed.
 Lemma part2TE U (X Y : {set U}) : part2 setT X Y = (X == ~: Y).
 Proof.
 rewrite /part2; apply/idP/eqP => [/andP[/eqP eqU dXY] | ->].
-  rewrite -setTD eqU setDUl setDv setU0.
-  apply/setP => x /[!inE]; rewrite andbC; case H : (x \in X) => //=.
-  by move: dXY; rewrite disjoints_subset => /subsetP/(_ _ H) /[!inE] ->.
+  rewrite -setTD {}eqU setDUl setDv setU0 -[LHS](setID X Y).
+  by move/disjoint_setI0: dXY => ->; rewrite set0U.
 by rewrite setUC setUCr eqxx /= disjoint_sym -subsets_disjoint subxx.
 Qed.
 
@@ -74,10 +73,9 @@ Proof.
 rewrite /prodSp_mor => U V f g eqfg /= -[[xa xb] /= Hp2].
 by apply/eq_prodSpP; rewrite /= !(functor_ext_hom (SpSet _) _ _ eqfg).
 Qed.
-Lemma prodSp_mor_bij U V (f : {hom U -> V}) : bijective (prodSp_mor f).
-Proof. exact: (functor_bij prodSp_ext prodSp_id prodSp_comp). Qed.
 HB.instance Definition _ U V (f : {hom U -> V}) :=
-  BijHom.Build (prodSpT U) (prodSpT V) (prodSp_mor f) (prodSp_mor_bij f).
+  BijHom.Build (prodSpT U) (prodSpT V) (prodSp_mor f)
+    (functor_bij prodSp_ext prodSp_id prodSp_comp f).
 HB.instance Definition _ :=
   isFunctor.Build Bij Bij prodSpT prodSp_ext prodSp_id prodSp_comp.
 
@@ -92,9 +90,9 @@ rewrite {1}/cardSp; rewrite -(card_imset predT val_inj) /= imset_val_sub.
 have cardle (E : {set 'I_n}) : #|E| < n.+1.
   rewrite ltnS -[X in _ <= X](card_ord n).
   exact/subset_leq_card/subset_predT.
-pose cardS E := Ordinal (cardle E).
+pose cards E := Ordinal (cardle E).
 rewrite [LHS](card_preim (fun p => tag p.1)) /=.
-rewrite [LHS](partition_big (fun E : {set 'I_n} => cardS E) xpredT) //=.
+rewrite [LHS](partition_big (fun E : {set 'I_n} => cards E) xpredT) //=.
 rewrite big_mkord; apply eq_bigr => i _.
 rewrite -[X in 'C(X, i)](card_ord n) -card_draws -sum1_card !big_distrl /=.
 apply: eq_big => [E | E /eqP/(congr1 val) /= eq_card].
@@ -113,7 +111,7 @@ Qed.
 
 Lemma tag1_act_prodSp U (x : prodSp U) (s : {perm U}) :
   tag (\val (actSp _ _ x s)).1 = s @: (tag (\val x).1).
-Proof. by case: x => [[[]]]. Qed.
+Proof. by case: x => [[[]?]]. Qed.
 Lemma tag2_act_prodSp U (x : prodSp U) (s : {perm U}) :
   tag (\val (actSp _ _ x s)).2 = s @: (tag (\val x).2).
 Proof. by case: x => [[?[]]]. Qed.
@@ -142,41 +140,39 @@ End Def.
 Lemma toIsoPair_inj :
   {in [set x | \val x \in isoreprs prodSp 'I_n] &, injective toIsoPair}.
 Proof.
-move=> [x tx1][y ty1]; rewrite !inE /= => Hx Hy.
+move=> [x tx][y ty]; rewrite !inE /= => Hx Hy.
 rewrite /toIsoPair => -[/eqP + /eqP]; rewrite !orbit_eq_mem.
-repeat move : (card_tag1_prodSp _) => /= {}; move=> tx1' ty1'.
-repeat move : (card_tag2_prodSp _) => /=; move=> tx2 ty2.
+repeat move: (card_tag1_prodSp _) => /=; move=> tx1 ty1.
+repeat move: (card_tag2_prodSp _) => /=; move=> tx2 ty2.
 rewrite !isoclass_SpSetC2ord /= => /orbitP[/= s1 _].
-rewrite /actSp_fun /= /SpSetC_mor /= => /(congr1 val) /= => eq1 {tx1' ty1'}.
+rewrite /actSp_fun /= /SpSetC_mor /= => /(congr1 val) /= => eq1 {tx1 ty1}.
 move=> /orbitP[/= s2 _].
-rewrite /actSp_fun /= /SpSetC_mor /= => /(congr1 val) /= => eq2.
-apply val_inj => /=; apply/eqP; rewrite -(isoreprsE Hx Hy) {Hx Hy}.
-rewrite orbit_sym.
-apply/orbitP; rewrite /= /actSp_fun /= /prodSp_mor /=.
-case: x y tx1 tx2 ty1 ty2 eq1 eq2.
-move=> /= [[E1 x1][E2 x2] /= px] /=[] [[F1 y1][F2 y2] /= py] cE1 cF2 cF1 cE2.
+rewrite /actSp_fun /= /SpSetC_mor /= => /(congr1 val) /= => eq2 {tx2 ty2}.
+apply val_inj => /=; apply/eqP; rewrite -(isoreprsE Hx Hy) {Hx Hy tx ty}.
+rewrite orbit_sym; apply/orbitP; rewrite /= /actSp_fun /= /prodSp_mor /=.
+case: x y eq1 eq2 => /= [[[E1 x1][E2 x2] /= px]] /= [[[F1 y1][F2 y2] /= py]].
+move E2 after E1; move F1 after E2; move F2 after F1.
 rewrite eqSpSet => /= -[eqEF1 /(_ eqEF1)].
 rewrite eq_Tagged /= hom_compE -functor_o /= => /eqP eq1.
 rewrite eqSpSet => /= -[eqEF2 /(_ eqEF2)].
 rewrite eq_Tagged /= hom_compE -functor_o /= => /eqP eq2.
-have := px; rewrite part2TE => /eqP HE.
-have := py; rewrite part2TE => /eqP HF.
+have:= px; rewrite part2TE => /eqP HE.
+have:= py; rewrite part2TE => /eqP HF.
 exists (glue_perm HE HF eqEF1 eqEF2); first by rewrite inE.
-apply val_inj => /=; apply/eqP; rewrite xpair_eqE; apply/andP; split.
-- apply/eqP; rewrite eqSpSet /=; split => [|eqtag].
-    rewrite -[RHS]eqEF1; apply eq_in_imset => x.
-    by rewrite permE /= => ->.
-  rewrite eq_Tagged /= hom_compE -functor_o; apply/eqP; rewrite -{}[RHS]eq1.
+apply val_inj => /=; apply/eqP; rewrite xpair_eqE; apply/andP.
+split=> [{x2 y2 eq2}|{x1 y1 eq1}];
+        apply/eqP; rewrite eqSpSet /=; split => [|eqtag].
+- rewrite -[RHS]eqEF1; apply eq_in_imset => /= x.
+  by rewrite permE /= => ->.
+- rewrite eq_Tagged /= hom_compE -functor_o; apply/eqP; rewrite -{}[RHS]eq1.
   apply: (functor_ext_hom A) => {}y /=.
   by apply: val_inj; rewrite /= !val_cast_TSet /= !permE /= TSetP.
-- apply/eqP; rewrite eqSpSet /=; split => [|eqtag].
-    rewrite -[RHS]eqEF2; apply eq_in_imset => x.
-    by rewrite permE /= HF inE => ->.
-  rewrite eq_Tagged /= hom_compE -functor_o; apply/eqP; rewrite -{}[RHS]eq2.
+- rewrite -[RHS]eqEF2; apply eq_in_imset => /= x.
+  by rewrite permE /= HF inE => ->.
+- rewrite eq_Tagged /= hom_compE -functor_o; apply/eqP; rewrite -{}[RHS]eq2.
   apply: (functor_ext_hom B) => {}x /=.
   by apply: val_inj; rewrite /= !val_cast_TSet /= !permE /= HF inE TSetP.
 Qed.
-
 
 Lemma toIsoPairP (x1 x2 : prodSpCTag) :
   val x1 \in isoclass (val x2) -> toIsoPair x1 = toIsoPair x2.
@@ -280,7 +276,6 @@ HB.instance Definition _ A B :=
   @isNatural.Build Bij Bij (A * B) (B * A) prodSpC (@prodSpC_natural A B).
 
 Lemma prodSpCK A B : prodSpC \v prodSpC =%= NId (A * B).
-Proof.
 Proof. by move=> U [[a b] eq]; apply val_inj. Qed.
 Lemma prodSpC_invE A B : isoSpinv (@prodSpC A B) =%= prodSpC.
 Proof. by apply: eq_nattrans_sym; apply: isoSpinvrE; apply: prodSpCK. Qed.
@@ -394,10 +389,8 @@ move=> U V h x /=; apply: eq_prodSpP.
   by rewrite functor_o /= -/(Tagged _ _) Tagged_SpTSet_castE.
 rewrite /prodSp1_inv -!lock /= -!/(Tagged _ _).
 move: (eq_rect_r _ _) => HL; move: (eq_rect_r _ _) => HR.
-rewrite -(Tagged_SpTSet_castE (imset0 h) (A := 1)).
-rewrite [(1 # _) _]hom_compE -functor_o.
-apply/eqP; rewrite eq_Tagged /=; apply/eqP.
-exact: deltaSpE.
+rewrite eqSpSet /=; split => [|eqtag]; first exact: imset0.
+by rewrite eq_Tagged /=; apply/eqP; apply: deltaSpE.
 Qed.
 Fact prodSp1_natural : naturality (A * 1) A prodSp1.
 Proof. exact: (natural_inv prodSp1V_natural). Qed.
@@ -407,7 +400,7 @@ HB.instance Definition _ :=
   @isNatural.Build Bij Bij (A * 1) A prodSp1 prodSp1_natural.
 
 Lemma prodSp1_invE : isoSpinv prodSp1 =%= prodSp1V.
-Proof. by apply: eq_nattrans_sym; apply: isoSpinvrE => U; apply: prodSp1_homK. Qed.
+Proof. by apply/eq_nattrans_sym/isoSpinvrE => U; apply: prodSp1_homK. Qed.
 
 Definition prod1Sp : 1 * A ~> A := prodSp1 \v prodSpC.
 Lemma prod1Sp_invE : isoSpinv prod1Sp =%= prodSpC \v isoSpinv prodSp1.
@@ -483,6 +476,7 @@ by case: x => [a|b] /=; rewrite prodSpC_invE.
 Qed.
 
 
+(** Associativity of product of Species *)
 Section UpSpecies.
 
 Variables (U : Bij) (S : {set U}).
@@ -610,7 +604,7 @@ End DownSpeciesInSet.
 
 Section ProdSpeciesA3.
 
-Variable (A B C : Species).
+Context {A B C : Species}.
 Implicit Type (U V : Bij).
 
 Definition part3 U (W X Y : {set U}) :=
@@ -660,10 +654,9 @@ Fact prodSp3_comp : FunctorLaws.comp prodSp3_mor.
 rewrite /prodSp3_mor => U V W f g /= [[[a b] c] /= p3]; apply: val_inj => /=.
 by rewrite !functor_o.
 Qed.
-Fact prodSp3_bij U V (f : {hom U -> V}) : bijective (prodSp3_mor f).
-Proof. exact: (functor_bij prodSp3_ext prodSp3_id prodSp3_comp). Qed.
 HB.instance Definition _ U V (f : {hom U -> V}) :=
-  BijHom.Build (prodSp3T U) (prodSp3T V) (prodSp3_mor f) (prodSp3_bij f).
+  BijHom.Build (prodSp3T U) (prodSp3T V) (prodSp3_mor f)
+    (functor_bij prodSp3_ext prodSp3_id prodSp3_comp f).
 HB.instance Definition _ :=
   isFunctor.Build Bij Bij prodSp3T prodSp3_ext prodSp3_id prodSp3_comp.
 
@@ -768,37 +761,76 @@ HB.instance Definition _ :=
 End ProdSpeciesA3.
 
 
-Definition prodSpC3_fun (A B C : Species) (U : Bij) :
-  el (prodSp3 C A B U) -> el (prodSp3 A B C U).
+Definition prodSpC3_fun {A B C : Species} {U : Bij} :
+  el (@prodSp3 C A B U) -> el (@prodSp3 A B C U).
 by move=> [[[c a] b] /= p3]; exists (a, b, c); rewrite -part3C.
 Defined.
 
 Lemma prodSpC3_cycle A B C (U : Bij) :
-  prodSpC3_fun (U := U) \o prodSpC3_fun (U := U) \o @prodSpC3_fun A B C U =1 idfun.
+  prodSpC3_fun \o prodSpC3_fun \o @prodSpC3_fun A B C U =1 idfun.
 Proof. by move=> [[[c a] b] /= H]; apply val_inj. Qed.
 
 Section ProdCycleA3.
-Variable (A B C : Species).
+Context {A B C : Species}.
 
 Fact prodSpC3_bij U : bijective (@prodSpC3_fun A B C U).
 Proof.
-by exists (prodSpC3_fun (U := U) \o prodSpC3_fun (U := U)) => x;
-     apply: prodSpC3_cycle x.
+by exists (prodSpC3_fun \o prodSpC3_fun) => x; apply: prodSpC3_cycle x.
 Qed.
 HB.instance Definition _ U :=
-  BijHom.Build (prodSp3 C A B U) (prodSp3 A B C U)
-    (@prodSpC3_fun A B C U) (prodSpC3_bij U).
+  BijHom.Build (prodSp3 U) (prodSp3 U) prodSpC3_fun (prodSpC3_bij U).
 
-Definition prodSpC3 : prodSp3 C A B ~~> prodSp3 A B C := @prodSpC3_fun A B C.
+Definition prodSpC3 : prodSp3 ~~> prodSp3 := @prodSpC3_fun A B C.
 
-Fact prodSpC3_natural : naturality (prodSp3 C A B) (prodSp3 A B C) prodSpC3.
+Fact prodSpC3_natural : naturality prodSp3 prodSp3 prodSpC3.
 Proof. by move=> U V h [[[c a] b] /= H]; apply: val_inj. Qed.
 HB.instance Definition _ :=
-  @isNatural.Build Bij Bij (prodSp3 C A B) (prodSp3 A B C)
-    prodSpC3 prodSpC3_natural.
+  @isNatural.Build Bij Bij prodSp3 prodSp3 prodSpC3 prodSpC3_natural.
 
 End ProdCycleA3.
 
-
 Definition prodSpA {A B C : Species} : A * B * C ~> A * (B * C) :=
-  isoSpinv (prodSpA3 _ _ _) \v prodSpC3 _ _ _ \v prodSpA3 _ _ _ \v prodSpC.
+  isoSpinv prodSpA3 \v prodSpC3 \v prodSpA3 \v prodSpC.
+
+
+(** The product of two natural transformations *)
+Section ProdNatTransf.
+
+Variable (A1 A2 B1 B2 : Species) (tA : A1 ~> A2) (tB : B1 ~> B2).
+
+Section Defs.
+Variable (U : Bij).
+
+Definition prodSpTr_fun (x : el ((A1 * B1) U)) : el ((A2 * B2) U) :=
+  let: exist (existT Ea xa, existT Eb xb) pf := x in
+  exist _ (existT _ Ea (tA (TSet Ea) xa), existT _ Eb (tB (TSet Eb) xb)) pf.
+Definition prodSpTr_inv (x : el ((A2 * B2) U)) : el ((A1 * B1) U) :=
+  let: exist (existT Ea xa, existT Eb xb) pf := x in
+  exist _ (existT _ Ea (finv (tA _) xa), existT _ Eb (finv (tB _) xb)) pf.
+Lemma prodSpTr_funK : cancel prodSpTr_fun prodSpTr_inv.
+Proof. by case=> [[[Ea xa][Eb xb] p2]]; apply: eq_prodSpP; rewrite /= finvK. Qed.
+Lemma prodSpTr_invK : cancel prodSpTr_inv prodSpTr_fun.
+Proof. by case=> [[[Ea xa][Eb xb] p2]]; apply: eq_prodSpP; rewrite /= finvKV. Qed.
+Fact prodSpTr_fun_bij : bijective prodSpTr_fun.
+Proof. by exists prodSpTr_inv; [exact prodSpTr_funK | exact prodSpTr_invK]. Qed.
+HB.instance Definition _ :=
+  BijHom.Build ((A1 * B1) U) ((A2 * B2) U) prodSpTr_fun prodSpTr_fun_bij.
+End Defs.
+
+Definition prodSpTr : A1 * B1 ~~> A2 * B2 := @prodSpTr_fun.
+Fact prodSpTr_natural : naturality (A1 * B1) (A2 * B2) prodSpTr.
+Proof.
+move=> U V h [[/= [Ea xa][Eb xb] /= p2]].
+by apply: eq_prodSpP => /=; rewrite !hom_compE natural.
+Qed.
+HB.instance Definition _ :=
+  @isNatural.Build Bij Bij (A1 * B1) (A2 * B2) prodSpTr prodSpTr_natural.
+
+End ProdNatTransf.
+
+Lemma prodSpTr_invE (A1 A2 B1 B2 : Species) (tA : A1 ~> A2) (tB : B1 ~> B2) :
+  isoSpinv (prodSpTr tA tB) =%= prodSpTr (isoSpinv tA) (isoSpinv tB).
+Proof.
+apply: eq_nattrans_sym; apply: isoSpinvrE => U [[/= [Ea xa][Eb xb] /= p2]] /=.
+by rewrite !finvK.
+Qed.
