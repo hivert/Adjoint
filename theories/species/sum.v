@@ -9,9 +9,6 @@ Unset Printing Implicit Defensive.
 
 
 Local Open Scope category_scope.
-
-Declare Scope species_scope.
-Delimit Scope category_scope with species.
 Local Open Scope species_scope.
 
 
@@ -52,9 +49,9 @@ Proof. by rewrite /sumSp /sumSp_fun /= /cardSp /= card_sum. Qed.
 Lemma cardiso_sumSp A B n : cardiso (A + B) n = (cardiso A n + cardiso B n)%N.
 Proof.
 rewrite -!cardiso_ordE.
-pose fA (C : {set A 'I_n}) := (inl @: C) : {set ((A + B)%species 'I_n)}.
+pose fA (C : {set A 'I_n}) := (inl @: C) : {set ((A + B)%Sp 'I_n)}.
 have fA_inj : injective fA by apply: imset_inj => x y [].
-pose fB (C : {set B 'I_n}) := (inr @: C) : {set ((A + B)%species 'I_n)}.
+pose fB (C : {set B 'I_n}) := (inr @: C) : {set ((A + B)%Sp 'I_n)}.
 have fB_inj : injective fB by apply: imset_inj => x y [].
 rewrite -(card_imset _ fA_inj) -(card_imset _ fB_inj) -cardsUI.
 rewrite [X in (_ + #|pred_of_set X|)%N](_ : _ = set0) ?cards0 ?addn0; first last.
@@ -194,12 +191,12 @@ Variable (A1 A2 B1 B2 : Species) (tA : A1 ~> A2) (tB : B1 ~> B2).
 Section Defs.
 Variable (U : Bij).
 
-Definition sumSpTr_fun (x : el ((A1 + B1)%species U)) : el ((A2 + B2)%species U) :=
+Definition sumSpTr_fun (x : el ((A1 + B1)%Sp U)) : el ((A2 + B2)%Sp U) :=
   match x with
   | inl a => inl (tA U a)
   | inr b => inr (tB U b)
   end.
-Definition sumSpTr_inv (x : el ((A2 + B2)%species U)) : el ((A1 + B1)%species U) :=
+Definition sumSpTr_inv (x : el ((A2 + B2)%Sp U)) : el ((A1 + B1)%Sp U) :=
   match x with
   | inl a => inl (finv (tA U) a)
   | inr b => inr (finv (tB U) b)
@@ -211,7 +208,7 @@ Proof. by case=> [] x /=; rewrite finvKV. Qed.
 Fact sumSpTr_fun_bij : bijective sumSpTr_fun.
 Proof. by exists sumSpTr_inv; [exact sumSpTr_funK | exact sumSpTr_invK]. Qed.
 HB.instance Definition _ :=
-  BijHom.Build ((A1 + B1)%species U) ((A2 + B2)%species U)
+  BijHom.Build ((A1 + B1)%Sp U) ((A2 + B2)%Sp U)
     sumSpTr_fun sumSpTr_fun_bij.
 End Defs.
 

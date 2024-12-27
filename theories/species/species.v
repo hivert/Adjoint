@@ -11,7 +11,7 @@ Unset Printing Implicit Defensive.
 Local Open Scope category_scope.
 
 Declare Scope species_scope.
-Delimit Scope category_scope with species.
+Delimit Scope category_scope with Sp.
 Local Open Scope species_scope.
 
 

@@ -9,9 +9,6 @@ Unset Printing Implicit Defensive.
 
 
 Local Open Scope category_scope.
-
-Declare Scope species_scope.
-Delimit Scope category_scope with species.
 Local Open Scope species_scope.
 
 
@@ -88,7 +85,8 @@ HB.instance Definition _ :=
 Definition prodSp : Species := prodSpT.
 
 Lemma card_prodSp n :
-  cardSp prodSp n = \sum_(i < n.+1) 'C(n, i) * (cardSp A i) * (cardSp B (n - i)).
+  cardSp prodSp n =
+    \sum_(0 <= i < n.+1) 'C(n, i) * (cardSp A i) * (cardSp B (n - i)).
 Proof.
 rewrite {1}/cardSp; rewrite -(card_imset predT val_inj) /= imset_val_sub.
 have cardle (E : {set 'I_n}) : #|E| < n.+1.
@@ -97,7 +95,7 @@ have cardle (E : {set 'I_n}) : #|E| < n.+1.
 pose cardS E := Ordinal (cardle E).
 rewrite [LHS](card_preim (fun p => tag p.1)) /=.
 rewrite [LHS](partition_big (fun E : {set 'I_n} => cardS E) xpredT) //=.
-apply eq_bigr => i _.
+rewrite big_mkord; apply eq_bigr => i _.
 rewrite -[X in 'C(X, i)](card_ord n) -card_draws -sum1_card !big_distrl /=.
 apply: eq_big => [E | E /eqP/(congr1 val) /= eq_card].
   by rewrite inE -val_eqE /=.
@@ -192,13 +190,13 @@ Qed.
 End ToPair.
 
 Lemma cardiso_prodSp n :
-  cardiso prodSp n = \sum_(i < n.+1) (cardiso A i) * (cardiso B (n - i)).
+  cardiso prodSp n = \sum_(0 <= i < n.+1) (cardiso A i) * (cardiso B (n - i)).
 Proof.
 have csub_pf (E : {set 'I_n}) : #|E| < n.+1.
   rewrite ltnS -[X in _ <= X](card_ord n).
   exact/subset_leq_card/subset_predT.
 pose csub E := Ordinal (csub_pf E).
-rewrite -cardiso_ordE -card_isoreprE.
+rewrite -cardiso_ordE -card_isoreprE big_mkord.
 rewrite [LHS](card_preim (fun x => csub (tag (val x).1))); apply eq_bigr => i _.
 rewrite -!cardiso_ordE -[RHS]cardsX.
 transitivity #|[set x : prodSpCTag i | val x \in isoreprs prodSp 'I_n]|.
@@ -274,18 +272,17 @@ Fact prodSpC_bij A B U : bijective (@prodSpC_fun A B U).
 Proof. by exists (prodSpC_fun (U := U)); exact: prodSpC_funK. Qed.
 HB.instance Definition _ A B U :=
   @BijHom.Build ((A * B) U) ((B * A) U) (@prodSpC_fun A B U) (@prodSpC_bij A B U).
-Definition prodSpC A B : A * B ~~> B * A := @prodSpC_fun A B.
+Definition prodSpC {A B : Species} : A * B ~~> B * A := @prodSpC_fun A B.
 
-Fact prodSpC_natural A B : naturality (A * B) (B * A) (prodSpC A B).
+Fact prodSpC_natural A B : naturality (A * B) (B * A) prodSpC.
 Proof. by move=> U V h [[a b] eq]; apply val_inj. Qed.
 HB.instance Definition _ A B :=
-  @isNatural.Build Bij Bij (A * B) (B * A)
-    (prodSpC A B) (@prodSpC_natural A B).
+  @isNatural.Build Bij Bij (A * B) (B * A) prodSpC (@prodSpC_natural A B).
 
-Lemma prodSpCK A B : prodSpC B A \v prodSpC A B =%= NId (A * B).
+Lemma prodSpCK A B : prodSpC \v prodSpC =%= NId (A * B).
 Proof.
 Proof. by move=> U [[a b] eq]; apply val_inj. Qed.
-Lemma prodSpC_invE A B : isoSpinv (prodSpC A B) =%= prodSpC B A.
+Lemma prodSpC_invE A B : isoSpinv (@prodSpC A B) =%= prodSpC.
 Proof. by apply: eq_nattrans_sym; apply: isoSpinvrE; apply: prodSpCK. Qed.
 
 End ProdSpeciesCommutative.
@@ -325,8 +322,8 @@ HB.instance Definition _ :=
 Lemma prodSp0_invE : isoSpinv prodSp0 =%= prodSp0_inv.
 Proof. by apply: eq_nattrans_sym; apply: isoSpinvrE => U; apply: prodSp0_funK. Qed.
 
-Definition prod0Sp : 0 * A ~> 0 := prodSp0 \v (prodSpC 0 A).
-Lemma prod0Sp_invE : isoSpinv prod0Sp =%= (prodSpC A 0) \v isoSpinv prodSp0.
+Definition prod0Sp : 0 * A ~> 0 := prodSp0 \v prodSpC.
+Lemma prod0Sp_invE : isoSpinv prod0Sp =%= prodSpC \v isoSpinv prodSp0.
 Proof.
 apply: (eq_nattrans_trans (isoSpinv_vcomp _ _)) => U x /=.
 by rewrite prodSpC_invE.
@@ -365,7 +362,7 @@ Qed.
 Lemma prodSp1_inv_bij : bijective prodSp1_inv.
 Proof.
 apply: (inj_card_bij prodSp1_inv_inj).
-rewrite !cardSpE card_prodSp.
+rewrite !cardSpE card_prodSp big_mkord.
 rewrite (bigD1 (Ordinal (ltnSn #|U|))) //= binn mul1n cardSp1 subnn eqxx muln1.
 rewrite big1 ?addn0 // => [i]; rewrite -val_eqE /= => /negbTE neqi.
 rewrite cardSp1 subn_eq0 leqNgt.
@@ -412,8 +409,8 @@ HB.instance Definition _ :=
 Lemma prodSp1_invE : isoSpinv prodSp1 =%= prodSp1V.
 Proof. by apply: eq_nattrans_sym; apply: isoSpinvrE => U; apply: prodSp1_homK. Qed.
 
-Definition prod1Sp : 1 * A ~> A := prodSp1 \v prodSpC 1 A.
-Lemma prod1Sp_invE : isoSpinv prod1Sp =%= (prodSpC A 1) \v isoSpinv prodSp1.
+Definition prod1Sp : 1 * A ~> A := prodSp1 \v prodSpC.
+Lemma prod1Sp_invE : isoSpinv prod1Sp =%= prodSpC \v isoSpinv prodSp1.
 Proof.
 apply: (eq_nattrans_trans (isoSpinv_vcomp _ _)) => U x /=.
 by rewrite prodSpC_invE.
@@ -474,10 +471,10 @@ Proof. by apply/eq_nattrans_sym/isoSpinvrE => U; apply: prodSpDl_funK. Qed.
 End ProdSumSpeciesDistributive.
 
 Definition prodSpDr A B C : (B + C) * A ~> B * A + C * A :=
-  sumSpTr (prodSpC A B) (prodSpC A C) \v prodSpDl A B C \v prodSpC (B + C) A.
+  sumSpTr prodSpC prodSpC \v prodSpDl A B C \v prodSpC.
 Lemma prodSpDr_invE A B C :
   isoSpinv (prodSpDr A B C) =%=
-    prodSpC A (B + C) \v prodSpDlV A B C \v sumSpTr (prodSpC B A) (prodSpC C A).
+    prodSpC \v prodSpDlV A B C \v sumSpTr prodSpC prodSpC.
 Proof.
 move=> U x; rewrite isoSpinv_vcomp /= prodSpC_invE /= isoSpinv_vcomp /=.
 rewrite prodSpDl_invE /= !sumSpTr_invE /=.
@@ -684,7 +681,7 @@ by rewrite -{1}(upT_setT V) /upT (part2_imset _ _ _ val_inj).
 Defined.
 Definition prodSpA3_inv : el (prodSp3 U) -> el ((A * (B * C)) U).
 move=> [/=[[a b]c] /=] p3.
-have bc : (B * C)%species (TSet (tag b :|: tag c)).
+have bc : (B * C)%Sp (TSet (tag b :|: tag c)).
   pose xb := downSpSet (subsetUl (tag b) (tag c)).
   pose xc := downSpSet (subsetUr (tag b) (tag c)).
   exists (xb, xc) => /=.
@@ -803,5 +800,5 @@ HB.instance Definition _ :=
 End ProdCycleA3.
 
 
-Definition prodSpA (A B C : Species) : A * B * C ~> A * (B * C) :=
-  isoSpinv (prodSpA3 _ _ _) \v prodSpC3 _ _ _ \v prodSpA3 _ _ _ \v prodSpC _ _.
+Definition prodSpA {A B C : Species} : A * B * C ~> A * (B * C) :=
+  isoSpinv (prodSpA3 _ _ _) \v prodSpC3 _ _ _ \v prodSpA3 _ _ _ \v prodSpC.
