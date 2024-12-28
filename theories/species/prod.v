@@ -58,20 +58,20 @@ Lemma eq_prodSpE U (x y : prodSpT U) :
   ((val x).1 == (val y).1) && ((val x).2 == (val y).2) = (x == y).
 Proof. by apply/andP/eqP => [[/eqP + /eqP]|->//]; apply: eq_prodSpP. Qed.
 
-Lemma prodSp_id : FunctorLaws.id prodSp_mor.
+Fact prodSp_ext : FunctorLaws.ext prodSp_mor.
+Proof.
+rewrite /prodSp_mor => U V f g eqfg /= -[[xa xb] /= Hp2].
+by apply/eq_prodSpP; rewrite /= !(functor_ext_hom (SpSet _) _ _ eqfg).
+Qed.
+Fact prodSp_id : FunctorLaws.id prodSp_mor.
 Proof.
 rewrite /prodSp_mor => U /= -[[xa xb] /= Hp2].
 by apply/eq_prodSpP; rewrite /= !functor_id.
 Qed.
-Lemma prodSp_comp : FunctorLaws.comp prodSp_mor.
+Fact prodSp_comp : FunctorLaws.comp prodSp_mor.
 Proof.
 rewrite /prodSp_mor => U V W f g /= -[[xa xb] /= Hp2].
 by apply/eq_prodSpP; rewrite /= !functor_o.
-Qed.
-Lemma prodSp_ext : FunctorLaws.ext prodSp_mor.
-Proof.
-rewrite /prodSp_mor => U V f g eqfg /= -[[xa xb] /= Hp2].
-by apply/eq_prodSpP; rewrite /= !(functor_ext_hom (SpSet _) _ _ eqfg).
 Qed.
 HB.instance Definition _ U V (f : {hom U -> V}) :=
   BijHom.Build (prodSpT U) (prodSpT V) (prodSp_mor f)
@@ -640,15 +640,15 @@ exists ((SpSet A # f) a, (SpSet B # f) b, (SpSet C # f) c) => /=.
 by rewrite /SpSet_mor /= !tag_SpSet part3_imset.
 Defined.
 
-Fact prodSp3_id : FunctorLaws.id prodSp3_mor.
-Proof.
-rewrite /prodSp3_mor => U /= [[[a b] c] /= p3]; apply: val_inj => /=.
-by rewrite !functor_id.
-Qed.
 Fact prodSp3_ext : FunctorLaws.ext prodSp3_mor.
 Proof.
 rewrite /prodSp3_mor => U V f g H /= [[[a b] c] /= p3]; apply: val_inj => /=.
 by rewrite !(functor_ext_hom _ _ _ H).
+Qed.
+Fact prodSp3_id : FunctorLaws.id prodSp3_mor.
+Proof.
+rewrite /prodSp3_mor => U /= [[[a b] c] /= p3]; apply: val_inj => /=.
+by rewrite !functor_id.
 Qed.
 Fact prodSp3_comp : FunctorLaws.comp prodSp3_mor.
 rewrite /prodSp3_mor => U V W f g /= [[[a b] c] /= p3]; apply: val_inj => /=.

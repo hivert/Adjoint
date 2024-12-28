@@ -825,6 +825,9 @@ have /functor_ext_hom -> /= : cast_TSet (erefl J) =1 idfun by [].
 by rewrite functor_id_hom.
 Qed.
 
+Lemma restr_ext (U V : Bij) (f g : {hom U -> V}) (I : {set U}) (eq_fg : f =1 g) :
+  restr_hom I f =1 cast_TSet (eq_imset _ (fsym eq_fg)) \o (restr_hom I g).
+Proof. by move => x /=; apply val_inj; rewrite !val_cast_TSet !val_restrE. Qed.
 Lemma restr_id (U : Bij) (I : {set U}) :
   restr_hom I [hom idfun] =1 cast_TSet (esym (imset_id I)).
 Proof. by move=> x /=; apply val_inj; rewrite val_cast_TSet. Qed.
@@ -832,9 +835,6 @@ Lemma restr_comp (U V W : Bij) (f : {hom U -> V}) (g : {hom V -> W}) (I : {set U
   restr_hom _ g \o restr_hom I f
   =1 cast_TSet (imset_comp g f I) \o restr_hom _ (g \o f).
 Proof. by move => x /=; apply val_inj; rewrite val_cast_TSet !val_restrE. Qed.
-Lemma restr_ext (U V : Bij) (f g : {hom U -> V}) (I : {set U}) (eq_fg : f =1 g) :
-  restr_hom I f =1 cast_TSet (eq_imset _ (fsym eq_fg)) \o (restr_hom I g).
-Proof. by move => x /=; apply val_inj; rewrite !val_cast_TSet !val_restrE. Qed.
 
 
 Section SpSet.
@@ -879,16 +879,6 @@ Qed.
 Definition SpSet_mor U V (f : {hom U -> V}) (x : el (SpSet U)) : SpSet V :=
   let (S, v) := x in existT _ [set f u | u in S] ((A # restr_hom S f) v).
 
-Fact SpSet_id : FunctorLaws.id SpSet_mor.
-Proof.
-rewrite /SpSet_mor => U -[/= S x] /=; apply/eqP.
-rewrite -!/(Tagged _ _) -(Tagged_SpTSet_castE (imset_id _)) eq_Tagged.
-rewrite (functor_ext_hom A _ _ (@restr_id _ S)) hom_compE -functor_o.
-set Fid := (F in A # F).
-suff /(functor_ext_hom A) -> : Fid =1 idfun by rewrite functor_id.
-rewrite /Fid /= /cast_TSet /= => {}x /=.
-by rewrite -!/(cast_TSet _ _) cast_TSetKV.
-Qed.
 Fact SpSet_ext : FunctorLaws.ext SpSet_mor.
 Proof.
 rewrite /SpSet_mor => U V f g H -[/= S x] /=.
@@ -899,6 +889,16 @@ set F := (F in A # F).
 suff /(functor_ext_hom A) -> : F =1 (restr_hom S g) by rewrite tagged_asE.
 rewrite {}/F /= => {}x.
 by apply: val_inj; rewrite !val_cast_TSet.
+Qed.
+Fact SpSet_id : FunctorLaws.id SpSet_mor.
+Proof.
+rewrite /SpSet_mor => U -[/= S x] /=; apply/eqP.
+rewrite -!/(Tagged _ _) -(Tagged_SpTSet_castE (imset_id _)) eq_Tagged.
+rewrite (functor_ext_hom A _ _ (@restr_id _ S)) hom_compE -functor_o.
+set Fid := (F in A # F).
+suff /(functor_ext_hom A) -> : Fid =1 idfun by rewrite functor_id.
+rewrite /Fid /= /cast_TSet /= => {}x /=.
+by rewrite -!/(cast_TSet _ _) cast_TSetKV.
 Qed.
 Fact SpSet_comp : FunctorLaws.comp SpSet_mor.
 Proof.
@@ -1218,12 +1218,6 @@ HB.instance Definition _ :=
 
 End Hom.
 
-Fact ifSp_id : FunctorLaws.id ifSp_mor.
-Proof.
-move=> U; rewrite /= /ifSp_mor  /ifSp.
-by case: (cond U) (condP _) => /= C x /=;
-  rewrite (eq_irrelevance C (erefl _)) functor_id.
-Qed.
 Fact ifSp_ext : FunctorLaws.ext ifSp_mor.
 Proof.
 move=> U V f g eqfg; rewrite /= /ifSp_mor /ifSp.
@@ -1231,17 +1225,20 @@ rewrite (eq_irrelevance (condP g) (condP f)).
 by move: (cond U) (cond V) (condP f) => [] [] //= C x;
   rewrite (eq_irrelevance C (erefl _)); exact: functor_ext_hom.
 Qed.
+Fact ifSp_id : FunctorLaws.id ifSp_mor.
+Proof.
+move=> U; rewrite /= /ifSp_mor  /ifSp.
+by case: (cond U) (condP _) => /= C x /=;
+  rewrite (eq_irrelevance C (erefl _)) functor_id.
+Qed.
 Fact ifSp_comp : FunctorLaws.comp ifSp_mor.
 move=> U V W f g; rewrite /= /ifSp_mor /ifSp.
-have -> : condP (ssrfun_comp__canonical__category_Hom f g) =
-            etrans (condP f) (condP g).
-  exact: eq_irrelevance.
+have -> : condP (f \o g) = etrans (condP f) (condP g) by apply: eq_irrelevance.
 move: (condP f) (condP g) (etrans _ _).
 by move: (cond U) (cond V) (cond W) => [] [] [] //= C1 C2 CT x;
   rewrite (eq_irrelevance C1 (erefl _)) (eq_irrelevance C2 (erefl _))
     (eq_irrelevance CT (erefl _)) [LHS]functor_o.
 Qed.
-
 HB.instance Definition _ :=
   isFunctor.Build Bij Bij ifSp ifSp_ext ifSp_id ifSp_comp.
 
