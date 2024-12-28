@@ -18,8 +18,7 @@ Section SumSpecies.
 Variable A B : Species.
 
 Definition sumSpT U : Bij := (A U + B U)%type.
-Definition sumSp_mor U V (f : {hom U -> V}) :
-  el (sumSpT U) -> el (sumSpT V) :=
+Definition sumSp_mor U V (f : {hom U -> V}) : el (sumSpT U) -> el (sumSpT V) :=
   fun x => match x with
            | inl a => inl ((A # f) a)
            | inr b => inr ((B # f) b)
@@ -45,7 +44,7 @@ End SumSpecies.
 Notation "f + g" := (sumSp f g) : species_scope.
 
 Lemma card_sumSp A B n : cardSp (A + B) n = (cardSp A n + cardSp B n)%N.
-Proof. by rewrite /sumSp /sumSpT /= /cardSp /= card_sum. Qed.
+Proof. by rewrite /cardSp /= card_sum. Qed.
 
 Lemma cardiso_sumSp A B n : cardiso (A + B) n = (cardiso A n + cardiso B n)%N.
 Proof.

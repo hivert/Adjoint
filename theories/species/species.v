@@ -134,12 +134,14 @@ End PermExtd.
 
 
 Section PermutationGlue.
+
 Variable (U : finType) (E1 E2 F1 F2 : {set U}) (s1 s2 : {perm U}).
 Hypothesis HE : E1 = ~: E2.
 Hypothesis HF : F1 = ~: F2.
 Hypothesis eqEF1 : [set s1 u | u in F1] = E1.
 Hypothesis eqEF2 : [set s2 u | u in F2] = E2.
-Definition glue_perm_fun := [fun u => if u \in F1 then s1 u else s2 u].
+
+Let glue_perm_fun := [fun u => if u \in F1 then s1 u else s2 u].
 Lemma glue_perm_inj : injective glue_perm_fun.
 Proof.
 move=> u1 u2 /=.
@@ -1055,12 +1057,12 @@ End Localization.
 
 Section ZeroSpecies.
 
-Definition Sp0_fun := fun _ : Bij => voidB.
+Definition Sp0T := fun _ : Bij => voidB.
 Definition Sp0_mor (U V : Bij) (f : {hom U -> V}) : {hom voidB -> voidB} := idfun.
 HB.instance Definition _ :=
-  @isFunctor.Build Bij Bij Sp0_fun Sp0_mor
+  @isFunctor.Build Bij Bij Sp0T Sp0_mor
     (fun _ _ _ _ _ => frefl _) (fun _ => frefl _) (fun _ _ _ _ _ => frefl _).
-Definition Sp0 : Species := Sp0_fun.
+Definition Sp0 : Species := Sp0T.
 
 Lemma cardSp0 n : cardSp Sp0 n = 0%N.
 Proof. by rewrite /cardSp /= card_void. Qed.
@@ -1076,27 +1078,26 @@ Notation "0" := Sp0 : species_scope.
 
 Section SetSpecies.
 
-Definition setSp_fun (U : Bij) := unitB.
-Lemma setSp_funE (U V : Bij) (f : {hom U -> V}) :
-  setSp_fun U = setSp_fun V.
+Definition setSpT (U : Bij) := unitB.
+Lemma setSpTE (U V : Bij) (f : {hom U -> V}) : setSpT U = setSpT V.
 Proof. by []. Qed.
-Lemma setSp_fun_uniq (U : Bij) (x y : setSp_fun U) : x = y.
-Proof. by move: x y; rewrite /setSp_fun => - [] []. Qed.
+Lemma setSpT_uniq (U : Bij) (x y : setSpT U) : x = y.
+Proof. by move: x y => - [] []. Qed.
 Definition setSp_mor (U V : Bij) (f : {hom U -> V}) :
-  {hom setSp_fun U -> setSp_fun V} :=
-  eq_rect _ (fun x => {hom x -> setSp_fun V}) idfun _ (esym (setSp_funE f)).
+  {hom setSpT U -> setSpT V} :=
+  eq_rect _ (fun x => {hom x -> setSpT V}) idfun _ (esym (setSpTE f)).
 Fact setSp_ext : FunctorLaws.ext setSp_mor.
-Proof. by move=> /= U V f g _ x; apply: setSp_fun_uniq. Qed.
+Proof. by move=> /= U V f g _ x; apply: setSpT_uniq. Qed.
 Fact setSp_id : FunctorLaws.id setSp_mor.
-Proof. move=> /= a x; apply: setSp_fun_uniq. Qed.
+Proof. move=> /= a x; apply: setSpT_uniq. Qed.
 Fact setSp_comp  : FunctorLaws.comp setSp_mor.
-Proof. by move=> /= a b c f g x; apply: setSp_fun_uniq. Qed.
+Proof. by move=> /= a b c f g x; apply: setSpT_uniq. Qed.
 HB.instance Definition _ :=
-  isFunctor.Build Bij Bij setSp_fun setSp_ext setSp_id setSp_comp.
-Definition setSp : Species := setSp_fun.
+  isFunctor.Build Bij Bij setSpT setSp_ext setSp_id setSp_comp.
+Definition setSp : Species := setSpT.
 
 Lemma card_setSp n : cardSp setSp n = 1%N.
-Proof. by rewrite /cardSp /= /setSp_fun /= card_unit. Qed.
+Proof. by rewrite /cardSp /= /setSpT /= card_unit. Qed.
 
 Lemma isoclass_setSp (U : Bij) (i : setSp U) : isoclass i = [set: unit].
 Proof.
@@ -1108,7 +1109,7 @@ Lemma cardiso_setSp n : cardiso setSp n = 1%N.
 Proof.
 rewrite -cardiso_ordE.
 rewrite -[RHS](cards1 [set: setSp 'I_n.+1]); congr #|pred_of_set _|.
-apply/setP => /= S; rewrite !inE /setSp_fun /unitB.
+apply/setP => /= S; rewrite !inE /setSpT /unitB.
 apply/imsetP/eqP => [[i _ {S}->] | {S}->]; first by rewrite isoclass_setSp.
 by exists tt; rewrite ?inE // isoclass_setSp.
 Qed.
@@ -1118,9 +1119,9 @@ End SetSpecies.
 
 Section SubsetSpecies.
 
-Definition subsetSp_fun (U : Bij) : Bij := {set U}.
+Definition subsetSpT (U : Bij) : Bij := {set U}.
 Definition subsetSp_mor U V (f : {hom U -> V}) :
-  el (subsetSp_fun U) -> el (subsetSp_fun V) := fun X => f @: X.
+  el (subsetSpT U) -> el (subsetSpT V) := fun X => f @: X.
 
 Lemma subsetSp_mor_bij U V (f : {hom U -> V}) : bijective (subsetSp_mor f).
 Proof.
@@ -1129,7 +1130,7 @@ by exists (subsetSp_mor (finv f)) => X;
   [exact: finvK | exact: finvKV].
 Qed.
 HB.instance Definition _ U V (f : {hom U -> V}) :=
-  BijHom.Build (subsetSp_fun U) (subsetSp_fun V)
+  BijHom.Build (subsetSpT U) (subsetSpT V)
     (subsetSp_mor f) (subsetSp_mor_bij f).
 Fact subsetSp_ext : FunctorLaws.ext subsetSp_mor.
 Proof. by move=> U V f g eq X /=; rewrite /subsetSp_mor /=; apply: eq_imset. Qed.
@@ -1138,12 +1139,12 @@ Proof. by move=> U X; apply: imset_id. Qed.
 Fact subsetSp_comp  : FunctorLaws.comp subsetSp_mor.
 Proof. by move=> U V W f g X; rewrite /= /subsetSp_mor -imset_comp. Qed.
 HB.instance Definition _ :=
-  isFunctor.Build Bij Bij subsetSp_fun subsetSp_ext subsetSp_id subsetSp_comp.
-Definition subsetSp : Species := subsetSp_fun.
+  isFunctor.Build Bij Bij subsetSpT subsetSp_ext subsetSp_id subsetSp_comp.
+Definition subsetSp : Species := subsetSpT.
 
 Lemma card_subsetSp0n n : cardSp subsetSp n = (2 ^ n)%N.
 Proof.
-by rewrite /cardSp -cardsT /subsetSp_fun -powersetT card_powerset cardsT card_ord.
+by rewrite /cardSp -cardsT /subsetSpT -powersetT card_powerset cardsT card_ord.
 Qed.
 
 Lemma isoclass_subsetSpE (U : Bij) (F : {set U}) :
