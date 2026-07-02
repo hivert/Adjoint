@@ -1,6 +1,6 @@
 (* Categories for the working MathComp developpers                            *)
-(* Copyright (C) 2020 monae authors, 2024 Florent Hivert,                     *)
-(* license: LGPL-2.1-or-later                                                 *)
+(* Copyright (C) 2020 monae authors, 2024-2026 Florent Hivert,                *)
+(* license: LGPL-3.0-or-later                                                 *)
 From HB Require Import structures.
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq.
 From mathcomp Require Import choice fintype finfun bigop.
