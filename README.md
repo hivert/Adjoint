@@ -1,6 +1,8 @@
 Algebraic categories
 ====================
 
+[![Nix CI for bundle rocq-9.1-mc2.5.0](https://github.com/hivert/Adjoint/actions/workflows/nix-action-rocq-9.1-mc2.5.0.yml/badge.svg)](https://github.com/hivert/Adjoint/actions/workflows/nix-action-rocq-9.1-mc2.5.0.yml) [![Nix CI for bundle rocq-9.0-mc2.5.0](https://github.com/hivert/Adjoint/actions/workflows/nix-action-rocq-9.0-mc2.5.0.yml/badge.svg)](https://github.com/hivert/Adjoint/actions/workflows/nix-action-rocq-9.0-mc2.5.0.yml) [![Nix CI for bundle rocq-9.1-mcmaster](https://github.com/hivert/Adjoint/actions/workflows/nix-action-rocq-9.1-mcmaster.yml/badge.svg)](https://github.com/hivert/Adjoint/actions/workflows/nix-action-rocq-9.1-mcmaster.yml)
+
 This repository contains a preliminary experiment to model algebraic
 categories using MathComp and HierarchyBuilder. The main goal was to properly
 get the adjunction of the free algebra (resp. free commutative algebra)
