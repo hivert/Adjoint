@@ -329,7 +329,7 @@ Section functorcomposition.
 Variables C0 C1 C2 : category.
 Variables (F : {functor C1 -> C2}) (G : {functor C0 -> C1}).
 Definition functorcomposition a b :=
-  fun h : {hom[C0] a -> b} => nosimpl (F # (G # h) : {hom[C2] F (G a) -> F (G b)}).
+  fun h : {hom[C0] a -> b} => (F # (G # h) : {hom[C2] F (G a) -> F (G b)}).
 
 Fact functorcomposition_ext : FunctorLaws.ext functorcomposition.
 Proof.
@@ -602,11 +602,24 @@ Variables
 Variables (s : F ~> G) (t : F' ~> G') (u : F'' ~> G'').
 
 Lemma HCompId c : (t \h NId F) c =1 t (F c).
-Proof. by move=> x; rewrite HCompE NIdE /= functor_id. Qed.
+Proof.
+move=> x; rewrite HCompE -hom_compE.
+have -> := @functor_ext_hom _ _ F' _ _ _ _ (@NIdE _ _ F c).
+by rewrite functor_id idhomapp /=. Qed.
 Lemma HIdComp c : (NId G' \h s) c =1 G' # s c.
-Proof. by move=> x; rewrite HCompE NIdE. Qed.
+Proof. by move=> x; rewrite HCompE -hom_compE NIdE idhomapp /=. Qed.
 Lemma HCompA c : ((u \h t) \h s) c =1 (u \h (t \h s)) c.
 Proof.
+move=> x /=.
+rewrite (@HCompE _ _ _ _ _ _ _ s (u \h t) c) -hom_compE.
+rewrite (@HCompE _ _ _ _ _ _ _ t u (G c)) hom_compE.
+rewrite (@HCompE _ _ _ _ _ _ _ (t \h s) u c).
+rewrite homcompA.
+
+hom_compE
+rewrite !(hom_compE _ _ x); apply: eq_comp => // {x}.
+apply: functor_ext_hom.
+
 move=> x; rewrite [in LHS]HCompE [in RHS]HCompE [in LHS]HCompE.
 rewrite hom_compA /= (hom_compE _ _ x) -functor_o; apply: eq_comp => // {x}.
 by apply: functor_ext_hom; rewrite HCompE.
