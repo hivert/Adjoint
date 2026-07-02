@@ -424,7 +424,7 @@ Section functorcomposition.
 Variables C0 C1 C2 : category.
 Variables (F : {functor C1 -> C2}) (G : {functor C0 -> C1}).
 Definition functorcomposition a b :=
-  fun h : {hom[C0] a -> b} => nosimpl (F # (G # h) : {hom[C2] F (G a) -> F (G b)}).
+  fun h : {hom[C0] a -> b} => (F # (G # h) : {hom[C2] F (G a) -> F (G b)}).
 
 Fact functorcomposition_ext : FunctorLaws.ext functorcomposition.
 Proof.

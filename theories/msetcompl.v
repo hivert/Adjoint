@@ -112,7 +112,7 @@ HB.instance Definition _ :=
 Definition fmeval_head (k : unit) x f := let: tt := k in f x.
 Local Notation fmeval x := (fmeval_head tt x).
 
-Fact fmeval_is_additive x : semi_additive (fmeval x).
+Fact fmeval_is_nmod_morphism x : nmod_morphism (fmeval x).
 Proof.
 split; rewrite /fmeval_head /= ?fsfunE // => f g.
 rewrite fsfunE inE.
@@ -120,7 +120,7 @@ case: (boolP (x \in finsupp f)); case: (boolP (x \in finsupp g)) => //=.
 by move=> /fsfun_dflt -> /fsfun_dflt ->; rewrite addr0.
 Qed.
 HB.instance Definition _ x :=
-  GRing.isSemiAdditive.Build {freemod R[T]} R _ (fmeval_is_additive x).
+  GRing.isNmodMorphism.Build {freemod R[T]} R _ (fmeval_is_nmod_morphism x).
 
 Lemma fm0E x : (0 : {freemod R[T]}) x = 0.
 Proof. exact: (raddf0 (fmeval x)). Qed.
@@ -192,7 +192,7 @@ End OnZModule.
 
 Section OnRing.
 
-Variables (R : ringType) (T : choiceType).
+Variables (R : nzRingType) (T : choiceType).
 Implicit Types (a b c : R) (f g h : {freemod R[T]}) (x y z : T).
 
 Fact scalefm_key : unit. Proof. exact: tt. Qed.
@@ -216,7 +216,6 @@ Proof.
 move=> a b; apply/fsfunP => x.
 by rewrite !(fmD, scalefmE) /= mulrDl.
 Qed.
-
 HB.instance Definition _ :=
   GRing.Zmodule_isLmodule.Build R {freemod R[T]}
     scalefmA scale1fm scalefmDr scalefmDl.
@@ -267,13 +266,13 @@ Proof. by rewrite fsfunE /= in_fset1 eq_sym; case eqP. Qed.
 Definition mset_head h a A := let: tt := h in A a.
 Local Notation coefm a := (mset_head tt a).
 
-Fact coefm_is_additive a : semi_additive (coefm a).
+Fact coefm_is_nmod_morphism a : nmod_morphism (coefm a).
 Proof.
 split; rewrite /mset_head /= ?mset0E // => A B.
 by rewrite -(@fmDE nat K A B a) !fsfunE.
 Qed.
 HB.instance Definition _ a :=
-  GRing.isSemiAdditive.Build {mset K} nat _ (coefm_is_additive a).
+  GRing.isNmodMorphism.Build {mset K} nat _ (coefm_is_nmod_morphism a).
 
 Lemma msetDE A B a : (A + B) a = A a + B a.
 Proof. exact: (raddfD (coefm a)). Qed.
