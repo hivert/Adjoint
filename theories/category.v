@@ -90,11 +90,6 @@ Delimit Scope category_scope with category.
 Local Open Scope category_scope.
 
 
-(* Help to rewrite with compositions *)
-Lemma compapp A B C (f : A -> B) (g : B -> C) (a : A) :
-  (g \o f) a = g (f a). Proof. by []. Qed.
-Lemma idfunK A : cancel (@idfun A) idfun. Proof. by []. Qed.
-
 (* opaque ssrfun.frefl blocks some proofs involving functor_ext *)
 #[global]
 Remove Hints frefl : core.
@@ -178,14 +173,6 @@ Lemma homcompA (a b c d : C)
   (h \@ g) \@ f =m= h \@ (g \@ f).
 Proof. by []. Qed.
 
-Lemma homcompE (a b c : C) (g : {hom b -> c}) (f : {hom a -> b}) :
-  g \@ f =1 g \o f :> (el a -> el c).
-Proof. by []. Qed.
-
-Lemma hom_compE (a b c : C) (g : {hom b -> c}) (f : {hom a -> b}) x :
-  g (f x) = (g \@ f) x.
-Proof. by [].  Qed.
-
 Lemma hom_compId (a b : C) (f : {hom a -> b}) : f \@ idfun =m= f.
 Proof. by []. Qed.
 Lemma hom_Idcomp (a b : C) (f : {hom a -> b}) : idfun \@ f =m= f.
@@ -193,26 +180,6 @@ Proof. by []. Qed.
 
 
 Import comps_notation.
-
-(* Restricting the components of a composition to homs and using the lemma
-   homcompA, we can avoid the infinite sequence of redundunt compositions
-   "_ \o id" or "id \o _" that pops out when we "rewrite !compA".*)
-Lemma hom_compA (a b c d : C)
-  (h : {hom c -> d}) (g : {hom b -> c}) (f : {hom a -> b}) :
-  (h \@ g) \@ f =m= [\@ h, g, f].
-Proof. exact: homcompA. Qed.
-
-Example hom_compA' (a b c d : C)
-  (h : {hom c -> d}) (g : {hom b -> c}) (f : {hom a -> b}) :
-  (h \@ g) \@ f =m= [\@ h, g, f].
-Proof. by []. Qed.
-
-(* Tactic support is desirable for the following two cases :
-   1. rewriting at the head of the sequence;
-      compare for example the lemmas natural and natural_head below
-   2. rewriting under [hom _];
-      dependent type errors and explicit application of hom_ext is tedious.
-*)
 
 End category_lemmas.
 
@@ -250,18 +217,14 @@ Add Parametric Morphism  (a a' b b' : C) (pa : a = a') (pb : b = b') :
     with signature (@eq_morphism C b a) ==> (@eq_morphism C b' a')
       as transport_homE.
 Proof. by subst a b. Qed.
-(*
-Lemma transport_homE (a a' b b' : C) (pa : a = a') (pb : b = b')
-  (f g : {hom a -> b}) :
-  f =m= g -> transport_hom pa pb f =m= transport_hom pa pb g.
-Proof. by subst a b. Qed.
-*)
+
 Lemma transport_hom_inj (a a' b b' : C) (pa : a = a') (pb : b = b')
   (f g : {hom a -> b}) :
   transport_hom pa pb f =m= transport_hom pa pb g -> f =m= g.
 Proof. by subst a b. Qed.
 Lemma transport_hom_trans (a a' a'' b b' b'' : C)
-  (pa : a = a') (pa' : a' = a'') (pb : b = b') (pb' : b' = b'') (f : {hom a -> b}) :
+      (pa : a = a') (pa' : a' = a'') (pb : b = b') (pb' : b' = b'')
+      (f : {hom a -> b}) :
   (transport_hom pa' pb' \o transport_hom pa pb) f =m=
     transport_hom (eq_trans pa pa') (eq_trans pb pb') f.
 Proof. by subst a a' b b'. Qed.
@@ -289,6 +252,8 @@ Arguments inv_homK [C a b].
 Section isom_interface.
 Variable C : category.
 Implicit Types a b c : C.
+
+#[local] Lemma idfunK A : cancel (@idfun A) idfun. Proof. by []. Qed.
 
 HB.instance Definition _ c :=
   isIsom.Build _ _ _ (@idfun (el c))
@@ -578,7 +543,7 @@ Variables (C D : category) (F G : {functor C -> D}).
 
 Lemma natural_head (phi : F ~> G) a b c (h : {hom a -> b}) (f : {hom c -> F a}) :
   [\@ G # h, phi a, f] =m= [\@ phi b, F # h, f].
-Proof. by rewrite -!hom_compA (natural phi). Qed.
+Proof. by rewrite -!homcompA (natural phi). Qed.
 
 Definition eq_nattrans (phi psi : F ~> G) := forall a : C, (phi a =m= psi a).
 Notation "p =%= q" := (eq_nattrans p q).
@@ -1056,7 +1021,7 @@ evar (TY : Type).
 evar (Y : TY).
 have -> : X =m= Y by rewrite /X -(natural eps0) => x; apply: erefl.
 rewrite (functor_o_head F1) FIdf.
-rewrite -!hom_compA triL1 hom_Idcomp.
+rewrite -!homcompA triL1 hom_Idcomp.
 by rewrite -(functor_o F1) triL0 functor_id.
 Qed.
 
@@ -1072,7 +1037,7 @@ evar (TY : Type).
 evar (Y : TY).
 have -> : G0 # X =m= G0 # Y
   by rewrite /X /= (natural eta1) => x; exact: erefl.
-rewrite (functor_o G0) hom_compA FIdf triR0 hom_compId.
+rewrite (functor_o G0) homcompA FIdf triR0 hom_compId.
 by rewrite -(functor_o G0) triR1 functor_id.
 Qed.
 
@@ -1322,7 +1287,7 @@ Lemma bindE (a b : C) (f : {hom a -> F b}) : bind f =m= join b \@ F # f.
 Proof. by rewrite /join /= bind_fmap; apply: bind_ext_hom. Qed.
 Lemma joinretM : JoinLaws.left_unit ret join.
 Proof.
-rewrite /join => A m /=; rewrite !hom_compE.
+rewrite /join => A /=.
 exact: bindretf_fun.
 Qed.
 Lemma joinMret : JoinLaws.right_unit ret join.

@@ -14,6 +14,11 @@ Set SsrOldRewriteGoalsOrder.  (* change to Unset and remove the line when requir
 
 Import GRing.Theory.
 
+
+(* Help to rewrite with compositions *)
+#[local] Lemma compapp A B C (f : A -> B) (g : B -> C) (a : A) :
+  (g \o f) a = g (f a). Proof. by []. Qed.
+
 Local Open Scope category_scope.
 
 (* Sets *****************************************************************)
