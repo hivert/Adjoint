@@ -1247,7 +1247,10 @@ Let bindretf_fun : (forall (a b : C) (f : {hom a -> M b}),
   bind f \@ ret' a =m= f).
 Proof. by apply/bind_left_neutral_hom_fun/bindretf. Qed.
 Let fmap_id : FunctorLaws.id fmap.
-Proof. by move=> A; rewrite /fmap bind_ext_hom; last exact: bindmret. Qed.
+Proof.
+move=> A; rewrite /fmap (bind_ext_hom (hom_compId (ret' A))).
+exact: bindmret.
+Qed.
 Let fmap_ext : FunctorLaws.ext fmap.
 Proof. by move=> A B f g eq; apply: bind_ext_hom; rewrite /= eq. Qed.
 Let fmap_o : FunctorLaws.comp fmap.
