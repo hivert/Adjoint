@@ -90,23 +90,14 @@ Delimit Scope category_scope with category.
 Local Open Scope category_scope.
 
 
-Lemma compfid A B (f : A -> B) : f \o id = f. Proof. by []. Qed.
-Lemma compidf A B (f : A -> B) : id \o f = f. Proof. by []. Qed.
 (* Help to rewrite with compositions *)
 Lemma compapp A B C (f : A -> B) (g : B -> C) (a : A) :
   (g \o f) a = g (f a). Proof. by []. Qed.
 Lemma idfunK A : cancel (@idfun A) idfun. Proof. by []. Qed.
-Lemma idfunE A a : (@idfun A a) = a. Proof. by []. Qed.
 
 (* opaque ssrfun.frefl blocks some proofs involving functor_ext *)
 #[global]
 Remove Hints frefl : core.
-
-Lemma frefl_transparent A B (f : A -> B) : f =1 f.
-Proof. by []. Defined.
-
-#[global]
-Hint Resolve frefl_transparent : core.
 
 (* Our categories are always concrete; morphisms are just functions. *)
 HB.mixin Record isCategory (obj : Type) := {
@@ -328,6 +319,20 @@ Proof. exact: homK. Qed.
 Lemma isom_invK (a b : C) (f : {isom a -> b}) : f \@ inv_hom f =m= idfun.
 Proof. exact: inv_homK. Qed.
 
+Lemma comp_isom_inj (a b c : C) (f : {isom a -> b}) (g1 g2 : {hom b -> c}) :
+  g1 \@ f =m= g2 \@ f -> g1 =m= g2.
+Proof.
+move=> eq; rewrite -(hom_compId g1) -(hom_compId g2) -(isom_invK f).
+by rewrite -!homcompA eq.
+Qed.
+
+Lemma isom_comp_inj (a b c : C) (f1 f2 : {hom a -> b}) (g : {isom b -> c}) :
+  g \@ f1 =m= g \@ f2 -> f1 =m= f2.
+Proof.
+move=> eq; rewrite -(hom_Idcomp f1) -(hom_Idcomp f2) -(isomK g).
+by rewrite !homcompA eq.
+Qed.
+
 End ismorphism_lemmas.
 
 HB.factory Record hasInverse (C : category) (a b : C) (f : el a -> el b)
@@ -387,7 +392,7 @@ Record eq_functor (C D : category)
   (F : {functor C -> D}) (G : {functor C -> D}) : Prop := EqFunctor {
     pm : F =1 G;
     eq_transport : forall (A B : C) (f : {hom A  -> B}),
-      transport_hom (pm A) (pm B) (F # f) =1 G # f
+      transport_hom (pm A) (pm B) (F # f) =m= G # f
   }.
 Notation "F =#= G" := (eq_functor F G).
 
@@ -423,8 +428,8 @@ Lemma eq_functor_trans (F G H : {functor C -> D}) :
   F =#= G -> G =#= H -> F =#= H.
 Proof.
 move=> [pmFG eqFG] [pmGH eqGH].
-apply: (functor_ext (eq := fun A => eq_trans (pmFG A) (pmGH A))) => A B f x.
-rewrite -transport_hom_trans -eqGH /=.
+apply: (functor_ext (eq := fun A => eq_trans (pmFG A) (pmGH A))) => A B f.
+rewrite -transport_hom_trans /= -eqGH /=.
 exact/transport_homE/eqFG.
 Qed.
 
@@ -432,9 +437,8 @@ Lemma eq_functor_sym (F G : {functor C -> D}) : F =#= G -> G =#= F.
 Proof.
 move=> [pm eq].
 apply: (functor_ext (eq := fun A => esym (pm A))) => A B f.
-apply (transport_hom_inj (pa := pm A) (pb := pm B)) => x.
-rewrite {}eq; move: x; rewrite -/(_ =1 _).
-move: (G # f) => {f}.
+apply (transport_hom_inj (pa := pm A) (pb := pm B)).
+rewrite {}eq; move: (G # f) => {f}.
 by case:_/(pm B); case:_/(pm A).
 Qed.
 
@@ -489,18 +493,17 @@ Definition functorcomposition a b :=
 
 Fact functorcomposition_ext : FunctorLaws.ext functorcomposition.
 Proof.
-move=> A B f g eq_fg x; rewrite /functorcomposition.
-by do 2 apply: functor_ext_hom.
+by move=> A B f g eq_fg; do 2 apply: functor_ext_hom.
 Qed.
 Fact functorcomposition_id : FunctorLaws.id functorcomposition.
 Proof.
-move=> A x; rewrite /functorcomposition [RHS]/=.
+rewrite /functorcomposition => A.
 rewrite (functor_ext_hom _ _ _ (functor_id (a := A))).
 exact: functor_id.
 Qed.
 Fact functorcomposition_comp : FunctorLaws.comp functorcomposition.
 Proof.
-move=> a b c g h x; rewrite /functorcomposition.
+rewrite /functorcomposition => a b c g h.
 rewrite (functor_ext_hom _ _ _ (functor_comp_hom _ _ _ _ _)).
 exact: functor_comp_hom.
 Qed.
@@ -583,10 +586,10 @@ Notation "p =%= q" := (eq_nattrans p q).
 Lemma eq_nattrans_refl (phi : F ~> G) : phi =%= phi.
 Proof. by []. Qed.
 Lemma eq_nattrans_sym (phi psi : F ~> G) : phi =%= psi -> psi =%= phi.
-Proof. by move=> eq a x /[!eq]. Qed.
+Proof. by move=> eq a /[!eq]. Qed.
 Lemma eq_nattrans_trans (phi psi ksi : F ~> G) :
   phi =%= psi -> psi =%= ksi -> phi =%= ksi.
-Proof. by move=> eqp eqk a x /[!eqp] /[!eqk]. Qed.
+Proof. by move=> eqp eqk a /[!eqp] /[!eqk]. Qed.
 
 Add Parametric Relation : (F ~> G) eq_nattrans
     reflexivity proved by eq_nattrans_refl
@@ -651,10 +654,10 @@ Lemma natural_inv (C D : category) (F G : {functor C -> D})
   (T : forall a, {isom F a -> G a}) :
   naturality F G T -> naturality G F (fun a => inv_hom (T a)).
 Proof.
-move=> T_nat A B f x; apply: (can_inj (homK (T B))).
+move=> T_nat A B f; apply: (isom_comp_inj (g := T B)).
 pose Tn := Natural.Pack (Natural.Class (isNatural.Build C D F G T T_nat)).
-have /= <- := natural_head Tn A B _ f (inv_hom (T A)) x.
-by rewrite !inv_homK.
+have /= <- := natural_head Tn A B _ f (inv_hom (T A)).
+by rewrite isom_invK -homcompA isom_invK hom_compId hom_Idcomp.
 Qed.
 
 
@@ -849,11 +852,13 @@ Definition fun_eqIdFG (e : E) : _ -> _ := trans_eqIdFG e.
 
 Fact fun_eqFGIdK (e : E) : cancel (@fun_eqFGId e) (@fun_eqIdFG e).
 Proof.
+(* TODO: point-free proof ? *)
 move=> x; rewrite /fun_eqFGId /fun_eqIdFG /= homK !HCompId !HIdComp.
 by rewrite -functor_inv_homE homK.
 Qed.
 Fact fun_eqIdFGK (e : E) : cancel (trans_eqIdFG e) (trans_eqFGId e).
 Proof.
+(* TODO: point-free proof ? *)
 move=> x; rewrite /fun_eqFGId /fun_eqIdFG /= !HCompId !HIdComp /=.
 by rewrite -functor_inv_homE !inv_homK.
 Qed.
@@ -878,11 +883,13 @@ Definition fun_eqIdGF (c : C) : _ -> _ := trans_eqIdGF c.
 
 Fact fun_eqGFIdK (c : C) : cancel (@fun_eqGFId c) (@fun_eqIdGF c).
 Proof.
+(* TODO: point-free proof ? *)
 move=> x; rewrite /fun_eqGFId /fun_eqIdGF /= homK !HCompId !HIdComp.
 by rewrite -functor_inv_homE homK.
 Qed.
 Fact fun_eqIdGFK (c : C) : cancel (@fun_eqIdGF c) (@fun_eqGFId c).
 Proof.
+(* TODO: point-free proof ? *)
 move=> x; rewrite /fun_eqGFId /fun_eqIdGF /= !HCompId !HIdComp.
 by rewrite -functor_inv_homE FCompE FIdf /= !inv_homK.
 Qed.
@@ -1022,8 +1029,10 @@ Definition Eta : FId ~> G \O F :=
     \v [NEq G0 \O F0 , G0 \O FId \O F0]
     \v eta0.
 Lemma EtaE a : Eta a =m= G0 # (eta1 (F0 a)) \@ (eta0 a).
+(* TODO: point-free proof ? *)
 Proof. by move=> x /=; rewrite HCompId HIdComp. Qed.
 Lemma EtaE_hom a : Eta a =m= G0 # (eta1 (F0 a)) \@ (eta0 a).
+(* TODO: point-free proof ? *)
 Proof. by move=> x; rewrite EtaE. Qed.
 
 Definition Eps : F \O G ~> FId :=
@@ -1032,8 +1041,10 @@ Definition Eps : F \O G ~> FId :=
     \v (NId F1 \h eps0 \h NId G1)
     \v [NEq F \O G , (F1 \O (F0 \O G0)) \O G1].
 Lemma EpsE a : Eps a =m= (eps1 _) \@ F1 # (eps0 (G1 a)).
+(* TODO: point-free proof ? *)
 Proof. by move=> x /=; rewrite HCompId HIdComp. Qed.
 Lemma EpsE_hom a : Eps a =m= (eps1 _) \@ F1 # (eps0 (G1 a)).
+(* TODO: point-free proof ? *)
 Proof. by move=> x; rewrite EpsE. Qed.
 
 Lemma triL : TriangularLaws.left Eta Eps.
@@ -1102,6 +1113,7 @@ move: (AdjointFunctors.eps adj) => eps.
 move: (AdjointFunctors.eta adj) => eta <-.
 rewrite !VCompE homcompA HIdComp /= -functor_o.
 rewrite HCompId -homcompA.
+(* TODO: point-free proof ? *)
 have -> : G'G (F A) \@ GG' (F A) =m= idfun by move=> x /=; rewrite GG'K.
 by rewrite functor_o functor_id hom_Idcomp.
 Qed.
@@ -1115,6 +1127,7 @@ move: (AdjointFunctors.eta adj) => eta triR.
 rewrite !(HIdComp, HCompId, VCompE) /= functor_o !homcompA.
 rewrite (natural_head GG' (F (G' A))) -FCompE (natural eta) FIdf.
 rewrite (natural_head GG') -(homcompA (G # _)) triR.
+(* TODO: point-free proof ? *)
 by rewrite hom_Idcomp => x /=; rewrite G'GK.
 Qed.
 
@@ -1159,12 +1172,12 @@ Fact associative_aux x y z (f : {hom x -> M y}) (g : {hom y -> M z}) :
   (fun w => (f w >>= g)) =1 (b g \@ f).
 Proof. by []. Qed.
 Definition associative :=
-  forall A B C (m : el (M A)) (f : {hom A -> M B}) (g : {hom B -> M C}),
-  (m >>= f) >>= g = m >>= (b g \@ f).
+  forall A B C (f : {hom A -> M B}) (g : {hom B -> M C}),
+       b g \@ b f =m= b (b g \@ f).
 Definition left_neutral (r : forall A, {hom A -> M A}) :=
-  forall A B (f : {hom A -> M B}), (b f \@ r A) =m= f.
+  forall A B (f : {hom A -> M B}), b f \@ r A =m= f.
 Definition right_neutral (r : forall A, {hom A -> M A}) :=
-  forall A (m : el (M A)), m >>= r _ = m.
+  forall A, b (r A) =m= idfun.
 End bindlaws.
 End BindLaws.
 
@@ -1175,10 +1188,18 @@ Variables (C : category) (M : C -> C).
 Variable b : forall A B, {hom A -> M B} -> {hom M A -> M B}.
 Local Notation "m >>= f" := (b f m).
 
-Lemma bind_left_neutral_hom_fun (r : forall A, {hom A -> M A})
-  : BindLaws.left_neutral b r
-    <-> forall A B (f : {hom A -> M B}), b f \@ r A =m= f.
-Proof. by split; move=> H A B f; exact: (H A B f). Qed.
+Lemma bind_left_neutral_hom_fun (r : forall A, {hom A -> M A}) :
+  BindLaws.left_neutral b r
+  <-> forall A B (f : {hom A -> M B}), (b f \@ r A) =m= f.
+Proof. by []. Qed.
+Lemma bind_right_neutral_hom_fun (r : forall A, {hom A -> M A}) :
+  BindLaws.right_neutral b r <-> forall A (m : el (M A)), m >>= r _ = m.
+Proof. by []. Qed.
+Lemma associative_hom_fun :
+  BindLaws.associative b
+  <-> forall A B C (m : el (M A)) (f : {hom A -> M B}) (g : {hom B -> M C}),
+  (m >>= f) >>= g = m >>= (b g \@ f).
+Proof. by split => [H U V W m f g | H U V W f g m]; exact: H. Qed.
 
 End bind_lemmas.
 
@@ -1209,8 +1230,6 @@ Variable (C : category) (M : monad C).
 (* *_head lemmas are for [fun of f] \o ([fun of g] \o ([fun of h] \o ..))*)
 
 Import comps_notation.
-(* *_head lemmas are for [fun of f] \o ([fun of g] \o ([fun of h] \o ..))*)
-Import comps_notation.
 Lemma joinretM_head a (c : C) (f : {hom c -> M a}) :
   [\@ join _, ret _, f] =m= f.
 Proof. by rewrite -homcompA joinretM. Qed.
@@ -1238,7 +1257,7 @@ Let bind (a b : C) (f : {hom a -> M b}) : {hom M a -> M b} :=
       join _ \@ (F # f).
 Let bind_ext (a b : C) (f g : {hom a -> M b}) :
   f =m= g -> bind f =m= bind g.
-Proof. by rewrite /bind => eq x /=; rewrite (functor_ext_hom _ _ _ eq). Qed.
+Proof. by rewrite /bind => /functor_ext_hom ->. Qed.
 Let bindE (a b : C) (f : {hom a -> M b}) (m : el (M a)) :
     bind f m = join b (([the {functor C -> C} of M] # f) m).
 Proof. by []. Qed.
@@ -1263,20 +1282,14 @@ Let bindretf_fun : (forall (a b : C) (f : {hom a -> M b}),
   bind f \@ ret' a =m= f).
 Proof. by apply/bind_left_neutral_hom_fun/bindretf. Qed.
 Let fmap_id : FunctorLaws.id fmap.
-Proof.
-move=> A m; rewrite /fmap /idfun -[in RHS](bindmret m).
-by apply: bind_ext_hom.
-Qed.
+Proof. by move=> A; rewrite /fmap bind_ext_hom; last exact: bindmret. Qed.
 Let fmap_ext : FunctorLaws.ext fmap.
-Proof.
-by move=> A B f g eq; rewrite /fmap; apply: bind_ext_hom => x /= /[!eq].
-Qed.
+Proof. by move=> A B f g eq; apply: bind_ext_hom; rewrite /= eq. Qed.
 Let fmap_o : FunctorLaws.comp fmap.
 Proof.
-move=> a b c g h x; rewrite /fmap.
-rewrite [RHS]bindA/=; apply: bind_ext_hom => {}x /=.
-rewrite !hom_compE homcompA; apply: esym.
-exact: bindretf_fun.
+move=> a b c g h; rewrite /fmap.
+rewrite [X in _ =m= X]bindA/=; apply: bind_ext_hom.
+by rewrite -!homcompA bindretf_fun.
 Qed.
 HB.instance Definition _ := isFunctor.Build C C M fmap_ext fmap_id fmap_o.
 Notation F := [the {functor _ -> _} of M].
@@ -1287,47 +1300,41 @@ HB.instance Definition _ := isNatural.Build _ _ FId F
   (ret' : FId ~~> M)(*NB: fails without this type constraint*) ret'_naturality.
 Definition ret := [the FId ~> F of ret'].
 Let join' : F \O F ~~> F := fun _ => bind [hom idfun].
-Let fmap_bind a b c (f : {hom a ->b}) m (g : {hom c ->F a}) :
-  (fmap f) (bind g m) = bind (fmap f \@ g) m.
+Let fmap_bind a b c (f : {hom a ->b}) (g : {hom c ->F a}) :
+  (fmap f) \@ (bind g) =m= bind (fmap f \@ g).
 Proof. by rewrite /fmap bindA. Qed.
 Let join'_naturality : naturality (F \O F) F join'.
 Proof.
-move=> A B h m; rewrite /join /=.
-rewrite fmap_bind bindA; apply: bind_ext_hom => {}m /=.
-rewrite !hom_compE homcompA; apply: esym.
-exact: bindretf_fun.
+move=> A B h; rewrite /join /=.
+rewrite fmap_bind bindA; apply: bind_ext_hom.
+by rewrite -!homcompA bindretf_fun.
 Qed.
 HB.instance Definition _ := isNatural.Build _ _ _ _ _ join'_naturality.
 Definition join := [the F \O F ~> F of join'].
 
-Let bind_fmap a b c (f : {hom a -> b}) (m : el (F a)) (g : {hom b -> F c}) :
-  bind g (fmap f m) = bind (g \@ f) m .
+Let bind_fmap a b c (f : {hom a -> b}) (g : {hom b -> F c}) :
+  bind g \@ (fmap f) =m= bind (g \@ f).
 Proof.
-rewrite bindA /=; apply: bind_ext_hom => {}m /=.
-rewrite !hom_compE homcompA /=.
-exact: bindretf_fun.
+rewrite bindA /=; apply: bind_ext_hom.
+by rewrite -!homcompA bindretf_fun.
 Qed.
-Lemma bindE (a b : C) (f : {hom a -> F b}) (m : el (F a)) :
-  bind f m = join b (([the {functor C -> C} of F] # f) m).
-Proof. by rewrite /join /= bind_fmap /=; apply: bind_ext_hom. Qed.
+Lemma bindE (a b : C) (f : {hom a -> F b}) : bind f =m= join b \@ F # f.
+Proof. by rewrite /join /= bind_fmap; apply: bind_ext_hom. Qed.
 Lemma joinretM : JoinLaws.left_unit ret join.
 Proof.
 rewrite /join => A m /=; rewrite !hom_compE.
 exact: bindretf_fun.
 Qed.
-Let bind_fmap_fun a b c (f : {hom a ->b}) (g : {hom b -> F c}) :
-  bind g \@ fmap f =m= bind (g \@ f).
-Proof. by move=> m; exact: bind_fmap. Qed.
 Lemma joinMret : JoinLaws.right_unit ret join.
 Proof.
-rewrite /join => A ma /=; rewrite !hom_compE.
-rewrite bind_fmap_fun/= -[in RHS](bindmret ma) /=.
+rewrite /join => A /=.
+rewrite bind_fmap -[X in _ =m= X]bindmret.
 exact: bind_ext_hom.
 Qed.
 Lemma joinA : JoinLaws.associativity join.
 Proof.
-move => A mmma; rewrite /join.
-rewrite bind_fmap_fun/= bindA/=.
+move=> A; rewrite /join /=.
+rewrite bind_fmap /= bindA /=.
 exact: bind_ext_hom.
 Qed.
 HB.instance Definition _ :=
@@ -1351,12 +1358,12 @@ Let triL := AdjointFunctors.triL A.
 Let triR := AdjointFunctors.triR A.
 
 Lemma naturality_ret : naturality FId M ret.
-Proof. by move=> a b f x; rewrite (natural eta). Qed.
+Proof. by move=> a b f; rewrite (natural eta). Qed.
 HB.instance Definition _ := isNatural.Build C C FId M ret naturality_ret.
 Lemma naturality_join : naturality (M \O M) M join.
 Proof.
-rewrite /join => a b h x.
-rewrite /M !FCompE -2!(@functor_o _ _ G) /=; apply: functor_ext_hom => {}x.
+rewrite /join => a b h.
+rewrite /M !FCompE -2!(@functor_o _ _ G) /=; apply: functor_ext_hom.
 exact: (natural eps).
 Qed.
 HB.instance Definition _ := isNatural.Build C C (M \O M) M join naturality_join.
@@ -1365,13 +1372,14 @@ Let joinE : join = fun a => G # (@eps (F a)).
 Proof. by []. Qed.
 Let join_associativity' a : join a \@ join (M a) =m= join a \@ (M # join a).
 Proof.
-move=> x; rewrite joinE -2!(@functor_o _ _ G) /=; apply: functor_ext_hom => {}x /=.
+rewrite joinE -2!(@functor_o _ _ G) /=.
+apply: functor_ext_hom.
 exact: (natural eps).
 Qed.
 Lemma join_associativity : JoinLaws.associativity join.
-Proof. by move=> a x; rewrite join_associativity'. Qed.
+Proof. by move=> a; rewrite join_associativity'. Qed.
 Lemma join_left_unit : JoinLaws.left_unit ret join.
-Proof. by move=> a x; rewrite joinE triR. Qed.
+Proof. by move=> a; rewrite joinE triR. Qed.
 Lemma join_right_unit :JoinLaws.right_unit ret join.
 Proof.
 move=> a; rewrite joinE /M FCompE /=.
