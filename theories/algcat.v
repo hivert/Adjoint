@@ -2081,7 +2081,7 @@ HB.instance Definition _ (A : Monoids) :=
 
 Lemma monalgE (A : Monoids) (T : Algebras R)
   (f g : {hom[Algebras R] {monalg R[A]} -> T}) :
-  (forall a : A, f [fm / a |-> 1] = g [fm / a |-> 1]) -> f =1 g.
+  (forall a : A, f [fm / a |-> 1] = g [fm / a |-> 1]) -> f =m= g.
 Proof.
 move=> eq x; rewrite -(lrmorphism_of_AlgebrasE f) -(lrmorphism_of_AlgebrasE g).
 exact: linear_fmE.
@@ -2258,7 +2258,7 @@ Lemma univmap_MonoidAlgebraP a : univmap_MonoidAlgebra [fm / a |-> 1] = \val (f 
 Proof. by rewrite -[in RHS](AdjointFunctors.hom_invK Adj _ _ f a). Qed.
 
 Lemma univmap_MonoidAlgebra_uniq (g : {hom[Algebras R] {monalg R[A]} -> M}) :
-  (forall a : A, g [fm / a |-> 1] = \val (f a)) -> g =1 univmap_MonoidAlgebra.
+  (forall a : A, g [fm / a |-> 1] = \val (f a)) -> g =m= univmap_MonoidAlgebra.
 Proof.
 move=> eq; apply: (AdjointFunctors.hom_iso_inj Adj).
 move=> a; rewrite AdjointFunctors.hom_invK.
@@ -2321,10 +2321,10 @@ Definition transf_multmon_to_Algebra : forgetMult ~> forget_Algebras_to_Sets R
               forget_Algebra_to_Semirings].
 
 Lemma transf_Algebra_to_multmonE A :
-  transf_Algebra_to_multmon A =1 transf_to_multmon A.
+  transf_Algebra_to_multmon A =m= transf_to_multmon A.
 Proof. by move=> a; rewrite /= !HCompId. Qed.
 Lemma transf_multmon_to_AlgebraE A :
-  transf_multmon_to_Algebra A =1 transf_from_multmon A.
+  transf_multmon_to_Algebra A =m= transf_from_multmon A.
 Proof. by move=> a; rewrite /= !HCompId. Qed.
 Lemma transf_Algebra_to_multmonK A :
   cancel (transf_Algebra_to_multmon A) (transf_multmon_to_Algebra A).
@@ -2468,10 +2468,6 @@ Definition forget_Hom_ComMonoid_to_Monoid A B (f : {hom[ComMonoids] A -> B}) :=
   fm_tmp (isHom_inhom f).
 Definition ComMonoidAlgebra_mor A B (f : {hom[ComMonoids] A -> B}) :=
   ComMonoidAlgebra_mor_tmp R (isHom_inhom f).
-
-Lemma ComMonoidAlgebra_morE A B (f : {hom[ComMonoids] A -> B}) :
-  ComMonoidAlgebra_mor f =1 MonoidAlgebra R # (forget_Hom_ComMonoid_to_Monoid f).
-Proof. by []. Qed.
 
 Fact ComMonoidAlgebra_ext : FunctorLaws.ext ComMonoidAlgebra_mor.
 Proof. by move=> M N f g eq; apply: MonoidAlgebra_ext. Qed.
