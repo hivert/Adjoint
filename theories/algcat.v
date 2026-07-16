@@ -1613,6 +1613,7 @@ End UniversalProperty.
 
 
 Section FunctorialityInRing.
+(* shouldn't f be a {hom[Rings] R -> S} ??? *)
 Variable (A : Sets) (R S : Rings) (f : {rmorphism R -> S}).
 
 Definition homRing_FreeLModule (m : {freemod R[A]}) : {freemod S[A]} :=
@@ -1672,13 +1673,14 @@ Section HomRingFreeLModuleFunctor.
 Variables (A : Sets) (R S T : Rings).
 
 Fact homRing_FreeLModule_ext (f g : {rmorphism R -> S}) :
-  f =1 g -> homRing_FreeLModule f (A := A) =1 homRing_FreeLModule g (A := A).
+  f =m= g -> homRing_FreeLModule f (A := A) =m= homRing_FreeLModule g (A := A).
 Proof.
-move=> eq; apply: linear_fm_scaleE => /= [r x /= /[!eq] //|x].
+move=> eq; apply: linear_fm_scaleE => /= [r x /= |x].
+  by rewrite [f r](eq r).
 by rewrite !homRing_FreeLModuleP.
 Qed.
 Fact homRing_FreeLModule_id :
-  homRing_FreeLModule (A := A) (R := R) idfun =1 idfun.
+  homRing_FreeLModule (A := A) (R := R) idfun =m= idfun.
 Proof.
 move=> eq; apply: linear_fm_scaleE => //= x.
 by rewrite !homRing_FreeLModuleP.
@@ -1686,17 +1688,26 @@ Qed.
 
 Variables (f : {rmorphism R -> S}) (g : {rmorphism S -> T}).
 
+#[local] Notation comp :=
+  (homRing_FreeLModule g (A := A) \@ homRing_FreeLModule f (A := A)).
+
 Let comp := homRing_FreeLModule g (A := A) \@ homRing_FreeLModule f (A := A).
-HB.instance Definition _ := GRing.Additive.on comp.
 Let comp_is_scalable : scalable_for (g \o f \; *:%R) comp.
 Proof. by rewrite /comp => r x /=; rewrite !linearZ_LR /=. Qed.
-HB.instance Definition _ :=
-  GRing.isScalable.Build R {freemod R[A]} {freemod T[A]}
-    (g \o f \; *:%R) comp comp_is_scalable.
+
+(** Avoid declaring as a a canonical instance => non forgetful inheritance *)
+(** See: https://rocq-prover.zulipchat.com/#narrow/channel/237664-math-comp-users/topic/Linearity.20w.2Er.2Et.20change.20of.20scalar.20and.20compose.20map/near/610998680 *)
+Let fmadd := GRing.Additive.on comp.
+Let fmscal := GRing.isScalable.Build R {freemod R[A]} {freemod T[A]}
+                 (g \o f \; *:%R) (Hom.sort comp) comp_is_scalable.
+Definition comp_homRing_FreeLModule :
+  {linear {freemod R[A]} -> {freemod T[A]} | g \o f \; *:%R} :=
+      HB.pack (Hom.sort comp) fmadd fmscal.
+
 Fact homRing_FreeLModule_comp : comp =m= homRing_FreeLModule (g \o f) (A := A).
 Proof.
-apply: linear_fm_scaleE => //= x.
-by rewrite /comp /= !homRing_FreeLModuleP.
+apply: (linear_fm_scaleE (f := comp_homRing_FreeLModule)) => //= x.
+by rewrite !homRing_FreeLModuleP.
 Qed.
 
 End HomRingFreeLModuleFunctor.
@@ -2807,7 +2818,8 @@ Lemma homRing_FreeComAlgebra_uniq
   (g : {lrmorphism {freecalg R[A]} -> {freecalg S[A]} | f \; *:%R }) :
   (forall i, g (fcalg_gen R i) = fcalg_gen S i) -> g =m= homRing_FreeComAlgebra.
 Proof.
-move=> eqg x; rewrite -(freecalgE x) !linear_sum; apply: eq_bigr => i _.
+move=> eqg x; rewrite -(freecalgE x).
+rewrite [LHS]linear_sum [RHS]linear_sum; apply: eq_bigr => i _.
 rewrite !linearZ_LR !rmorph_prod /=; congr (_ *: _); apply: eq_bigr => a _.
 by rewrite eqg homRing_FreeComAlgebraP.
 Qed.
@@ -2869,7 +2881,8 @@ Lemma univmap_RingFreeComAlgebra_uniq
   (g : {lrmorphism {freecalg R[X]} -> A | fRm \; *:%R }) :
   (forall i : X, g (fcalg_gen R i) = fX i) -> g =m= univmap_RingFreeComAlgebra.
 Proof.
-move=> eqg a; rewrite -(freecalgE a) !linear_sum; apply eq_bigr => m _.
+move=> eqg a; rewrite -(freecalgE a).
+rewrite [LHS]linear_sum [RHS]linear_sum; apply eq_bigr => m _.
 rewrite !linearZ /=; congr (_ *: _).
 rewrite !rmorph_prod; apply: eq_bigr => {m} i _ /=.
 by rewrite eqg univmap_RingFreeComAlgebraP.
