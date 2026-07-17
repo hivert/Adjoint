@@ -20,8 +20,9 @@ Here are some difficulties encountered during the development process:
   the functor `F` to `f`. Then this should be three rewrites
   `F # f \o h =1 F # idfun \o h =1 idfun \o h =1 h`.
   Currently lot's of time is spend in precisely folding and unfolding map
-  compositions. See for example
-  https://github.com/hivert/Adjoint/blob/55353be6bbf1e8e086ee9cf977844a9cb67fb40d/theories/algcat.v#L1762-L1771
+  compositions.
+
+  :satisfied: This is now working thanks to setoid rewrite !!! 
 
 - Lots of the code in
   https://github.com/hivert/Adjoint/blob/main/theories/algcat.v
