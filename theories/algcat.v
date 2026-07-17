@@ -1,4 +1,194 @@
-(* Copyright (C) 2024-2026 Florent Hivert, license: LGPL-3-or-later *)
+(** * Cat.algcat : Algebraic Categories *)
+(******************************************************************************)
+(*    Copyright (C) 2019-2026 Florent Hivert <florent.hivert@lisn.fr>         *)
+(*                                                                            *)
+(*    This program is free software; you can redistribute it and/or           *)
+(*    modify it under the terms of the GNU Lesser General Public              *)
+(*    License as published by the Free Software Foundation; either            *)
+(*    version 3 of the License, or (at your option) any later version.        *)
+(*                                                                            *)
+(*    This code is distributed in the hope that it will be useful,            *)
+(*    but WITHOUT ANY WARRANTY; without even the implied warranty of          *)
+(*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU       *)
+(*    General Public License for more details.                                *)
+(*                                                                            *)
+(*    The full text of the LGPL is available at:                              *)
+(*                                                                            *)
+(*                  http://www.gnu.org/licenses/                              *)
+(******************************************************************************)
+(** #
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+ # *)
+(** * Algebraic categories
+
+We define the following categories:
+
+- Sets         == the category of Sets (modeled by choiceType in MC)
+                  There is a coercion {hom[Sets] a -> b} >-> (a -> b)
+- NModules     == the category of N-modules. There is a coercion
+                  {hom[NModules] a -> b} >-> {additive a -> b}
+- ZModules     == the category of Z-modules. There is a coercion
+                  {hom[ZModules] a -> b} >-> {additive a -> b}
+- Monoids      == the category of multiplicative monoids.
+                  There is a coercion
+                  {hom[Monoids] a -> b} >-> {mmorphism a -> b}
+- ComMonoids   == the category of commutative multiplicative monoids.
+                  There is a coercion
+                  {hom[ComMonoids] a -> b} >-> {mmorphism a -> b}
+- SemiRings    == the category of non-zero semi-rings. There is a coercion
+                  {hom[SemiRings] a -> b} >-> {rmorphism a -> b}
+- Rings        == the category of non-zero rings. There is a coercion
+                  {hom[Rings] a -> b} >-> {rmorphism a -> b}
+- ComSemiRings == the category of non-zero commutative semi-rings.
+                  There is a coercion
+                  {hom[ComSemiRings] a -> b} >-> {rmorphism a -> b}
+- ComRings     == the category of non-zero commutative rings.
+                  There is a coercion
+                  {hom[ComRings] a -> b} >-> {rmorphism a -> b}
+- LModules R   == the category of left R-module where R : nzRingType
+                  There is a coercion
+                  {hom[LModules R] a -> b} >-> {linear a -> b}
+- LAlgebras R  == the category of left R-algebra where R : nzRingType
+                  There is a coercion
+                  {hom[LAlgebras R] a -> b} >-> {lrmorphism a -> b}
+- Algebras R   == the category of R-algebra where R : nzRingType
+                  There is a coercion
+                  {hom[Algebras R] a -> b} >-> {lrmorphism a -> b}
+- ComAlgebras R == the category of commutative R-algebra where R : nzRingType
+                  There is a coercion
+                  {hom[ComAlgebras R] a -> b} >-> {lrmorphism a -> b}
+
+We define the following forgetful functors, we use following the consistent
+naming scheme: forget_CatSource_to_CatTarget for example
+forget_NModules_to_Sets. Moreover in the following R is a nzRingType.
+
+- NModules -> Sets
+- ZModules -> Sets
+- ZModules -> NModules
+- Monoids -> Sets
+- ComMonoids -> Sets
+- ComMonoids -> Monoids
+- SemiRings -> Sets
+- SemiRings -> NModules
+- Rings -> Sets
+- Rings -> ZModules
+- Rings -> SemiRings
+- ComSemiRings -> Sets
+- ComSemiRings -> SemiRings
+- ComRings -> Sets
+- ComRings -> ComSemiRings
+- ComRings -> Rings
+- LModules R -> Sets
+- LModules R -> ZModules
+- LAlgebras R -> Sets
+- LAlgebras R -> Rings
+- LAlgebras R -> LModules R
+- Algebras R -> Sets
+- Algebras R -> Monoids
+- Algebras R -> LAlgebras R
+- ComAlgebras R -> Sets
+- ComAlgebras R -> ComRings
+- ComAlgebras R -> ComMonoids
+- ComAlgebras R -> Algebras R
+
+Adjunction of functors:
+
+- FreeNModule  == the left adjoint functor of forget_NModules_to_Sets
+                  as witnessed by adjoint_FreeNModule_forget_to_Sets.
+  {freenmod A} == the image of A by FreeNModule
+  univmap_FreeNModule f == for any function f in {hom[Sets] A -> M}
+                  the universal morphism in {hom[NModules] {freenmod A} -> M}
+
+- FreeMonoid   == the left adjoint functor of forget_Monoids_to_Sets as
+                  witnessed by adjoint_FreeMonoid_forget_to_Sets.
+  {freemon A}  == the image of A by FreeMonoid.
+  univmap_FreeMonoid f == for any function f in {hom[Sets] A -> M}
+                  the universal morphism in {hom[Monoids] {freemon A} -> M}
+
+- FreeComMonoid == the left adjoint functor of forget_ComMonoids_to_Sets
+                  as witnessed by adjoint_FreeComMonoid_forget_to_Sets.
+  {freecmon A} == the image of A by FreeComMonoid
+  univmap_FreeComMonoid f == for any function f in {hom[Sets] A -> M}
+                  the universal morphism in
+                  {hom[ComMonoids] {freecmon A} -> M}
+
+- FreeLModule R == (R in Rings), the left adjoint functor of
+                  forget_LModules_to_Sets as witnessed by
+                  adjoint_FreeLModule_forget_to_Sets R
+  {freelmod R[A]} == the image of A by FreeLmodule R
+  univmap_FreeLModule R f == for any function f in {hom[Sets] A -> M}
+                  where M : LModules R the universal morphism in
+                  {hom[LModules R] {freelmod R[A]} -> M}
+  homRing_FreeLModule A f == the functorial map from {freemod R[A]} to
+                  {freemod S[A]} where A : Sets and f : {rmorphism R -> S}
+
+- MonoidAlgebra R == (R in ComRings), the left adjoint functor of
+                  forget_Algebras_to_Monoids as witnessed by
+                  adjoint_MonoidAlgebra_forget_to_Monoids R
+  {monalg R[A]} == the image of A by MonoidAlgebra R
+  univmap_MonoidAlgebra A f == for any morphism in {hom[Monoids] M -> A}
+                  where A : Algebras R the universal morphism in
+                  {hom[Algebra R] {monalg R[A]} -> M}
+  homRing_MonoidAlgebra A f == where A : Monoids and f : {rmorphism R -> S}
+                  the functorial map from {monalg R[A]} to {monalg S[A]}
+
+- FreeAlgebra R == (R in ComRings), the left adjoint functor of
+                  forget_Algebras_to_Sets as witnessed by
+                  adjoint_FreeAlgebra_forget_to_Sets R
+  {freealg R[A]} == the image of A by FreeAlgebra R
+  univmap_FreeAlgebra R f == for any function f in {hom[Sets] E -> A}
+                  the universal morphism in
+                  {hom[Algebra R] {freealg R[E]} -> A}
+  homRing_FreeAlgebra E f == where E : Sets and f : {rmorphism R -> S}
+                  the functorial map from {freealg R[E]} to {freealg S[E]}
+
+- ComMonoidAlgebra R == (R in ComRings), the left adjoint functor of
+                  forget_ComAlgebras_to_ComMonoids as witnessed by
+                  adjoint_ComMonoidAlgebra_forget_to_ComMonoids R
+  {monalg R[M]} == the image of M by ComMonoidAlgebra R -- when M is a
+                  commutative monoid, automatically a commutative algebra
+  univmap_ComMonoidAlgebra R f == for any morphism f in
+                  {hom[ComMonoids] M -> forget_ComAlgebras_to_ComMonoids A}
+                  the universal morphism in
+                  {hom[ComAlgebra R] {monalg R[M]} -> A}
+  homRing_ComMonoidAlgebra M f == where M : ComMonoids and f : {rmorphism R -> S}
+                  the functorial map from {monalg R[M]} to {monalg S[M]}
+
+- FreeComAlgebra R == (R in ComRings), the left adjoint functor of
+                  forget_Algebras_to_Sets as witnessed by
+                  adjoint_FreeComAlgebra_forget_to_Sets R
+  {freecalg R[A]} == the image of A by FreeComAlgebra R
+  univmap_FreeComAlgebra R f == for any function f in {hom[Sets] E -> A}
+                  where A : ComAlgebras R the universal morphism in
+                  {hom[Algebra R] {freecalg R[E]} -> A}
+  homRing_FreeComAlgebra A f == where E : Sets and f : {rmorphism R -> S}
+                  the functorial map from {freecalg R[E]} to {freecalg S[E]}
+
+
+Equivalence of categories:
+
+The categories ComMonoids and NModules are adjoint equivalent through
+the functors NModule_of_ComMonoid and ComMonoid_of_NModule as witnessed by
+equivalence_ComMonoids_NModules with the adjunctions
+adjoint_ComMonoid_NModule and adjoint_NModule_ComMonoid.
+
+- cmon_of_nmod x == the image in ComMonoid_of_NModule M of an element x
+                   of a N-module M
+- cmon_of_nmod_inv y == the preimage in M of an element y of
+                   ComMonoid_of_NModule M
+- nmod_of_cmon x == the image in NModule_of_ComMonoid M of an element x
+                   of a commmutative monoid M
+- nmod_of_cmon_inv x == the preimage in M of an element y of
+                   NModule_of_ComMonoid M
+
+Finaly the following useful notion are defined:
+
+- setHom f      == the Sets morphism associated to the function f.
+- [fmon x]      == the image of x : T in the free monoid {freemon T}
+- [ma / x |-> v] == the element of {monalg R[M]} whose support is x with
+                  coefficient c
+*)
 From HB Require Import structures.
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq.
 From mathcomp Require Import choice fintype finfun bigop.
@@ -13,6 +203,11 @@ Unset Printing Implicit Defensive.
 Set SsrOldRewriteGoalsOrder.  (* change to Unset and remove the line when requiring MathComp >= 2.6 *)
 
 Import GRing.Theory.
+
+
+(* Help to rewrite with compositions *)
+#[local] Lemma compapp A B C (f : A -> B) (g : B -> C) (a : A) :
+  (g \o f) a = g (f a). Proof. by []. Qed.
 
 Local Open Scope category_scope.
 
@@ -37,7 +232,8 @@ HB.instance Definition _ :=
   isCategory.Build nmodType (fun T : nmodType => T)
     nmod_morphism idfun_is_nmod_morphism comp_is_nmod_morphism.
 Definition NModules : category := nmodType.
-Definition additive_of_Nmod a b (f : {hom[NModules] a -> b}) :
+#[warning="-uniform-inheritance"]
+Coercion additive_of_Nmod a b (f : {hom[NModules] a -> b}) :
   {additive a -> b} :=
   HB.pack (Hom.sort f) (GRing.isNmodMorphism.Build _ _ _ (isHom_inhom f)).
 Lemma additive_of_NmodE a b (f : {hom[NModules] a -> b}) :
@@ -466,8 +662,8 @@ Notation forget_LAlgebras_to_LModules := ForgetLAlgebras_to_LModules.functor.
 Lemma forget_LAlgebras_to_LModulesE R a b (f : {hom[LAlgebras R] a -> b}) :
   forget_LAlgebras_to_LModules R # f = f :> (_ -> _).
 Proof. by []. Qed.
-Definition forget_LAlgebras_to_Sets (R : nzRingType) :=
-  (forget_LModules_to_Sets R) \O (forget_LAlgebras_to_LModules R).
+Definition forget_LAlgebras_to_Sets R :=
+  forget_LModules_to_Sets R \O forget_LAlgebras_to_LModules R.
 Lemma forget_LAlgebras_to_SetsE R a b (f : {hom[LAlgebras R] a -> b}) :
   forget_LAlgebras_to_Sets R # f = f :> (_ -> _).
 Proof. by []. Qed.
@@ -628,7 +824,8 @@ Definition functor R : {functor ComAlgebras R -> ComRings} := @forget R.
 
 End ForgetComAlgebras_to_ComRings.
 
-Definition forget_ComAlgebras_to_ComRings := ForgetComAlgebras_to_ComRings.functor.
+Notation forget_ComAlgebras_to_ComRings :=
+  ForgetComAlgebras_to_ComRings.functor.
 Lemma forget_ComAlgebras_to_ComRingsE R a b (f : {hom[ComAlgebras R] a -> b}) :
   forget_ComAlgebras_to_ComRings R # f = f :> (_ -> _).
 Proof. by []. Qed.
@@ -678,12 +875,12 @@ Proof. by []. Qed.
 Local Open Scope monoid_scope.
 
 
-Definition FreeMonoidT (a : Sets) := seq a.
-HB.instance Definition _ (a : Sets) := Choice.on (FreeMonoidT a).
+Definition FreeMonoid_obj (a : Sets) := seq a.
+HB.instance Definition _ (a : Sets) := Choice.on (FreeMonoid_obj a).
 HB.instance Definition _ (a : Sets) :=
-  isMonoid.Build (FreeMonoidT a) (@catA a) (@cat0s a) (@cats0 a).
+  isMonoid.Build (FreeMonoid_obj a) (@catA a) (@cat0s a) (@cats0 a).
 
-Notation "{ 'freemon' T }" := (FreeMonoidT T)
+Notation "{ 'freemon' T }" := (FreeMonoid_obj T)
                                 (at level 0, format "{ 'freemon'  T }").
 Notation "[fmon x ]" := ([:: x] : {freemon _})
                         (at level 0, format "[fmon  x ]").
@@ -697,71 +894,70 @@ Section FreeMonoid.
 
 Variables (a b c : Sets) (f : {hom[Sets] a -> b}).
 
-Definition hom_FreeMonoid (m : {freemon a}) : {freemon b} :=
+Definition FreeMonoid_mor (m : {freemon a}) : {freemon b} :=
   [seq f i | i <- m].
 
-Lemma hom_FreeMonoid1 x : hom_FreeMonoid [fmon x] = [fmon f x].
+Lemma FreeMonoid_mor1 x : FreeMonoid_mor [fmon x] = [fmon f x].
 Proof. by []. Qed.
-Lemma hom_FreeMonoidE (s : {freemon a}) :
-  hom_FreeMonoid s = \prod_(i <- s) [fmon f i].
-Proof. by rewrite /hom_FreeMonoid -[LHS]freemonE big_map. Qed.
-Lemma hom_FreeMonoid_monmorphism : monmorphism hom_FreeMonoid.
-Proof. by rewrite /hom_FreeMonoid; split => [// | /= x y]; rewrite map_cat. Qed.
+Lemma FreeMonoid_morE (s : {freemon a}) :
+  FreeMonoid_mor s = \prod_(i <- s) [fmon f i].
+Proof. by rewrite /FreeMonoid_mor -[LHS]freemonE big_map. Qed.
+Lemma FreeMonoid_mor_monmorphism : monmorphism FreeMonoid_mor.
+Proof. by rewrite /FreeMonoid_mor; split => [// | /= x y]; rewrite map_cat. Qed.
 
 End FreeMonoid.
 
 HB.instance Definition _ (a b : Sets) (f : {hom[Sets] a -> b}) :=
   @isHom.Build Monoids {freemon a} {freemon b}
-    (hom_FreeMonoid f : [the Monoids of {freemon a}] -> {freemon b})
-    (hom_FreeMonoid_monmorphism f).
-Definition FreeMonoid_mor (a b : Sets) (f : {hom[Sets] a -> b})
-  : {hom[Monoids] {freemon a} -> {freemon b}} := hom_FreeMonoid f.
+    (FreeMonoid_mor f : [the Monoids of {freemon a}] -> {freemon b})
+    (FreeMonoid_mor_monmorphism f).
 
 Fact FreeMonoid_ext : FunctorLaws.ext FreeMonoid_mor.
-Proof. by move=> /= a b f g eq y; rewrite /hom_FreeMonoid; exact: eq_map. Qed.
+Proof. by move=> /= a b f g eq y; rewrite /FreeMonoid_mor; exact: eq_map. Qed.
 Fact FreeMonoid_id : FunctorLaws.id FreeMonoid_mor.
-Proof. by move=> /= a x /=; rewrite /hom_FreeMonoid /= map_id. Qed.
+Proof. by move=> /= a x /=; rewrite /FreeMonoid_mor /= map_id. Qed.
 Fact FreeMonoid_comp  : FunctorLaws.comp FreeMonoid_mor.
-Proof. by move=> /= a b c f g x; rewrite /hom_FreeMonoid /= map_comp. Qed.
-Definition FreeMonoid T : Monoids := {freemon T}.
+Proof. by move=> /= a b c f g x; rewrite /= /FreeMonoid_mor -map_comp. Qed.
+Definition FreeMonoid_functor T : Monoids := {freemon T}.
 HB.instance Definition _ :=
-  @isFunctor.Build Sets Monoids
-    FreeMonoid FreeMonoid_mor FreeMonoid_ext FreeMonoid_id FreeMonoid_comp.
+  @isFunctor.Build Sets Monoids FreeMonoid_functor
+    FreeMonoid_mor FreeMonoid_ext FreeMonoid_id FreeMonoid_comp.
+Definition FreeMonoid : {functor Sets -> Monoids} :=  FreeMonoid_functor.
 
 
 Module FreeMonoidAdjoint.
 Section Adjoint.
 
-Definition eta : FId ~~> forget_Monoids_to_Sets \o FreeMonoid :=
+Definition eta : FId ~~> forget_Monoids_to_Sets \O FreeMonoid :=
   fun a => [hom fun x : a => [fmon x]].
-Fact eta_natural : naturality FId (forget_Monoids_to_Sets \o FreeMonoid) eta.
+Fact eta_natural : naturality FId (forget_Monoids_to_Sets \O FreeMonoid) eta.
 Proof. by move=> /= a b h x /=; rewrite FIdf. Qed.
 HB.instance Definition _ :=
   @isNatural.Build Sets Sets FId
-    (forget_Monoids_to_Sets \o FreeMonoid) eta eta_natural.
+    (forget_Monoids_to_Sets \O FreeMonoid) eta eta_natural.
 
-Definition eps_fun T (m : (FreeMonoid \o forget_Monoids_to_Sets) T) : T :=
+Definition eps_fun T (m : (FreeMonoid \O forget_Monoids_to_Sets) T) : T :=
       \prod_(i <- m : {freemon _}) i.
 Fact eps_fun_monmorphism T : monmorphism (@eps_fun T).
 Proof. by rewrite /eps_fun; split => [|s t]; rewrite ?big_nil ?big_cat. Qed.
 HB.instance Definition _ T :=
-  isHom.Build Monoids ((FreeMonoid \o forget_Monoids_to_Sets) T) (FId T)
+  isHom.Build Monoids ((FreeMonoid \O forget_Monoids_to_Sets) T) (FId T)
     (@eps_fun T) (@eps_fun_monmorphism T).
-Definition eps : FreeMonoid \o forget_Monoids_to_Sets ~~> FId := eps_fun.
-Fact eps_natural : naturality (FreeMonoid \o forget_Monoids_to_Sets) FId eps.
+Definition eps : FreeMonoid \O forget_Monoids_to_Sets ~~> FId := eps_fun.
+Fact eps_natural : naturality (FreeMonoid \O forget_Monoids_to_Sets) FId eps.
 Proof.
 move=> /= a b h x /=.
 rewrite -!mmorphism_of_MonoidsE [LHS]mmorph_prod /=.
-by rewrite FIdf /eps_fun /= /hom_FreeMonoid big_map.
+by rewrite FIdf /eps_fun /= /FreeMonoid_mor big_map.
 Qed.
 HB.instance Definition _ :=
   @isNatural.Build Monoids Monoids
-    (FreeMonoid \o forget_Monoids_to_Sets) FId eps eps_natural.
+    (FreeMonoid \O forget_Monoids_to_Sets) FId eps eps_natural.
 
 Fact triL : TriangularLaws.left eta eps.
 Proof.
 move=> /= a x.
-rewrite -!mmorphism_of_MonoidsE /= /eps_fun /hom_FreeMonoid.
+rewrite -!mmorphism_of_MonoidsE /= /eps_fun /FreeMonoid_mor.
 by rewrite big_map -[RHS]freemonE.
 Qed.
 Fact triR : TriangularLaws.right eta eps.
@@ -783,10 +979,10 @@ Let Adj := adjoint_FreeMonoid_forget_to_Sets.
 Definition univmap_FreeMonoid := AdjointFunctors.hom_inv Adj f.
 
 Lemma univmap_FreeMonoidP a : univmap_FreeMonoid [fmon a] = f a.
-Proof. by rewrite -[RHS](AdjointFunctors.hom_invK Adj). Qed.
+Proof. exact: (AdjointFunctors.hom_invK Adj). Qed.
 
 Lemma univmap_FreeMonoid_uniq (g : {hom[Monoids] {freemon A} -> M}) :
-  (forall a : A, g [fmon a] = f a) -> g =1 univmap_FreeMonoid.
+  (forall a : A, g [fmon a] = f a) -> g =m= univmap_FreeMonoid.
 Proof.
 move=> eq; apply: (AdjointFunctors.hom_iso_inj Adj).
 by move=> a; rewrite AdjointFunctors.hom_invK -{}eq.
@@ -836,184 +1032,190 @@ Proof. by []. Qed.
 
 
 (** Equivalence ComMonoid NModule ***********************************)
-
-Record NMod_of_ComMonoidT (M : ComMonoids) :=
-  NModOfCommonoid { nmod_of_commonoid_val : M }.
-Definition nmod_of_commonoid M x := @NModOfCommonoid M x.
-Definition nmod_of_commonoid_inv M x := @nmod_of_commonoid_val M x.
-Lemma nmod_of_commonoidK M :
-  cancel (@nmod_of_commonoid M) (@nmod_of_commonoid_inv M).
+Record NModule_of_ComMonoidT (M : ComMonoids) :=
+  NModOfCMon { nmod_of_cmon_val : M }.
+Definition nmod_of_cmon M x := @NModOfCMon M x.
+Definition nmod_of_cmon_inv M x := @nmod_of_cmon_val M x.
+Lemma nmod_of_cmonK M :
+  cancel (@nmod_of_cmon M) (@nmod_of_cmon_inv M).
 Proof. by []. Qed.
-Lemma nmod_of_commonoid_invK M :
-  cancel (@nmod_of_commonoid_inv M) (@nmod_of_commonoid M).
+Lemma nmod_of_cmon_invK M :
+  cancel (@nmod_of_cmon_inv M) (@nmod_of_cmon M).
 Proof. by case. Qed.
 
 Section Defs.
 
 Variable M : ComMonoids.
-Local Notation nmodM := (NMod_of_ComMonoidT M).
+Local Notation nmodM := (NModule_of_ComMonoidT M).
 HB.instance Definition _ :=
-  Choice.copy nmodM (can_type (@nmod_of_commonoid_invK M)).
+  Choice.copy nmodM (can_type (@nmod_of_cmon_invK M)).
 
-Let zeronm := @nmod_of_commonoid M 1%M.
+Let zeronm := @nmod_of_cmon M 1%M.
 Let addnm (x y : nmodM) :=
-  nmod_of_commonoid (nmod_of_commonoid_inv x * nmod_of_commonoid_inv y).
+  nmod_of_cmon (nmod_of_cmon_inv x * nmod_of_cmon_inv y).
 Fact addnmA : associative addnm.
-Proof. by move=> x y z; rewrite /addnm !nmod_of_commonoidK mulmA. Qed.
+Proof. by move=> x y z; rewrite /addnm !nmod_of_cmonK mulmA. Qed.
 Fact addnmC : commutative addnm.
 Proof. by move=> x y; rewrite /addnm mulmC. Qed.
 Fact add0nm : left_id zeronm addnm.
 Proof.
 move=> x.
-by rewrite /addnm /zeronm nmod_of_commonoidK mul1m nmod_of_commonoid_invK.
+by rewrite /addnm /zeronm nmod_of_cmonK mul1m nmod_of_cmon_invK.
 Qed.
 HB.instance Definition _ := GRing.isNmodule.Build nmodM addnmA addnmC add0nm.
-Definition NMod_of_ComMonoid : NModules := nmodM.
+Definition NMod_of_CMon_obj : NModules := nmodM.
 
-Lemma nmod_of_commonoid1 : nmod_of_commonoid 1 = 0%R:> nmodM.
+Lemma nmod_of_cmon1 : nmod_of_cmon 1 = 0%R:> nmodM.
 Proof. by []. Qed.
-Lemma nmod_of_commonoidM :
-  {morph @nmod_of_commonoid M : x y / (x * y)%M >-> (x + y)%R}.
-Proof. by move=> x y; rewrite /GRing.add /= /addnm !nmod_of_commonoidK. Qed.
-Definition nmod_of_commonoid_prod :=
-  big_morph _ nmod_of_commonoidM nmod_of_commonoid1.
+Lemma nmod_of_cmonM :
+  {morph @nmod_of_cmon M : x y / (x * y)%M >-> (x + y)%R}.
+Proof. by move=> x y; rewrite /GRing.add /= /addnm !nmod_of_cmonK. Qed.
+Definition nmod_of_cmon_prod :=
+  big_morph _ nmod_of_cmonM nmod_of_cmon1.
 
 End Defs.
 
 Section Functor_on_Hom.
 
 Variables (M N : ComMonoids) (f : {hom[ComMonoids] M -> N}).
-Let nmod_of_commonoid_mor : (NMod_of_ComMonoid M) -> (NMod_of_ComMonoid N) :=
-  (@nmod_of_commonoid N) \o f \o (@nmod_of_commonoid_inv M).
+Let nmod_of_cmon_mor : (NMod_of_CMon_obj M) -> (NMod_of_CMon_obj N) :=
+  (@nmod_of_cmon N) \o f \o (@nmod_of_cmon_inv M).
 
-Fact nmod_of_commonoid_mor_nmod_morphism : nmod_morphism nmod_of_commonoid_mor.
+Fact nmod_of_cmon_mor_nmod_morphism : nmod_morphism nmod_of_cmon_mor.
 Proof.
-rewrite /nmod_of_commonoid_mor; split => /= [|x y /=].
-  by rewrite -nmod_of_commonoid1 -(mmorphism_of_ComMonoidsE f) mmorph1.
-by rewrite -nmod_of_commonoidM -(mmorphism_of_ComMonoidsE f) -mmorphM.
+rewrite /nmod_of_cmon_mor; split => /= [|x y /=].
+  by rewrite -nmod_of_cmon1 -(mmorphism_of_ComMonoidsE f) mmorph1.
+by rewrite -nmod_of_cmonM -(mmorphism_of_ComMonoidsE f) -mmorphM.
 Qed.
 HB.instance Definition _ :=
-  isHom.Build NModules (NMod_of_ComMonoid M) (NMod_of_ComMonoid N)
-    nmod_of_commonoid_mor nmod_of_commonoid_mor_nmod_morphism.
-Definition NMod_of_ComMonoid_mor
-  : {hom[NModules] NMod_of_ComMonoid M -> NMod_of_ComMonoid N}
-  := nmod_of_commonoid_mor.
+  isHom.Build NModules (NMod_of_CMon_obj M) (NMod_of_CMon_obj N)
+    nmod_of_cmon_mor nmod_of_cmon_mor_nmod_morphism.
+Definition NMod_of_CMon_mor
+  : {hom[NModules] NMod_of_CMon_obj M -> NMod_of_CMon_obj N}
+  := nmod_of_cmon_mor.
 
 End Functor_on_Hom.
 
-Fact NMod_of_ComMonoid_ext : FunctorLaws.ext NMod_of_ComMonoid_mor.
+Fact NMod_of_CMon_ext : FunctorLaws.ext NMod_of_CMon_mor.
 Proof. by move=> /= a b f g eq y; rewrite /= eq. Qed.
-Fact NMod_of_ComMonoid_id : FunctorLaws.id NMod_of_ComMonoid_mor.
-Proof. by move=> /= a x /=; rewrite /= nmod_of_commonoid_invK. Qed.
-Fact NMod_of_ComMonoid_comp  : FunctorLaws.comp NMod_of_ComMonoid_mor.
+Fact NMod_of_CMon_id : FunctorLaws.id NMod_of_CMon_mor.
+Proof. by move=> /= a x /=; rewrite /= nmod_of_cmon_invK. Qed.
+Fact NMod_of_CMon_comp  : FunctorLaws.comp NMod_of_CMon_mor.
 Proof. by []. Qed.
 HB.instance Definition _ :=
-  @isFunctor.Build ComMonoids NModules NMod_of_ComMonoid NMod_of_ComMonoid_mor
-    NMod_of_ComMonoid_ext NMod_of_ComMonoid_id NMod_of_ComMonoid_comp.
+  @isFunctor.Build ComMonoids NModules NMod_of_CMon_obj NMod_of_CMon_mor
+    NMod_of_CMon_ext NMod_of_CMon_id NMod_of_CMon_comp.
 
+Definition NModule_of_ComMonoid : {functor ComMonoids -> NModules}
+  := NMod_of_CMon_obj.
 
-Record ComMonoid_of_NModT (M : NModules) :=
-  CommonoidOfNMod { commonoid_of_nmod_val : M }.
-Definition commonoid_of_nmod M x := @CommonoidOfNMod M x.
-Definition commonoid_of_nmod_inv M x := @commonoid_of_nmod_val M x.
-Lemma commonoid_of_nmodK M :
-  cancel (@commonoid_of_nmod M) (@commonoid_of_nmod_inv M).
+Record ComMonoid_of_NModuleT (M : NModules) :=
+  CMonOfNMod { cmon_of_nmod_val : M }.
+Definition cmon_of_nmod M x := @CMonOfNMod M x.
+Definition cmon_of_nmod_inv M x := @cmon_of_nmod_val M x.
+Lemma cmon_of_nmodK M :
+  cancel (@cmon_of_nmod M) (@cmon_of_nmod_inv M).
 Proof. by []. Qed.
-Lemma commonoid_of_nmod_invK M :
-  cancel (@commonoid_of_nmod_inv M) (@commonoid_of_nmod M).
+Lemma cmon_of_nmod_invK M :
+  cancel (@cmon_of_nmod_inv M) (@cmon_of_nmod M).
 Proof. by case. Qed.
 
 
 Section Defs.
 
 Variable M : NModules.
-Local Notation cmonM := (ComMonoid_of_NModT M).
+Local Notation cmonM := (ComMonoid_of_NModuleT M).
 HB.instance Definition _ :=
-  Choice.copy cmonM (can_type (@commonoid_of_nmod_invK M)).
+  Choice.copy cmonM (can_type (@cmon_of_nmod_invK M)).
 
-Let onecm := @commonoid_of_nmod M 0%R.
+Let onecm := @cmon_of_nmod M 0%R.
 Let mulcm (x y : cmonM) :=
-  commonoid_of_nmod (commonoid_of_nmod_inv x + commonoid_of_nmod_inv y).
+  cmon_of_nmod (cmon_of_nmod_inv x + cmon_of_nmod_inv y).
 Fact mulcmA : associative mulcm.
-Proof. by move=> x y z; rewrite /mulcm !commonoid_of_nmodK addrA. Qed.
+Proof. by move=> x y z; rewrite /mulcm !cmon_of_nmodK addrA. Qed.
 Fact mulcmC : commutative mulcm.
 Proof. by move=> x y; rewrite /mulcm addrC. Qed.
 Fact mul1cm : left_id onecm mulcm.
 Proof.
 move=> x.
-by rewrite /mulcm /onecm commonoid_of_nmodK add0r commonoid_of_nmod_invK.
+by rewrite /mulcm /onecm cmon_of_nmodK add0r cmon_of_nmod_invK.
 Qed.
 HB.instance Definition _ := isComMonoid.Build cmonM mulcmA mulcmC mul1cm.
-Definition ComMonoid_of_NMod : ComMonoids := cmonM.
+Definition CMon_of_NMod_obj : ComMonoids := cmonM.
 
-Lemma commonoid_of_nmod0 : commonoid_of_nmod 0%R = 1%M:> cmonM.
+Lemma cmon_of_nmod0 : cmon_of_nmod 0%R = 1%M:> cmonM.
 Proof. by []. Qed.
-Lemma commonoid_of_nmodD :
-  {morph @commonoid_of_nmod M : x y / (x + y)%R >-> (x * y)%M}.
-Proof. by move=> x y; rewrite /mul /= /mulcm !commonoid_of_nmodK. Qed.
-Definition commonoid_of_nmod_sum :=
-  big_morph _ commonoid_of_nmodD commonoid_of_nmod0.
+Lemma cmon_of_nmodD :
+  {morph @cmon_of_nmod M : x y / (x + y)%R >-> (x * y)%M}.
+Proof. by move=> x y; rewrite /mul /= /mulcm !cmon_of_nmodK. Qed.
+Definition cmon_of_nmod_sum :=
+  big_morph _ cmon_of_nmodD cmon_of_nmod0.
 
 End Defs.
 
 Section Functor_on_Hom.
 
 Variables (M N : NModules) (f : {hom[NModules] M -> N}).
-Let commonoid_of_nmod_mor : (ComMonoid_of_NMod M) -> (ComMonoid_of_NMod N) :=
-  (@commonoid_of_nmod N) \o f \o (@commonoid_of_nmod_inv M).
+Let cmon_of_nmod_mor : (CMon_of_NMod_obj M) -> (CMon_of_NMod_obj N) :=
+  (@cmon_of_nmod N) \o f \o (@cmon_of_nmod_inv M).
 
-Fact commonoid_of_nmod_mor_monmorphism : monmorphism commonoid_of_nmod_mor.
+Fact cmon_of_nmod_mor_monmorphism : monmorphism cmon_of_nmod_mor.
 Proof.
-rewrite /commonoid_of_nmod_mor; split => /= [|x y].
-  by rewrite -commonoid_of_nmod0 -(additive_of_NmodE f) raddf0.
-by rewrite -commonoid_of_nmodD -(additive_of_NmodE f) -raddfD.
+rewrite /cmon_of_nmod_mor; split => /= [|x y].
+  by rewrite -cmon_of_nmod0 -(additive_of_NmodE f) raddf0.
+by rewrite -cmon_of_nmodD -(additive_of_NmodE f) -raddfD.
 Qed.
 HB.instance Definition _ :=
-  isHom.Build ComMonoids (ComMonoid_of_NMod M) (ComMonoid_of_NMod N)
-    commonoid_of_nmod_mor commonoid_of_nmod_mor_monmorphism.
-Definition ComMonoid_of_NMod_mor
-  : {hom[ComMonoids] ComMonoid_of_NMod M -> ComMonoid_of_NMod N}
-  := commonoid_of_nmod_mor.
+  isHom.Build ComMonoids (CMon_of_NMod_obj M) (CMon_of_NMod_obj N)
+    cmon_of_nmod_mor cmon_of_nmod_mor_monmorphism.
+Definition CMon_of_NMod_mor
+  : {hom[ComMonoids] CMon_of_NMod_obj M -> CMon_of_NMod_obj N}
+  := cmon_of_nmod_mor.
 
 End Functor_on_Hom.
 
-Fact ComMonoid_of_NMod_ext : FunctorLaws.ext ComMonoid_of_NMod_mor.
+Fact CMon_of_NMod_ext : FunctorLaws.ext CMon_of_NMod_mor.
 Proof. by move=> /= a b f g eq y; rewrite /= eq. Qed.
-Fact ComMonoid_of_NMod_id : FunctorLaws.id ComMonoid_of_NMod_mor.
-Proof. by move=> /= a x /=; rewrite /= commonoid_of_nmod_invK. Qed.
-Fact ComMonoid_of_NMod_comp  : FunctorLaws.comp ComMonoid_of_NMod_mor.
+Fact CMon_of_NMod_id : FunctorLaws.id CMon_of_NMod_mor.
+Proof. by move=> /= a x /=; rewrite /= cmon_of_nmod_invK. Qed.
+Fact CMon_of_NMod_comp  : FunctorLaws.comp CMon_of_NMod_mor.
 Proof. by []. Qed.
 HB.instance Definition _ :=
-  @isFunctor.Build NModules ComMonoids ComMonoid_of_NMod ComMonoid_of_NMod_mor
-    ComMonoid_of_NMod_ext ComMonoid_of_NMod_id ComMonoid_of_NMod_comp.
+  @isFunctor.Build NModules ComMonoids CMon_of_NMod_obj CMon_of_NMod_mor
+    CMon_of_NMod_ext CMon_of_NMod_id CMon_of_NMod_comp.
 
-(** Doesn't seems to be provable, equality is too strong.
-Lemma CM_id : ComMonoid_of_NMod \O NMod_of_ComMonoid =#= FId.
+Definition ComMonoid_of_NModule : {functor NModules -> ComMonoids} :=
+  CMon_of_NMod_obj.
+
+  (** Doesn't seems to be provable, equality is too strong.
+Lemma CM_id : CMon_of_NMod \O NMod_of_CMon =#= FId.
  *)
 
-Local Notation CM := (ComMonoid_of_NMod \O NMod_of_ComMonoid).
-Local Notation MC := (NMod_of_ComMonoid \O ComMonoid_of_NMod).
+Module EquivCatComMonoidNModule.
+
+Local Notation CM := (ComMonoid_of_NModule \O NModule_of_ComMonoid).
+Local Notation MC := (NModule_of_ComMonoid \O ComMonoid_of_NModule).
 
 (** Build natural isom *)
 Section IsoCM.
 
 Variable M : ComMonoids.
 Definition isoCM_map : CM M -> FId M :=
-  (@nmod_of_commonoid_inv _) \o (@commonoid_of_nmod_inv (NMod_of_ComMonoid M)).
+  (@nmod_of_cmon_inv _) \o (@cmon_of_nmod_inv (NModule_of_ComMonoid M)).
 Definition isoCM_inv : FId M -> CM M :=
-  (@commonoid_of_nmod _) \o (@nmod_of_commonoid M).
+  (@cmon_of_nmod _) \o (@nmod_of_cmon M).
 
 Fact isoCM_mapK : cancel isoCM_map isoCM_inv.
 Proof.
 rewrite /isoCM_map {}/isoCM_inv => x /=.
-by rewrite !(nmod_of_commonoid_invK, commonoid_of_nmod_invK).
+by rewrite !(nmod_of_cmon_invK, cmon_of_nmod_invK).
 Qed.
 Fact isoCM_invK : cancel isoCM_inv isoCM_map.
 Proof. by []. Qed.
 Fact isoCM_monmorphism : monmorphism isoCM_map.
 Proof.
 split => [|x y].
-  by rewrite -commonoid_of_nmod0 -nmod_of_commonoid1.
+  by rewrite -cmon_of_nmod0 -nmod_of_cmon1.
 by rewrite -{1}(isoCM_mapK x) -{1}(isoCM_mapK y).
 Qed.
 HB.instance Definition _ :=
@@ -1022,8 +1224,8 @@ HB.instance Definition _ :=
 Fact isoCM_inv_monmorphism : monmorphism isoCM_inv.
 Proof.
 rewrite /isoCM_inv; split => [|x y ] /=.
-  by rewrite -commonoid_of_nmod0 nmod_of_commonoid1.
-by rewrite nmod_of_commonoidM commonoid_of_nmodD.
+  by rewrite -cmon_of_nmod0 nmod_of_cmon1.
+by rewrite nmod_of_cmonM cmon_of_nmodD.
 Qed.
 HB.instance Definition _ :=
   isIsom.Build ComMonoids (CM M) M isoCM_map
@@ -1051,21 +1253,21 @@ Section IsoMC.
 
 Variable M : NModules.
 Definition isoMC_map : MC M -> FId M :=
-  (@commonoid_of_nmod_inv _) \o (@nmod_of_commonoid_inv (ComMonoid_of_NMod M)).
+  (@cmon_of_nmod_inv _) \@ (@nmod_of_cmon_inv (ComMonoid_of_NModule M)).
 Definition isoMC_inv : FId M -> MC M :=
-  (@nmod_of_commonoid _) \o (@commonoid_of_nmod M).
+  (@nmod_of_cmon _) \@ (@cmon_of_nmod M).
 
 Fact isoMC_mapK : cancel isoMC_map isoMC_inv.
 Proof.
 rewrite /isoMC_map {}/isoMC_inv => x /=.
-by rewrite !(nmod_of_commonoid_invK, commonoid_of_nmod_invK).
+by rewrite !(nmod_of_cmon_invK, cmon_of_nmod_invK).
 Qed.
 Fact isoMC_invK : cancel isoMC_inv isoMC_map.
 Proof. by []. Qed.
 Fact isoMC_nmod_morphism : nmod_morphism isoMC_map.
 Proof.
 split => [| x y].
-  by rewrite -nmod_of_commonoid1 -commonoid_of_nmod0.
+  by rewrite -nmod_of_cmon1 -cmon_of_nmod0.
 by rewrite -{1}(isoMC_mapK x) -{1}(isoMC_mapK y).
 Qed.
 HB.instance Definition _ :=
@@ -1074,8 +1276,8 @@ HB.instance Definition _ :=
 Fact isoMC_inv_nmod_morphism : nmod_morphism isoMC_inv.
 Proof.
 rewrite /isoMC_inv; split => [| x y] /=.
-  by rewrite -nmod_of_commonoid1 commonoid_of_nmod0.
-by rewrite commonoid_of_nmodD nmod_of_commonoidM.
+  by rewrite -nmod_of_cmon1 cmon_of_nmod0.
+by rewrite cmon_of_nmodD nmod_of_cmonM.
 Qed.
 HB.instance Definition _ :=
   isIsom.Build NModules (MC M) M isoMC_map
@@ -1099,59 +1301,61 @@ Definition isoMC : MC ~> FId := isoMC_hom.
 End IsoMCTrans.
 
 Definition equivalence_ComMonoids_NModules :
-  equivalence_category NMod_of_ComMonoid ComMonoid_of_NMod :=
+  equivalence_category NModule_of_ComMonoid ComMonoid_of_NModule :=
   EquivalenceCategory natural_isoMC natural_isoCM.
 
 
-Module ComMonoids_NModules_Adjoints.
 Section Defs.
 
-Let epsMC : NMod_of_ComMonoid \O ComMonoid_of_NMod ~> FId
+Let epsMC : NModule_of_ComMonoid \O ComMonoid_of_NModule ~> FId
     := eqFGId_trans equivalence_ComMonoids_NModules.
-Let etaMC : FId ~> ComMonoid_of_NMod \O NMod_of_ComMonoid
+Let etaMC : FId ~> ComMonoid_of_NModule \O NModule_of_ComMonoid
     := eqIdGF_trans equivalence_ComMonoids_NModules.
 
 Fact triRMC : TriangularLaws.right etaMC epsMC.
 Proof.
 move=> /= a x /=.
-by rewrite /isoMC_map /= commonoid_of_nmod_invK.
+by rewrite /isoMC_map /= cmon_of_nmod_invK.
 Qed.
 Fact triLMC : TriangularLaws.left etaMC epsMC.
-Proof. by move=> a x /=; rewrite /isoMC_map /= nmod_of_commonoid_invK. Qed.
+Proof. by move=> a x /=; rewrite /isoMC_map /= nmod_of_cmon_invK. Qed.
 
-Definition compMC : NMod_of_ComMonoid -| ComMonoid_of_NMod
+Definition compMC : NModule_of_ComMonoid -| ComMonoid_of_NModule
   := AdjointFunctors.mk triLMC triRMC.
 
 
-Let epsCM : ComMonoid_of_NMod \O NMod_of_ComMonoid~> FId
+Let epsCM : ComMonoid_of_NModule \O NModule_of_ComMonoid~> FId
     := eqGFId_trans equivalence_ComMonoids_NModules.
-Let etaCM : FId ~> NMod_of_ComMonoid \O ComMonoid_of_NMod
+Let etaCM : FId ~> NModule_of_ComMonoid \O ComMonoid_of_NModule
     := eqIdFG_trans equivalence_ComMonoids_NModules.
 
 Fact triRCM : TriangularLaws.right etaCM epsCM.
 Proof.
 move=> /= a x /=.
-by rewrite /isoCM_map /= nmod_of_commonoid_invK.
+by rewrite /isoCM_map /= nmod_of_cmon_invK.
 Qed.
 Fact triLCM : TriangularLaws.left etaCM epsCM.
 Proof.
 move=> /= a x /=.
-by rewrite /isoCM_map /= commonoid_of_nmod_invK.
+by rewrite /isoCM_map /= cmon_of_nmod_invK.
 Qed.
 
-Definition compCM : ComMonoid_of_NMod -| NMod_of_ComMonoid
+Definition compCM : ComMonoid_of_NModule -| NModule_of_ComMonoid
   := AdjointFunctors.mk triLCM triRCM.
 
 End Defs.
-End ComMonoids_NModules_Adjoints.
 
-Notation adjoint_ComMonoid_NModule := ComMonoids_NModules_Adjoints.compCM.
-Notation adjoint_NModule_ComMonoid := ComMonoids_NModules_Adjoints.compMC.
+End EquivCatComMonoidNModule.
+
+Notation equivalence_ComMonoids_NModules :=
+  EquivCatComMonoidNModule.equivalence_ComMonoids_NModules.
+Notation adjoint_ComMonoid_NModule := EquivCatComMonoidNModule.compCM.
+Notation adjoint_NModule_ComMonoid := EquivCatComMonoidNModule.compMC.
 
 
 (* TODO: Those are full subcategories, devise some infrastructure to
    - handle trivial forgetful functors
-   - morphisms coercions. *)
+   - morphisms coercions.
 HB.instance Definition _ :=
   isCategory.Build unitRingType (fun T : unitRingType => T)
     semiring_morph idfun_is_semiring_morph comp_is_semiring_morph.
@@ -1173,25 +1377,29 @@ HB.instance Definition _ (R : nzRingType) :=
     (fun a b (f : a -> b) => lalg_morphism f)
     (@idfun_is_lalg_morphism R) (@comp_is_lalg_morphism R).
 Definition ComUnitAlgebras (R : nzRingType) : category := comUnitAlgType R.
-
+ *)
 
 Local Open Scope ring_scope.
 Local Open Scope mset_scope.
 
 (** Adjunction between forget : NModules -> Sets and free N-Modules *)
-Section Set_to_FreeNmodule.
+Definition FreeNModule_obj (E : Sets) : NModules := {mset E}.
+Notation "{ 'freenmod' E }" := (FreeNModule_obj E)
+                                (at level 0, format "{ 'freenmod'  E }").
 
-Variable (a b : Sets) (f : {hom[Sets] a -> b}).
+Section Morphisms.
 
-Definition hom_mset (m : {mset a}) : {mset b} :=
-  \sum_(i <- m) [mset f i].
+Variable (A B : Sets) (f : {hom[Sets] A -> B}).
 
-Lemma hom_mset1 x : hom_mset [mset x] = [mset f x].
-Proof. by rewrite /hom_mset big_msetn /=. Qed.
+Definition FreeNModule_mor (m : {freenmod A}) : {freenmod B} :=
+  \sum_(i <- (m : {mset A})) [mset f i].
 
-Lemma hom_mset_is_nmod_morphism : nmod_morphism hom_mset.
+Lemma FreeNModule_mor1 x : FreeNModule_mor [mset x] = [mset f x].
+Proof. by rewrite /FreeNModule_mor big_msetn /=. Qed.
+
+Lemma FreeNModule_mor_is_nmod_morphism : nmod_morphism FreeNModule_mor.
 Proof.
-rewrite /hom_mset; split => [| /= x y]; first by rewrite big_mset0.
+rewrite /FreeNModule_mor; split => [| /= x y]; first by rewrite big_mset0.
 apply msetP => u /=; rewrite msetDE !mset_sum !sum_mset.
 under eq_bigr => i _ do rewrite msetDE natrDE mulnDl.
 rewrite natrDE big_split /=; congr (_ + _)%N.
@@ -1201,43 +1409,41 @@ rewrite addrC; apply: finsupp_widenD => i.
 by rewrite msuppE -mset_eq0 => /eqP -> /[!mul0n].
 Qed.
 
-End Set_to_FreeNmodule.
+End Morphisms.
 
-Definition FreeNModule (T : Sets) : NModules := {mset T}.
-(* TODO Cyril : The following declaration was
+(* TODO Ask experts : The following declaration was
 
 Definition FreeNModule (T : choiceType) : nmodType := {mset T}.
   HB.instance Definition _ (a b : Sets) (f : a -> b) :=
    @isHom.Build NModules {mset a} {mset b}
-   (hom_mset f : [the nmodType of {mset a}] -> [the nmodType of {mset b}])
-   (hom_mset_additive f).
+   (FreeNModule_mor f : [the nmodType of {mset a}] -> [the nmodType of {mset b}])
+   (FreeNModule_mor_additive f).
 
 the [the nmodType of ... ] was needed... Why ???
 *)
 HB.instance Definition _ (a b : Sets) (f : {hom[Sets] a -> b}) :=
-  @isHom.Build NModules (FreeNModule a) (FreeNModule b)
-    (hom_mset f : FreeNModule a -> FreeNModule b)
-    (hom_mset_is_nmod_morphism f).
-Definition FreeNModule_mor (a b : Sets) (f : {hom[Sets] a -> b})
-  : {hom[NModules] FreeNModule a -> FreeNModule b} := hom_mset f.
+  @isHom.Build NModules (FreeNModule_obj a) (FreeNModule_obj b)
+    (FreeNModule_mor f : FreeNModule_obj a -> FreeNModule_obj b)
+    (FreeNModule_mor_is_nmod_morphism f).
 
 Fact FreeNModule_ext : FunctorLaws.ext FreeNModule_mor.
 Proof.
-move=> /= a b f g eq y; rewrite /hom_mset.
+move=> /= a b f g eq y; rewrite /FreeNModule_mor.
 by apply eq_bigr => x _; rewrite eq.
 Qed.
 Fact FreeNModule_id : FunctorLaws.id FreeNModule_mor.
-Proof. by move=> /= a x /=; rewrite /hom_mset /= msetE. Qed.
+Proof. by move=> /= a x /=; rewrite /FreeNModule_mor /= msetE. Qed.
 Fact FreeNModule_comp  : FunctorLaws.comp FreeNModule_mor.
 Proof.
 move=> /= a b c f g.
+rewrite /FreeNModule_mor /eq_morphism /comp_morphism /=.
 rewrite -!additive_of_NmodE; apply: additive_msetE => /= x.
-by rewrite /hom_mset /= !big_msetn.
+by rewrite /FreeNModule_mor /= !big_msetn.
 Qed.
 HB.instance Definition _ :=
-  @isFunctor.Build Sets NModules
-    FreeNModule FreeNModule_mor FreeNModule_ext FreeNModule_id FreeNModule_comp.
-
+  @isFunctor.Build Sets NModules FreeNModule_obj FreeNModule_mor
+    FreeNModule_ext FreeNModule_id FreeNModule_comp.
+Definition FreeNModule : {functor Sets -> NModules} := FreeNModule_obj.
 
 Module FreeNModuleAdjoint.
 Section Adjoint.
@@ -1245,15 +1451,15 @@ Section Adjoint.
 Implicit Types (a : Sets) (T : NModules).
 
 Definition eta_fun a (x : a) := [mset x].
-Definition eta : FId ~~> forget_NModules_to_Sets \o FreeNModule := eta_fun.
+Definition eta : FId ~~> forget_NModules_to_Sets \O FreeNModule := eta_fun.
 Fact eta_natural :
-  naturality FId (forget_NModules_to_Sets \o FreeNModule) eta.
-Proof. by move=> /= a b h x /=; rewrite /eta_fun FIdf hom_mset1. Qed.
+  naturality FId (forget_NModules_to_Sets \O FreeNModule) eta.
+Proof. by move=> /= a b h x /=; rewrite /eta_fun FIdf FreeNModule_mor1. Qed.
 HB.instance Definition _ :=
   @isNatural.Build Sets Sets FId
-    (forget_NModules_to_Sets \o FreeNModule) eta eta_natural.
+    (forget_NModules_to_Sets \O FreeNModule) eta eta_natural.
 
-Let eps_fun T (m : (FreeNModule \o forget_NModules_to_Sets) T) : T :=
+Let eps_fun T (m : (FreeNModule \O forget_NModules_to_Sets) T) : T :=
       \sum_(i <- m : {mset _}) i.
 Fact eps_fun_nmod_morphism T : nmod_morphism (@eps_fun T).
 Proof.
@@ -1261,25 +1467,27 @@ rewrite /eps_fun; split => [|/= s t]; first by rewrite big_mset0.
 by rewrite big_msetD.
 Qed.
 HB.instance Definition _ T :=
-  isHom.Build NModules ((FreeNModule \o forget_NModules_to_Sets) T) (FId T)
+  isHom.Build NModules ((FreeNModule \O forget_NModules_to_Sets) T) (FId T)
     (@eps_fun T) (@eps_fun_nmod_morphism T).
-Definition eps : FreeNModule \o forget_NModules_to_Sets ~~> FId := eps_fun.
+Definition eps : FreeNModule \O forget_NModules_to_Sets ~~> FId := eps_fun.
 Fact eps_natural :
-  naturality (FreeNModule \o forget_NModules_to_Sets) FId eps.
+  naturality (FreeNModule \O forget_NModules_to_Sets) FId eps.
 Proof.
 move=> /= a b h.
+rewrite /FreeNModule_mor /eq_morphism /comp_morphism /=.
 rewrite -!additive_of_NmodE; apply: additive_msetE => /= x.
-by rewrite FIdf /eps_fun /hom_mset /= !big_msetn.
+by rewrite FIdf /eps_fun /FreeNModule_mor /= !big_msetn.
 Qed.
 HB.instance Definition _ :=
   @isNatural.Build NModules NModules
-    (FreeNModule \o forget_NModules_to_Sets) FId eps eps_natural.
+    (FreeNModule \O forget_NModules_to_Sets) FId eps eps_natural.
 
 Fact triL : TriangularLaws.left eta eps.
 Proof.
 move=> /= a.
+rewrite /FreeNModule_mor /eq_morphism /comp_morphism /=.
 rewrite -!additive_of_NmodE; apply: additive_msetE => /= x.
-by rewrite /eta_fun /= /eps_fun /hom_mset /= !big_msetn.
+by rewrite /eta_fun /= /eps_fun /FreeNModule_mor /= !big_msetn.
 Qed.
 Fact triR : TriangularLaws.right eta eps.
 Proof. by move=> /= M m; rewrite /eta_fun /= /eps_fun !big_msetn /=. Qed.
@@ -1298,13 +1506,14 @@ Variables (A : Sets) (M : NModules) (f : {hom[Sets] A -> M}).
 
 Let Adj := adjoint_FreeNModule_forget_to_Sets.
 
-Definition univmap_FreeNModule := AdjointFunctors.hom_inv Adj f.
+Definition univmap_FreeNModule : {hom[NModules] {freenmod A} -> M}
+  := AdjointFunctors.hom_inv Adj f.
 
 Lemma univmap_FreeNModuleP a : univmap_FreeNModule [mset a] = f a.
-Proof. by rewrite -[RHS](AdjointFunctors.hom_invK Adj). Qed.
+Proof. exact: (AdjointFunctors.hom_invK Adj). Qed.
 
-Lemma univmap_FreeNModule_uniq (g : {hom[NModules] {mset A} -> M}) :
-  (forall a : A, g [mset a] = f a) -> g =1 univmap_FreeNModule.
+Lemma univmap_FreeNModule_uniq (g : {hom[NModules] {freenmod A} -> M}) :
+  (forall a : A, g [mset a] = f a) -> g =m= univmap_FreeNModule.
 Proof.
 move=> eq; apply: (AdjointFunctors.hom_iso_inj Adj).
 by move=> a; rewrite AdjointFunctors.hom_invK -{}eq.
@@ -1314,14 +1523,14 @@ End UniversalProperty.
 
 
 
-Definition FreeComMonoid := ComMonoid_of_NMod \O FreeNModule.
+Definition FreeComMonoid := ComMonoid_of_NModule \O FreeNModule.
 Notation "{ 'freecmon' T }" := (FreeComMonoid T)
   (at level 0, format "{ 'freecmon'  T }").
 
-Definition cmon_gen A a : {freecmon A} := commonoid_of_nmod [mset a].
+Definition cmon_gen A a : {freecmon A} := cmon_of_nmod [mset a].
 #[warning="-uniform-inheritance"]
 Coercion enum_freecmon A (m : {freecmon A}) : seq A :=
-                            (commonoid_of_nmod_inv m : {mset A}).
+                            (cmon_of_nmod_inv m : {mset A}).
 
 Section FreeComMonoidTheory.
 Variable (A : Sets).
@@ -1329,34 +1538,34 @@ Implicit Types (m n : {freecmon A}).
 
 Lemma freecmon1E m : (1%M : {freecmon A}) = [::] :> seq A.
 Proof.
-by rewrite /enum_freecmon -commonoid_of_nmod0 commonoid_of_nmodK enum_mset0.
+by rewrite /enum_freecmon -cmon_of_nmod0 cmon_of_nmodK enum_mset0.
 Qed.
 Lemma freecmonE m : (\prod_(i <- m) cmon_gen i)%M = m.
 Proof.
-have:= congr1 (@commonoid_of_nmod _) (msetE (commonoid_of_nmod_inv m)).
-by rewrite commonoid_of_nmod_invK commonoid_of_nmod_sum => {2}<-.
+have:= congr1 (@cmon_of_nmod _) (msetE (cmon_of_nmod_inv m)).
+by rewrite cmon_of_nmod_invK cmon_of_nmod_sum => {2}<-.
 Qed.
 
 End FreeComMonoidTheory.
 
-Local Notation nmodSet := (forget_NModules_to_Sets \O NMod_of_ComMonoid).
+#[local] Notation nmodSet := (forget_NModules_to_Sets \O NModule_of_ComMonoid).
 
 Module FreeComMonoidAdjoint.
 Section FixForgetNmodSet.
 Variable (M : ComMonoids).
 
 Definition transf_to_nmodset_fun :
-  forget_ComMonoids_to_Sets M -> nmodSet M := fun (r : M) => nmod_of_commonoid r.
+  forget_ComMonoids_to_Sets M -> nmodSet M := fun (r : M) => nmod_of_cmon r.
 Definition transf_from_nmodset_fun :
   nmodSet M -> forget_ComMonoids_to_Sets M :=
-  fun (r : nmodSet M) => nmod_of_commonoid_inv r.
+  fun (r : nmodSet M) => nmod_of_cmon_inv r.
 
 Lemma transf_to_nmodset_funK :
   cancel transf_to_nmodset_fun transf_from_nmodset_fun.
-Proof. exact: nmod_of_commonoidK. Qed.
+Proof. exact: nmod_of_cmonK. Qed.
 Lemma transf_from_nmodset_funK :
   cancel transf_from_nmodset_fun transf_to_nmodset_fun.
-Proof. exact: nmod_of_commonoid_invK. Qed.
+Proof. exact: nmod_of_cmon_invK. Qed.
 
 HB.instance Definition _ :=
   isHom.Build Sets (forget_ComMonoids_to_Sets M) (nmodSet M)
@@ -1390,10 +1599,10 @@ HB.instance Definition _ :=
 
 Lemma transf_to_nmodsetK M :
   cancel (transf_to_nmodset M) (transf_from_nmodset M).
-Proof. exact: nmod_of_commonoidK. Qed.
+Proof. exact: nmod_of_cmonK. Qed.
 Lemma transf_from_nmodsetK M :
   cancel (transf_from_nmodset M) (transf_to_nmodset M).
-Proof. exact: nmod_of_commonoid_invK. Qed.
+Proof. exact: nmod_of_cmon_invK. Qed.
 
 Definition adjoint :
   FreeComMonoid -| forget_ComMonoids_to_Sets
@@ -1402,6 +1611,7 @@ Definition adjoint :
 
 End FreeComMonoidAdjoint.
 Notation adjoint_FreeComMonoid_forget_to_Sets := FreeComMonoidAdjoint.adjoint.
+
 
 Section UniversalProperty.
 
@@ -1414,13 +1624,13 @@ Definition univmap_FreeComMonoid := AdjointFunctors.hom_inv Adj f.
 Lemma univmap_FreeComMonoidP a :
   univmap_FreeComMonoid (cmon_gen a) = f a.
 Proof.
-rewrite -[RHS](AdjointFunctors.hom_invK Adj) /=; repeat congr (_ _).
+rewrite -[RHS](AdjointFunctors.hom_invK Adj _ _ f a) /=; repeat congr (_ _).
 (* TODO: I'm reproving some cancellation here *)
 by rewrite !HCompId /= !HIdComp.
 Qed.
 
 Lemma univmap_FreeComMonoid_uniq (g : {hom[ComMonoids] {freecmon A} -> M}) :
-  (forall a : A, g (cmon_gen a) = f a) -> g =1 univmap_FreeComMonoid.
+  (forall a : A, g (cmon_gen a) = f a) -> g =m= univmap_FreeComMonoid.
 Proof.
 move=> eq; apply: (AdjointFunctors.hom_iso_inj Adj).
 move=> a; rewrite AdjointFunctors.hom_invK -{}eq.
@@ -1436,27 +1646,33 @@ Local Close Scope monoid_scope.
 Local Open Scope ring_scope.
 
 (** Adjunction free L-Modules -| forget L-Modules to Sets and *)
+Definition FreeLModule_obj (R : Rings) (a : Sets) := {freemod R[a]}.
+HB.instance Definition _ (R : Rings) (a : Sets) :=
+  GRing.Lmodule.copy (FreeLModule_obj R a) {freemod R[a]}.
+Notation "{ 'freelmod' R [ T ] }" := (FreeLModule_obj R T)
+  (at level 0, format "{ 'freelmod'  R [ T ] }").
+
 Section Set_to_FreeLmodule.
 
 Variable R : nzRingType.
 
 Lemma FreeLModuleE (a : Sets) (T : LModules R)
-  (f g : {hom[LModules R] {freemod R[a]} -> T}) :
-  (forall x : a, f [fm / x |-> 1] = g [fm / x |-> 1]) -> f =1 g.
+  (f g : {hom[LModules R] {freelmod R[a]} -> T}) :
+  (forall x : a, f [fm / x |-> 1] = g [fm / x |-> 1]) -> f =m= g.
 Proof.
 move=> eq x; rewrite -(linear_of_LmodE f) -(linear_of_LmodE g).
 exact: linear_fmE.
 Qed.
 
 Variable (a b : Sets) (f : {hom[Sets] a -> b}).
-Definition hom_flm (m : {freemod R[a]}) : {freemod R[b]} :=
+Definition freelmod_mor (m : {freelmod R[a]}) : {freelmod R[b]} :=
   \sum_(i <- finsupp m) [fm / f i |-> m i].
 
-Lemma hom_flm1 (x : a) : hom_flm [fm / x |-> 1] = [fm / f x |-> 1].
-Proof. by rewrite /hom_flm finsupp_fm1 /= big_seq_fset1 fm1E eqxx. Qed.
-Fact hom_flm_linear : linear hom_flm.
+Lemma freelmod_mor1 (x : a) : freelmod_mor [fm / x |-> 1] = [fm / f x |-> 1].
+Proof. by rewrite /freelmod_mor finsupp_fm1 /= big_seq_fset1 fm1E eqxx. Qed.
+Fact freelmod_mor_linear : linear freelmod_mor.
 Proof.
-rewrite /hom_flm => c /= m n; rewrite scaler_sumr /=.
+rewrite /freelmod_mor => c /= m n; rewrite scaler_sumr /=.
 rewrite -!(finsupp_widen _ (S := finsupp m `|` finsupp n)%fset) /=.
 - rewrite -big_split /=; apply: eq_bigr => x _.
   apply/fsfunP => y; rewrite !fmD !scalefmE !fm1E.
@@ -1471,45 +1687,51 @@ rewrite -!(finsupp_widen _ (S := finsupp m `|` finsupp n)%fset) /=.
   by rewrite mulr0 addr0.
 Qed.
 HB.instance Definition _ :=
-  GRing.isLinear.Build R {freemod R[a]} {freemod R[b]} _ hom_flm hom_flm_linear.
+  GRing.isLinear.Build
+    R {freelmod R[a]} {freelmod R[b]} _ freelmod_mor freelmod_mor_linear.
 
-Lemma hom_flmc (x : a) (c : R) : hom_flm [fm / x |-> c] = [fm / f x |-> c].
-Proof. by rewrite -fm1ZE linearZ /= hom_flm1 fm1ZE. Qed.
+Lemma freelmod_morc (x : a) (c : R) :
+  freelmod_mor [fm / x |-> c] = [fm / f x |-> c].
+Proof. by rewrite -fm1ZE linearZ /= freelmod_mor1 fm1ZE. Qed.
 
 End Set_to_FreeLmodule.
+
 
 Section Functor.
 Variable (R : nzRingType).
 
 HB.instance Definition _ (a b : Sets) (f : {hom[Sets] a -> b}) :=
-  @isHom.Build (LModules R) {freemod R[a]} {freemod R[b]}
-    (hom_flm f : (_ : LModules R) -> _) (hom_flm_linear f).
+  @isHom.Build (LModules R) {freelmod R[a]} {freelmod R[b]}
+    (freelmod_mor f : (_ : LModules R) -> _) (freelmod_mor_linear f).
 Definition FreeLModule_mor (a b : Sets) (f : {hom[Sets] a -> b})
-  : {hom[LModules R] {freemod R[a]} -> {freemod R[b]}} := hom_flm f.
+  : {hom[LModules R] {freelmod R[a]} -> {freelmod R[b]}} := freelmod_mor f.
 
 Fact FreeLModule_ext : FunctorLaws.ext FreeLModule_mor.
 Proof.
-move=> /= a b f g eq y; rewrite /hom_mset /hom_flm.
+move=> /= a b f g eq y; rewrite /FreeNModule_mor /freelmod_mor.
 by apply eq_bigr => x _; rewrite eq.
 Qed.
 Fact FreeLModule_id : FunctorLaws.id FreeLModule_mor.
 Proof.
-move=> /= a x /=; rewrite /hom_mset /= -[RHS]fmE.
-by rewrite /hom_flm; apply: eq_bigr => i _.
+move=> /= a x /=; rewrite /FreeNModule_mor /= -[RHS]fmE.
+by rewrite /freelmod_mor; apply: eq_bigr => i _.
 Qed.
 Fact FreeLModule_comp  : FunctorLaws.comp FreeLModule_mor.
 Proof.
 move=> /= a b c f g.
+rewrite /FreeNModule_mor /eq_morphism /comp_morphism /=.
 rewrite -!linear_of_LmodE; apply: linear_fmE => /= x.
-by rewrite /hom_flm /= !(finsupp_fm1, big_seq_fset1, fm1E, eqxx).
+by rewrite /freelmod_mor /= !(finsupp_fm1, big_seq_fset1, fm1E, eqxx).
 Qed.
 
-Definition FreeLModule a : LModules R := {freemod R[a]}.
+Definition FreeLModule_functor a : LModules R := {freelmod R[a]}.
 HB.instance Definition _ :=
-  @isFunctor.Build Sets (LModules R) FreeLModule
+  @isFunctor.Build Sets (LModules R) FreeLModule_functor
      FreeLModule_mor FreeLModule_ext FreeLModule_id FreeLModule_comp.
 
 End Functor.
+Definition FreeLModule (R : Rings) : {functor Sets -> LModules R}
+  := FreeLModule_functor R.
 
 
 Module FreeLModuleAdjoint.
@@ -1519,15 +1741,15 @@ Variable R : nzRingType.
 Implicit Types (a : Sets) (T : LModules R).
 Local Notation fm := (@FreeLModule R).
 Local Notation forgetf := (forget_LModules_to_Sets R).
-Definition eta_fun a (x : a) : {freemod R[a]} := [fm / x |-> 1].
+Definition eta_fun a (x : a) : {freelmod R[a]} := [fm / x |-> 1].
 Definition eta : FId ~~> forgetf \o fm := eta_fun.
 Fact eta_natural : naturality FId (forgetf \o fm) eta.
-Proof. by move=> /= a b h x /=; rewrite /eta_fun FIdf hom_flm1. Qed.
+Proof. by move=> /= a b h x /=; rewrite /eta_fun FIdf freelmod_mor1. Qed.
 HB.instance Definition _ :=
   @isNatural.Build Sets Sets FId (forgetf \o fm) eta eta_natural.
 
 Definition eps_fun T (m : (fm \o forgetf) T) : T :=
-      \sum_(i <- finsupp (m : {freemod R[_]})) (m i) *: i.
+      \sum_(i <- finsupp (m : {freelmod R[_]})) (m i) *: i.
 Fact eps_fun_linear T : linear (@eps_fun T).
 Proof.
 rewrite /eps_fun => c s t; rewrite scaler_sumr.
@@ -1550,8 +1772,9 @@ Definition eps : fm \o forgetf ~~> FId := eps_fun.
 Fact eps_natural : naturality (fm \o forgetf) FId eps.
 Proof.
 move=> /= a b h.
+rewrite /FreeNModule_mor /eq_morphism /comp_morphism /=.
 rewrite -!linear_of_LmodE; apply: linear_fmE => /= x.
-rewrite FIdf /eps_fun /= hom_flm1.
+rewrite FIdf /eps_fun /= freelmod_mor1.
 by rewrite !finsupp_fm1 !big_seq_fset1 !fm1E !eqxx !scale1r.
 Qed.
 HB.instance Definition _ :=
@@ -1561,8 +1784,9 @@ HB.instance Definition _ :=
 Fact triL : TriangularLaws.left eta eps.
 Proof.
 move=> /= a.
+rewrite /FreeNModule_mor /eq_morphism /comp_morphism /=.
 rewrite -!linear_of_LmodE; apply: linear_fmE => /= x.
-rewrite /eta_fun /= /eps_fun /= hom_flm1.
+rewrite /eta_fun /= /eps_fun /= freelmod_mor1.
 by rewrite !finsupp_fm1 !big_seq_fset1 !fm1E !eqxx !scale1r.
 Qed.
 Fact triR : TriangularLaws.right eta eps.
@@ -1586,13 +1810,14 @@ Variables (A : Sets) (M : LModules R) (f : {hom[Sets] A -> M}).
 
 Let Adj := (adjoint_FreeLModule_forget_to_Sets R).
 
-Definition univmap_FreeLModule := AdjointFunctors.hom_inv Adj f.
+Definition univmap_FreeLModule : {hom[LModules R] {freelmod R[A]} -> M} :=
+  AdjointFunctors.hom_inv Adj f.
 
 Lemma univmap_FreeLModuleP a : univmap_FreeLModule [fm / a |-> 1] = f a.
-Proof. by rewrite -[RHS](AdjointFunctors.hom_invK Adj). Qed.
+Proof. by rewrite -[RHS](AdjointFunctors.hom_invK Adj _ _ f a). Qed.
 
-Lemma univmap_FreeLModule_uniq (g : {hom[LModules R] {freemod R[A]} -> M}) :
-  (forall a : A, g [fm / a |-> 1] = f a) -> g =1 univmap_FreeLModule.
+Lemma univmap_FreeLModule_uniq (g : {hom[LModules R] {freelmod R[A]} -> M}) :
+  (forall a : A, g [fm / a |-> 1] = f a) -> g =m= univmap_FreeLModule.
 Proof.
 move=> eq; apply: (AdjointFunctors.hom_iso_inj Adj).
 by move=> a; rewrite AdjointFunctors.hom_invK -{}eq.
@@ -1602,12 +1827,13 @@ End UniversalProperty.
 
 
 Section FunctorialityInRing.
-Variable (A : Sets) (R S : Rings) (f : {rmorphism R -> S}).
+(* shouldn't f be a {hom[Rings] R -> S} ??? *)
+Variable (E : Sets) (R S : Rings) (f : {rmorphism R -> S}).
 
-Definition homRing_FreeLModule (m : {freemod R[A]}) : {freemod S[A]} :=
+Definition homRing_FreeLModule (m : {freelmod R[E]}) : {freelmod S[E]} :=
   \sum_(i <- finsupp m) [fm / i |-> f (m i)].
-Lemma homRing_FreeLModuleP (a : A) :
-  homRing_FreeLModule [fm / a |-> 1] = [fm / a |-> 1].
+Lemma homRing_FreeLModuleP (e : E) :
+  homRing_FreeLModule [fm / e |-> 1] = [fm / e |-> 1].
 Proof.
 by rewrite /homRing_FreeLModule finsupp_fm1 /= big_seq_fset1 fm1E eqxx rmorph1.
 Qed.
@@ -1628,7 +1854,7 @@ rewrite -!(finsupp_widen _ (S := finsupp x `|` finsupp y)%fset) /=.
   by rewrite subr0.
 Qed.
 HB.instance Definition _ :=
-  GRing.isZmodMorphism.Build {freemod R[A]} {freemod S[A]}
+  GRing.isZmodMorphism.Build {freelmod R[E]} {freelmod S[E]}
     homRing_FreeLModule homRing_FreeLModule_is_zmod_morphism.
 
 Fact homRing_FreeLModule_is_scalable :
@@ -1644,12 +1870,12 @@ apply/fsfunP => b; rewrite !scalefmE !fm1E.
 by case: eqP => _; rewrite ?mulr0 // rmorphM.
 Qed.
 HB.instance Definition _ :=
-  GRing.isScalable.Build R {freemod R[A]} {freemod S[A]}
+  GRing.isScalable.Build R {freelmod R[E]} {freelmod S[E]}
     (f \; *:%R) homRing_FreeLModule homRing_FreeLModule_is_scalable.
 
 Lemma homRing_FreeLModule_uniq
-  (g : {linear {freemod R[A]} -> {freemod S[A]} | f \; *:%R}) :
-  (forall a, g [fm / a |-> 1] = [fm / a |-> 1]) -> g =1 homRing_FreeLModule.
+  (g : {linear {freelmod R[E]} -> {freelmod S[E]} | f \; *:%R}) :
+  (forall e, g [fm / e |-> 1] = [fm / e |-> 1]) -> g =m= homRing_FreeLModule.
 Proof.
 move=> eq; apply: linear_fm_scaleE => //= x.
 by rewrite eq homRing_FreeLModuleP.
@@ -1658,16 +1884,17 @@ Qed.
 End FunctorialityInRing.
 
 Section HomRingFreeLModuleFunctor.
-Variables (A : Sets) (R S T : Rings).
+Variables (E : Sets) (R S T : Rings).
 
 Fact homRing_FreeLModule_ext (f g : {rmorphism R -> S}) :
-  f =1 g -> homRing_FreeLModule f (A := A) =1 homRing_FreeLModule g (A := A).
+  f =m= g -> homRing_FreeLModule f (E := E) =m= homRing_FreeLModule g (E := E).
 Proof.
-move=> eq; apply: linear_fm_scaleE => /= [r x /= /[!eq] //|x].
+move=> eq; apply: linear_fm_scaleE => /= [r x /= |x].
+  by rewrite [f r](eq r).
 by rewrite !homRing_FreeLModuleP.
 Qed.
 Fact homRing_FreeLModule_id :
-  homRing_FreeLModule (A := A) (R := R) idfun =1 idfun.
+  homRing_FreeLModule (E := E) (R := R) idfun =m= idfun.
 Proof.
 move=> eq; apply: linear_fm_scaleE => //= x.
 by rewrite !homRing_FreeLModuleP.
@@ -1675,17 +1902,26 @@ Qed.
 
 Variables (f : {rmorphism R -> S}) (g : {rmorphism S -> T}).
 
-Let comp := homRing_FreeLModule g (A := A) \o homRing_FreeLModule f (A := A).
-HB.instance Definition _ := GRing.Additive.on comp.
+#[local] Notation comp :=
+  (homRing_FreeLModule g (E := E) \@ homRing_FreeLModule f (E := E)).
+
+Let comp := homRing_FreeLModule g (E := E) \@ homRing_FreeLModule f (E := E).
 Let comp_is_scalable : scalable_for (g \o f \; *:%R) comp.
 Proof. by rewrite /comp => r x /=; rewrite !linearZ_LR /=. Qed.
-HB.instance Definition _ :=
-  GRing.isScalable.Build R {freemod R[A]} {freemod T[A]}
-    (g \o f \; *:%R) comp comp_is_scalable.
-Fact homRing_FreeLModule_comp : comp =1 homRing_FreeLModule (g \o f) (A := A).
+
+(** Avoid declaring as a a canonical instance => non forgetful inheritance *)
+(** See: https://rocq-prover.zulipchat.com/#narrow/channel/237664-math-comp-users/topic/Linearity.20w.2Er.2Et.20change.20of.20scalar.20and.20compose.20map/near/610998680 *)
+Let fmadd := GRing.Additive.on comp.
+Let fmscal := GRing.isScalable.Build R {freemod R[E]} {freemod T[E]}
+                 (g \o f \; *:%R) (Hom.sort comp) comp_is_scalable.
+Definition comp_homRing_FreeLModule :
+  {linear {freelmod R[E]} -> {freelmod T[E]} | g \o f \; *:%R} :=
+      HB.pack (Hom.sort comp) fmadd fmscal.
+
+Fact homRing_FreeLModule_comp : comp =m= homRing_FreeLModule (g \o f) (E := E).
 Proof.
-apply: linear_fm_scaleE => //= x.
-by rewrite /comp /= !homRing_FreeLModuleP.
+apply: (linear_fm_scaleE (f := comp_homRing_FreeLModule)) => //= x.
+by rewrite !homRing_FreeLModuleP.
 Qed.
 
 End HomRingFreeLModuleFunctor.
@@ -1697,18 +1933,19 @@ Module ForgetSemiRings_to_Monoids.
 HB.instance Definition _ (R S : pzSemiRingType) (f : {rmorphism R -> S}) :=
   @isHom.Build Monoids (multMon R : Monoids) (multMon S : Monoids)
     (multMon_mor f : (_ : Monoids) -> _) (multMon_mor_monmorphism f).
-Definition functor_multMon_fun (R : SemiRings) : Monoids := multMon R.
+Definition multMon_obj (R : SemiRings) : Monoids := multMon R.
 Fact multMon_ext : FunctorLaws.ext (C := SemiRings) multMon_mor.
-Proof. by move=> /= a b f g eq y; rewrite /multMon_mor /= eq. Qed.
+Proof. by move=> /= a b f g eq y; rewrite /= /multMon_mor /= eq. Qed.
 Fact multMon_id : FunctorLaws.id (C := SemiRings) multMon_mor.
 Proof. by move=> /= a x /=; rewrite /multMon_mor /=; exact: val_inj. Qed.
 Fact multMon_comp  : FunctorLaws.comp (C := SemiRings) multMon_mor.
 Proof. by move=> /= a b c f g x; rewrite /multMon_mor /=. Qed.
 HB.instance Definition _ :=
   @isFunctor.Build SemiRings Monoids
-    functor_multMon_fun multMon_mor multMon_ext multMon_id multMon_comp.
-Definition functor : {functor SemiRings -> Monoids} := functor_multMon_fun.
+    multMon_obj multMon_mor multMon_ext multMon_id multMon_comp.
+Definition functor : {functor SemiRings -> Monoids} := multMon_obj.
 
+Definition multComMon_obj (R : ComSemiRings) : ComMonoids := multMon R.
 Definition multComMon_mor (R S : ComSemiRings) (f : {hom[ComSemiRings] R -> S})
   : (multMon R : ComMonoids) -> (multMon S : ComMonoids)
   := multMon_mor (rmorph_of_ComSemiRing f).  (* Why the coercion does't work *)
@@ -1716,7 +1953,6 @@ HB.instance Definition _ (R S : ComSemiRings) (f : {hom[ComSemiRings] R -> S}) :
   @isHom.Build ComMonoids (multMon R : ComMonoids) (multMon S : ComMonoids)
     (multComMon_mor f)
     (multMon_mor_monmorphism (rmorph_of_ComSemiRing f)).
-Definition functor_multComMon_fun (R : ComSemiRings) : ComMonoids := multMon R.
 Fact multComMon_ext : FunctorLaws.ext multComMon_mor.
 Proof. by move=> /= a b f g eq; exact: multMon_ext. Qed.
 Fact multComMon_id : FunctorLaws.id multComMon_mor.
@@ -1725,10 +1961,10 @@ Fact multComMon_comp  : FunctorLaws.comp multComMon_mor.
 Proof. by move=> /= a b c f g x; rewrite /multComMon_mor /multMon_mor. Qed.
 HB.instance Definition _ :=
   @isFunctor.Build ComSemiRings ComMonoids
-    functor_multComMon_fun multComMon_mor
+    multComMon_obj multComMon_mor
     multComMon_ext multComMon_id multComMon_comp.
 Definition functorCom : {functor ComSemiRings -> ComMonoids} :=
-  functor_multComMon_fun.
+  multComMon_obj.
 
 End ForgetSemiRings_to_Monoids.
 
@@ -1736,7 +1972,7 @@ Notation forget_SemiRings_to_Monoids := ForgetSemiRings_to_Monoids.functor.
 Lemma forget_SemiRings_to_MonoidsE a b (f : {hom[SemiRings] a -> b}) :
   forget_SemiRings_to_Monoids # f = multMon_mor f :> (_ -> _).
 Proof. by []. Qed.
-Definition forget_ComSemiRings_to_ComMonoids :=
+Notation forget_ComSemiRings_to_ComMonoids :=
   ForgetSemiRings_to_Monoids.functorCom.
 Lemma forget_ComSemiRings_to_ComMonoidsE a b (f : {hom[ComSemiRings] a -> b}) :
   forget_ComSemiRings_to_ComMonoids # f =
@@ -1746,7 +1982,7 @@ Proof. by []. Qed.
 
 (** Fix the non HB forgetful inheritance SemiRings -> Monoids *)
 Local Notation multSet :=  (* Multiplicative forgetful Sets of a SemiRings *)
-  (forget_Monoids_to_Sets \o forget_SemiRings_to_Monoids).
+  (forget_Monoids_to_Sets \O forget_SemiRings_to_Monoids).
 
 Section FixForgetMultMon.
 Variable (R : SemiRings).
@@ -1794,31 +2030,30 @@ HB.instance Definition _ :=
 Local Open Scope monoid_scope.
 
 (* Adjunction Free L-modules -| forget Algebras -> Monoids *)
-Definition monalg (R : Rings) (A : Monoids) := {freemod R[A]}.
-Notation "{ 'monalg' R [ T ] }" := (monalg R T)
+Definition MonoidAlgebraT (R : Rings) (M : Monoids) := {freemod R[M]}.
+Notation "{ 'monalg' R [ T ] }" := (MonoidAlgebraT R T)
   (at level 0, format "{ 'monalg'  R [ T ] }").
 
 Module MonoidAlgebra.
 Section MonoidAlgebra.
 
-Variable (R : Rings) (A : Monoids).
-Implicit Types (r s : R) (a b c : A) (x y z : {monalg R[A]}).
+Variable (R : Rings) (M : Monoids).
+Implicit Types (r s : R) (a b c : M) (x y z : {monalg R[M]}).
 
-Definition one_ma : {monalg R[A]} := [fm / 1 |-> 1].
-Definition mul_mma a : {hom[LModules R] {monalg R[A]} -> {monalg R[A]}} :=
-  (@FreeLModule R) # [the {hom[Sets] A -> A} of *%M a].
-Lemma mul_mma_comp a b : mul_mma b \o mul_mma a =1 mul_mma (b * a).
+Definition one_ma : {monalg R[M]} := [fm / 1 |-> 1].
+Definition mul_mma a : {hom[LModules R] {monalg R[M]} -> {monalg R[M]}} :=
+  (@FreeLModule R) # [the {hom[Sets] M -> M} of *%M a].
+Lemma mul_mma_comp a b : mul_mma b \@ mul_mma a =m= mul_mma (b * a).
 Proof.
-rewrite /mul_mma => c.
-rewrite -[LHS](functor_o (F := FreeLModule R)).
+rewrite /mul_mma -(functor_o (FreeLModule R)).
 apply: (functor_ext_hom (FreeLModule R)).
 by move=> {}c /=; rewrite mulmA.
 Qed.
 Lemma mul_mmacE a b r : mul_mma a [fm / b |-> r] = [fm / a * b |-> r].
-Proof. by rewrite /mul_mma /= hom_flmc. Qed.
+Proof. by rewrite /mul_mma /= freelmod_morc. Qed.
 
 Let mul_mma_fun x a := mul_mma a x.
-Definition mul_mar x : {hom[LModules R] {monalg R[A]} -> {monalg R[A]}} :=
+Definition mul_mar x : {hom[LModules R] {monalg R[M]} -> {monalg R[M]}} :=
   univmap_FreeLModule (mul_mma_fun x).
 Lemma mul_mar1E x a : mul_mar x [fm / a |-> 1] = mul_mma a x.
 Proof. by rewrite /mul_mar univmap_FreeLModuleP /mul_mma_fun. Qed.
@@ -1859,8 +2094,8 @@ pose f := fun z => mul_mar x z + mul_mar y z; rewrite -[RHS]/(f z).
 have lin_f : linear f.
   move => c u v.
   by rewrite /f -!linear_of_LmodE !linearP scalerDr addrACA -!addrA.
-pose flM := @isHom.Build (LModules R) {monalg R[A]} {monalg R[A]} f lin_f.
-pose fL : {hom[LModules R] {monalg R[A]} -> {monalg R[A]}} := HB.pack f flM.
+pose flM := @isHom.Build (LModules R) {monalg R[M]} {monalg R[M]} f lin_f.
+pose fL : {hom[LModules R] {monalg R[M]} -> {monalg R[M]}} := HB.pack f flM.
 apply: (FreeLModuleE (g := fL)) => a.
 rewrite /fL /f.
 rewrite [RHS]/(mul_mar x [fm / a |-> 1] + mul_mar y [fm / a |-> 1]) !mul_mar1E.
@@ -1874,8 +2109,10 @@ have /[swap] -> := oner_eq0 R.
 by rewrite eqxx.
 Qed.
 #[export]
+HB.instance Definition _ := GRing.Lmodule.on {monalg R[M]}.
+#[export]
 HB.instance Definition _ :=
-  GRing.Zmodule_isNzRing.Build {freemod R[A]}
+  GRing.Zmodule_isNzRing.Build {monalg R[M]}
              mul_maA mul_1ma mul_ma1 mul_maDl mul_maDr one_ma_neq0.
 
 Fact scaler_maAl r x y : (r *: (x * y) = (r *: x) * y)%R.
@@ -1886,7 +2123,7 @@ by rewrite /GRing.mul /= fmcZE !mul_maccE [LHS]fmcZE mulrA.
 Qed.
 #[export]
 HB.instance Definition _ :=
-  GRing.Lmodule_isLalgebra.Build R {freemod R[A]} scaler_maAl.
+  GRing.Lmodule_isLalgebra.Build R {monalg R[M]} scaler_maAl.
 
 End MonoidAlgebra.
 
@@ -1895,47 +2132,57 @@ HB.reexport MonoidAlgebra.
 
 Section Theory.
 
-Variable (R : Rings) (A : Monoids).
-Implicit Types (r s : R) (a b c : A) (x y z : {monalg R[A]}).
+Variable (R : Rings) (M : Monoids).
+Implicit Types (r s : R) (a b c : M) (x y z : {monalg R[M]}).
 
-Lemma onemaE : [fm / 1 |-> 1%R] = 1%R :> {monalg R[A]}.
+#[local] Notation "[ 'ma' / d ]" := ([fm / d] : {monalg R[M]})
+  (at level 0, format "[ 'ma'  /  d ]") : ring_scope.
+
+Lemma onemaE : [ma / 1 |-> 1%R] = 1%R.
 Proof. by []. Qed.
 
 Lemma mulmacE a b r s :
-  ([fm / a |-> r] * [fm / b |-> s])%R = [fm / a * b |-> r * s].
+  ([ma / a |-> r] * [ma / b |-> s])%R = [ma / a * b |-> r * s].
 Proof. by rewrite [LHS]/GRing.mul /= !mul_maccE. Qed.
 Lemma mulmaE a b :
-  ([fm / a |-> 1] * [fm / b |-> 1])%R = [fm / a * b |-> 1] :> {monalg R[A]}.
+  ([ma / a |-> 1] * [ma / b |-> 1])%R = [ma / a * b |-> 1] :> {monalg R[M]}.
 Proof. by rewrite mulmacE mulr1. Qed.
-Lemma prodmacE (I : Type) (f : I -> A) (g : I -> R) (s : seq I) :
-  [fm / \prod_(i <- s) f i |-> (\prod_(i <- s) g i)%R] =
-    (\prod_(i <- s) [fm / f i |-> g i])%R :> {monalg R[A]}.
+Lemma prodmacE (I : Type) (f : I -> M) (g : I -> R) (s : seq I) :
+  [ma / \prod_(i <- s) f i |-> (\prod_(i <- s) g i)%R] =
+    (\prod_(i <- s) [ma / f i |-> g i])%R :> {monalg R[M]}.
 Proof.
 elim: s => [| s0 s IHs]; first by rewrite !big_nil -onemaE.
 by rewrite !big_cons -mulmacE IHs.
 Qed.
-Lemma prodmaE (I : Type) (f : I -> A) (s : seq I) :
-  [fm / \prod_(i <- s) f i |-> 1] =
-    (\prod_(i <- s) [fm / f i |-> 1])%R :> {monalg R[A]}.
+Lemma prodmaE (I : Type) (f : I -> M) (s : seq I) :
+  [ma / \prod_(i <- s) f i |-> 1] =
+    (\prod_(i <- s) [ma / f i |-> 1])%R :> {monalg R[M]}.
 Proof. by have := prodmacE f (fun _=> 1%R) s; rewrite big1_eq. Qed.
 Lemma mulmaccC a b :
-  a * b = b * a -> @GRing.comm {monalg R[A]} [fm / a |-> 1] [fm / b |-> 1].
+  a * b = b * a -> @GRing.comm {monalg R[M]} [ma / a |-> 1] [ma / b |-> 1].
 Proof. by rewrite /GRing.comm => comm; rewrite !mulmacE comm. Qed.
+
+Lemma linear_maE (N : lmodType R) (f g : {linear {monalg R[M]} -> N}) :
+  (forall x : M, f [ma / x |-> 1] = g [ma / x |-> 1]) -> f =1 g.
+Proof. exact: linear_fm_scaleE. Qed.
 
 End Theory.
 End Exports.
 End MonoidAlgebra.
 HB.export MonoidAlgebra.Exports.
 
+Notation "[ 'ma' / d ]" := ([fm / d] : {monalg _[_]})
+  (at level 0, format "[ 'ma'  /  d ]") : ring_scope.
+
 
 Section FunctorMonoidLAlgebra.
 Variable R : Rings.
 
 Section Morphisms.
-Variables (A B : Monoids) (f : {hom[Monoids] A -> B}).
+Variables (M N : Monoids) (f : {hom[Monoids] M -> N}).
 
-Definition hom_fun (a : A) : {monalg R[B]} := [fm / f a |-> 1].
-Definition hom_MonoidLAlgebra : {monalg R[A]} -> {monalg R[B]} :=
+Definition hom_fun (m : M) : {monalg R[N]} := [ma / f m |-> 1].
+Definition hom_MonoidLAlgebra : {monalg R[M]} -> {monalg R[N]} :=
   univmap_FreeLModule hom_fun.
 
 Fact hom_MonoidLAlgebra_is_lalg_morphism : lalg_morphism hom_MonoidLAlgebra.
@@ -1954,50 +2201,52 @@ rewrite /hom_fun !fm1ZE mulmacE.
 by have /= -> := mmorphM f a b.
 Qed.
 HB.instance Definition _ :=
-  @isHom.Build (LAlgebras R) {monalg R[A]} {monalg R[B]}
-    (hom_MonoidLAlgebra : [the LAlgebras R of {monalg R[A]}] -> _)
+  @isHom.Build (LAlgebras R) {monalg R[M]} {monalg R[N]}
+    (hom_MonoidLAlgebra : [the LAlgebras R of {monalg R[M]}] -> _)
     hom_MonoidLAlgebra_is_lalg_morphism.
 Definition MonoidLAlgebra_mor
-  : {hom[LAlgebras R] {monalg R[A]} -> {monalg R[B]}} := hom_MonoidLAlgebra.
+  : {hom[LAlgebras R] {monalg R[M]} -> {monalg R[N]}} := hom_MonoidLAlgebra.
 
 End Morphisms.
 
 
 Fact MonoidLAlgebra_ext : FunctorLaws.ext MonoidLAlgebra_mor.
 Proof.
-rewrite /MonoidLAlgebra_mor => A B f g eq.
-apply univmap_FreeLModule_uniq => a.
+rewrite /MonoidLAlgebra_mor => M N f g eq.
+apply univmap_FreeLModule_uniq => m.
 by rewrite univmap_FreeLModuleP /hom_fun /= eq.
 Qed.
 Fact MonoidLAlgebra_id : FunctorLaws.id MonoidLAlgebra_mor.
 Proof.
-rewrite /MonoidLAlgebra_mor /= => A; apply fsym => x /=.
+rewrite /MonoidLAlgebra_mor /= => M; apply fsym => x /=.
 by have <- := univmap_FreeLModule_uniq (f := hom_fun idfun) (g := idfun) _ x.
 Qed.
 Fact MonoidLAlgebra_comp  : FunctorLaws.comp MonoidLAlgebra_mor.
 Proof.
-rewrite /MonoidLAlgebra_mor => A B C f g; apply fsym => x.
+rewrite /MonoidLAlgebra_mor => M N P f g; apply fsym => x.
 set gf := (X in X x = _).
 have <- // := univmap_FreeLModule_uniq (f := hom_fun (f \o g)) (g := gf) _ x.
 by move=> {x} a; rewrite [LHS]compapp !univmap_FreeLModuleP.
 Qed.
-Definition MonoidLAlgebra (T : Monoids) : LAlgebras R := {monalg R[T]}.
+Definition MonoidLAlgebra_functor (T : Monoids) : LAlgebras R := {monalg R[T]}.
 HB.instance Definition _ :=
   @isFunctor.Build Monoids (LAlgebras R)
-    MonoidLAlgebra MonoidLAlgebra_mor
+    MonoidLAlgebra_functor MonoidLAlgebra_mor
     MonoidLAlgebra_ext MonoidLAlgebra_id MonoidLAlgebra_comp.
 
 End FunctorMonoidLAlgebra.
+Definition MonoidLAlgebra (R : Rings) :
+  {functor Monoids -> LAlgebras R} := MonoidLAlgebra_functor R.
 
 
 Section FunctorialityInRing.
-Variable (R S : Rings) (f : {rmorphism R -> S}) (A : Monoids).
+Variable (R S : Rings) (f : {rmorphism R -> S}) (M : Monoids).
 
-Definition homRing_MonoidLAlgebra : {monalg R[A]} -> {monalg S[A]} :=
-  @homRing_FreeLModule A R S f.
+Definition homRing_MonoidLAlgebra : {monalg R[M]} -> {monalg S[M]} :=
+  @homRing_FreeLModule M R S f.
 HB.instance Definition _ := GRing.Linear.on homRing_MonoidLAlgebra.
-Lemma homRing_MonoidLAlgebraP (a : A) :
-  homRing_MonoidLAlgebra [fm / a |-> 1] = [fm / a |-> 1].
+Lemma homRing_MonoidLAlgebraP (m : M) :
+  homRing_MonoidLAlgebra [ma / m |-> 1] = [ma / m |-> 1].
 Proof. by rewrite /homRing_MonoidLAlgebra homRing_FreeLModuleP. Qed.
 
 Fact homRing_MonoidLAlgebra_is_monoid_morphism :
@@ -2015,30 +2264,30 @@ rewrite !linearZ /= !homRing_FreeLModuleP.
 by rewrite !fm1ZE mulmacE rmorphM.
 Qed.
 HB.instance Definition _ :=
-  GRing.isMonoidMorphism.Build {monalg R[A]} {monalg S[A]}
+  GRing.isMonoidMorphism.Build {monalg R[M]} {monalg S[M]}
     homRing_MonoidLAlgebra homRing_MonoidLAlgebra_is_monoid_morphism.
 
 Lemma homRing_MonoidLAlgebra_uniq
-  (g : {lrmorphism {monalg R[A]} -> {monalg S[A]} | f \; *:%R }) :
-  (forall a, g [fm / a |-> 1] = [fm / a |-> 1]) -> g =1 homRing_MonoidLAlgebra.
-Proof. exact: homRing_FreeLModule_uniq. Qed.
+  (g : {lrmorphism {monalg R[M]} -> {monalg S[M]} | f \; *:%R }) :
+  (forall m, g [ma / m |-> 1] = [ma / m |-> 1]) -> g =m= homRing_MonoidLAlgebra.
+Proof. exact: (homRing_FreeLModule_uniq (g := g)). Qed.
 
 End FunctorialityInRing.
 
 Section HomRingMonoidLAlgebraFunctor.
-Variables (A : Monoids) (R S T : Rings).
+Variables (M : Monoids) (R S T : Rings).
 
 Fact homRing_MonoidLAlgebra_ext (f g : {rmorphism R -> S}) :
-  f =1 g
-  -> homRing_MonoidLAlgebra f (A := A) =1 homRing_MonoidLAlgebra g (A := A).
+  f =m= g
+  -> homRing_MonoidLAlgebra f (M := M) =m= homRing_MonoidLAlgebra g (M := M).
 Proof. exact: homRing_FreeLModule_ext. Qed.
 Fact homRing_MonoidLAlgebra_id :
-  homRing_MonoidLAlgebra (A := A) (R := R) idfun =1 idfun.
+  homRing_MonoidLAlgebra (M := M) (R := R) idfun =m= idfun.
 Proof. exact: homRing_FreeLModule_id. Qed.
 Fact homRing_MonoidLAlgebra_comp
   (f : {rmorphism R -> S}) (g : {rmorphism S -> T}) :
-  homRing_MonoidLAlgebra g (A := A) \o homRing_MonoidLAlgebra f (A := A)
-  =1 homRing_MonoidLAlgebra (g \o f) (A := A).
+  homRing_MonoidLAlgebra g (M := M) \@ homRing_MonoidLAlgebra f (M := M)
+  =m= homRing_MonoidLAlgebra (g \o f) (M := M).
 Proof. exact: homRing_FreeLModule_comp. Qed.
 
 End HomRingMonoidLAlgebraFunctor.
@@ -2048,36 +2297,36 @@ Section FunctorMonoidAlgebra.
 
 Variable (R : ComRings).
 
-Fact scaler_maAr (A : Monoids) r (x y : {freemod R[A]}) :
+Fact scaler_maAr (M : Monoids) r (x y : {monalg R[M]}) :
   (r *: (x * y) = x * (r *: y))%R.
 Proof.
 rewrite -(fmE y) [in RHS]scaler_sumr !mulr_sumr scaler_sumr; apply eq_bigr => a _.
 rewrite -(fmE x) !mulr_suml !scaler_sumr; apply eq_bigr => b _.
 by rewrite !(mulmacE, fmcZE) mulrCA.
 Qed.
-HB.instance Definition _ (A : Monoids) :=
-  GRing.Lalgebra_isAlgebra.Build R {freemod R[A]} (@scaler_maAr A).
+HB.instance Definition _ (M : Monoids) :=
+  GRing.Lalgebra_isAlgebra.Build R {monalg R[M]} (@scaler_maAr M).
 
-Lemma monalgE (A : Monoids) (T : Algebras R)
-  (f g : {hom[Algebras R] {monalg R[A]} -> T}) :
-  (forall a : A, f [fm / a |-> 1] = g [fm / a |-> 1]) -> f =1 g.
+Lemma monalgE (M : Monoids) (A : Algebras R)
+  (f g : {hom[Algebras R] {monalg R[M]} -> A}) :
+  (forall m : M, f [ma / m |-> 1] = g [ma / m |-> 1]) -> f =m= g.
 Proof.
 move=> eq x; rewrite -(lrmorphism_of_AlgebrasE f) -(lrmorphism_of_AlgebrasE g).
-exact: linear_fmE.
+exact: linear_maE.
 Qed.
 
 
 Section MonoidAlgebraHoms.
-Variables (A B : Monoids) (f : {hom[Monoids] A -> B}).
+Variables (M N : Monoids) (f : {hom[Monoids] M -> N}).
 
 Definition hom_MonoidAlgebra :=
-  (@hom_MonoidLAlgebra R A B f: [the Algebras R of {monalg R[A]}] -> _).
+  (@hom_MonoidLAlgebra R M N f: [the Algebras R of {monalg R[M]}] -> _).
 
 HB.instance Definition _  :=
-  @isHom.Build (Algebras R) {monalg R[A]} {monalg R[B]}
-    hom_MonoidAlgebra (@hom_MonoidLAlgebra_is_lalg_morphism R A B f).
+  @isHom.Build (Algebras R) {monalg R[M]} {monalg R[N]}
+    hom_MonoidAlgebra (@hom_MonoidLAlgebra_is_lalg_morphism R M N f).
 Definition MonoidAlgebra_mor
-  : {hom[Algebras R] {monalg R[A]} -> {monalg R[B]}} := hom_MonoidAlgebra.
+  : {hom[Algebras R] {monalg R[M]} -> {monalg R[N]}} := hom_MonoidAlgebra.
 
 End MonoidAlgebraHoms.
 
@@ -2087,60 +2336,61 @@ Fact MonoidAlgebra_id : FunctorLaws.id MonoidAlgebra_mor.
 Proof. exact: MonoidLAlgebra_id. Qed.
 Fact MonoidAlgebra_comp  : FunctorLaws.comp MonoidAlgebra_mor.
 Proof. exact: MonoidLAlgebra_comp. Qed.
-Definition MonoidAlgebra (T : Monoids) : Algebras R := {monalg R[T]}.
+Definition MonoidAlgebra_functor (M : Monoids) : Algebras R := {monalg R[M]}.
 HB.instance Definition _ :=
   @isFunctor.Build Monoids (Algebras R)
-    MonoidAlgebra MonoidAlgebra_mor
+    MonoidAlgebra_functor MonoidAlgebra_mor
     MonoidAlgebra_ext MonoidAlgebra_id MonoidAlgebra_comp.
 
 End FunctorMonoidAlgebra.
+Definition MonoidAlgebra (R : ComRings) : {functor Monoids -> Algebras R}
+  := MonoidAlgebra_functor R.
 
 
 (** Adjunction Monoid Algebras |- forget Algebras to Monoids *)
-Definition forget_Algebras_to_Monoids R : {functor Algebras R -> Monoids} :=
-  forget_SemiRings_to_Monoids
-    \O forget_Rings_to_SemiRings
-    \O (@forget_LAlgebras_to_Rings R) \O (@forget_Algebras_to_LAlgebras R).
+Definition forget_Algebras_to_Monoids R :=
+  forget_SemiRings_to_Monoids \O forget_Rings_to_SemiRings
+    \O @forget_LAlgebras_to_Rings R \O @forget_Algebras_to_LAlgebras R.
 
 
 Module MonoidAlgebraAdjoint.
 Section Adjoint.
 Variable R : ComRings.
-Implicit Types (A : Monoids) (T : Algebras R).
+Implicit Types (M : Monoids) (A : Algebras R).
 
 Local Notation forgetf := (forget_Algebras_to_Monoids R).
 Local Notation fMA := (MonoidAlgebra R).
 
 Section def_ETA.
-Variable A : Monoids.
+Variable M : Monoids.
 
-Definition eta_fun (a : A) : (forgetf \o fMA) A := @to_multMon _ [fm / a |-> 1].
+Definition eta_fun (m : M) : (forgetf \O fMA) M := @to_multMon _ [ma / m |-> 1].
 Fact eta_fun_monmorphism : monmorphism eta_fun.
 Proof.
-split => //; rewrite /eta_fun => a b.
+split => //; rewrite /eta_fun => x y.
 by rewrite monME mulmacE mulr1.
 Qed.
 HB.instance Definition _ :=
-  isHom.Build Monoids A ((forgetf \o fMA) A) eta_fun eta_fun_monmorphism.
+  isHom.Build Monoids M ((forgetf \O fMA) M) eta_fun eta_fun_monmorphism.
 
 End def_ETA.
 
-Definition eta : FId ~~> forgetf \o fMA := eta_fun.
-Fact eta_natural : naturality FId (forgetf \o fMA) eta.
+Definition eta : FId ~~> forgetf \O fMA := eta_fun.
+Fact eta_natural : naturality FId (forgetf \O fMA) eta.
 Proof.
-move=> /= A B h x /=; rewrite FIdf /eta_fun /=.
+move=> /= M N h x /=; rewrite FIdf /eta_fun /=.
 by rewrite /multMon_mor /= /hom_MonoidAlgebra univmap_FreeLModuleP.
 Qed.
 HB.instance Definition _ :=
-  @isNatural.Build Monoids Monoids FId (forgetf \o fMA) eta eta_natural.
+  @isNatural.Build Monoids Monoids FId (forgetf \O fMA) eta eta_natural.
 
 Section def_EPS.
-Variable T : Algebras R.
+Variable A : Algebras R.
 
-Definition eps_fun (m : (fMA \o forgetf) T) : T :=
-  (\sum_(i <- finsupp (m : {freemod R[_]})) (m i *: \val i)).
+Definition eps_fun (m : (fMA \O forgetf) A) : A :=
+  (\sum_(i <- finsupp (m : {monalg R[_]})) (m i *: \val i)).
 
-Lemma eps_fun1E t r : eps_fun [fm / t |-> r] = r *: \val t.
+Lemma eps_fun1E t r : eps_fun [ma / t |-> r] = r *: \val t.
 Proof.
 rewrite /eps_fun.
 case : (altP (r =P 0)) => [-> | /finsupp_fmZ ->].
@@ -2165,7 +2415,7 @@ rewrite -big_split /=; apply: eq_bigr => a _.
   by rewrite mulr0 addr0.
 Qed.
 HB.instance Definition _ :=
-  GRing.isLinear.Build R ((fMA \o forgetf) T) T _ eps_fun eps_fun_linear.
+  GRing.isLinear.Build R ((fMA \O forgetf) A) A _ eps_fun eps_fun_linear.
 
 Fact eps_fun_is_lalg_morphism : lalg_morphism eps_fun.
 Proof.
@@ -2179,13 +2429,13 @@ rewrite mulmacE !eps_fun1E /=.
 by rewrite -!scalerAr -!scalerAl scalerA mulrC.
 Qed.
 HB.instance Definition _ :=
-  isHom.Build (Algebras R) ((fMA \o forgetf) T) T
+  isHom.Build (Algebras R) ((fMA \O forgetf) A) A
     eps_fun eps_fun_is_lalg_morphism.
 
 End def_EPS.
 
-Definition eps : fMA \o forgetf ~~> FId := eps_fun.
-Fact eps_natural : naturality (fMA \o forgetf) FId eps.
+Definition eps : fMA \O forgetf ~~> FId := eps_fun.
+Fact eps_natural : naturality (fMA \O forgetf) FId eps.
 Proof.
 move=> /= A B h x /=; rewrite FIdf -(fmE x); move: (finsupp x) => S.
 rewrite [eps_fun _]linear_sum /= -lrmorphism_of_AlgebrasE [LHS]linear_sum.
@@ -2199,11 +2449,12 @@ have /= -> := forget_Algebras_to_LAlgebrasE h.
 by rewrite -!lrmorphism_of_AlgebrasE linearZ.
 Qed.
 HB.instance Definition _ :=
-  @isNatural.Build (Algebras R) (Algebras R) (fMA \o forgetf) FId eps eps_natural.
+  @isNatural.Build (Algebras R) (Algebras R) (fMA \O forgetf) FId eps eps_natural.
 
 Fact triL : TriangularLaws.left eta eps.
 Proof.
 move=> /= a.
+rewrite /FreeNModule_mor /eq_morphism /comp_morphism /=.
 rewrite -linear_of_LmodE; apply: linear_fmE => x /=.
 rewrite -[X in eps_fun X]/(univmap_FreeLModule _ _) univmap_FreeLModuleP /=.
 by rewrite /eta_fun /= eps_fun1E scale1r /=.
@@ -2225,18 +2476,20 @@ Section UniversalProperty.
 
 Variable (R : ComRings).
 
-Variables (A : Monoids) (M : Algebras R)
-  (f : {hom[Monoids] A -> forget_Algebras_to_Monoids R M}).
+Variables (M : Monoids) (A : Algebras R)
+  (f : {hom[Monoids] M -> forget_Algebras_to_Monoids R A}).
 
 Let Adj := adjoint_MonoidAlgebra_forget_to_Monoids R.
 
-Definition univmap_MonoidAlgebra := AdjointFunctors.hom_inv Adj f.
+Definition univmap_MonoidAlgebra : {hom[Algebras R] {monalg R[M]} -> A}
+  := AdjointFunctors.hom_inv Adj f.
 
-Lemma univmap_MonoidAlgebraP a : univmap_MonoidAlgebra [fm / a |-> 1] = \val (f a).
-Proof. by rewrite -[in RHS](AdjointFunctors.hom_invK Adj). Qed.
+Lemma univmap_MonoidAlgebraP m :
+  univmap_MonoidAlgebra [fm / m |-> 1] = \val (f m).
+Proof. by rewrite -[in RHS](AdjointFunctors.hom_invK Adj _ _ f m). Qed.
 
-Lemma univmap_MonoidAlgebra_uniq (g : {hom[Algebras R] {monalg R[A]} -> M}) :
-  (forall a : A, g [fm / a |-> 1] = \val (f a)) -> g =1 univmap_MonoidAlgebra.
+Lemma univmap_MonoidAlgebra_uniq (g : {hom[Algebras R] {monalg R[M]} -> A}) :
+  (forall m : M, g [ma / m |-> 1] = \val (f m)) -> g =m= univmap_MonoidAlgebra.
 Proof.
 move=> eq; apply: (AdjointFunctors.hom_iso_inj Adj).
 move=> a; rewrite AdjointFunctors.hom_invK.
@@ -2245,25 +2498,28 @@ Qed.
 
 End UniversalProperty.
 
+Definition homRing_MonoidAlgebra (R S : ComRings) (f : {rmorphism R -> S})
+           (M : Monoids) := homRing_MonoidLAlgebra f (M := M).
+
 
 Definition FreeAlgebra R := MonoidAlgebra R \O FreeMonoid.
 Notation "{ 'freealg' R [ T ] }" := (FreeAlgebra R T)
   (at level 0, format "{ 'freealg'  R [ T ] }").
 
-Definition falg_gen {R} S i : {freealg R[S]} := [fm / [fmon i] |-> 1].
+Definition falg_gen {R} S i : {freealg R[S]} := [ma / [fmon i] |-> 1].
 
 Section FreeAlgebraTheory.
-Variable (R : ComRings) (A : Sets).
-Implicit Types (x y : {freealg R[A]}).
+Variable (R : ComRings) (E : Sets).
+Implicit Types (x y : {freealg R[E]}).
 
-Lemma freealg1E : 1%R = [fm / 1%M |-> 1] :> {freealg R[A]}.
+Lemma freealg1E : 1%R = [ma / 1%M |-> 1] :> {freealg R[E]}.
 Proof. by []. Qed.
 Lemma freealgE x :
   \sum_(m <- finsupp x) x m *: \prod_(i <- m) falg_gen i = x.
 Proof.
 rewrite -[RHS](fmE x); apply: eq_bigr => m _.
 rewrite -fm1ZE; congr (_ *: _).
-rewrite /falg_gen -prodmaE; congr [fm / _ |-> 1].
+rewrite /falg_gen -prodmaE; congr [ma / _ |-> 1].
 by rewrite freemonE.
 Qed.
 
@@ -2299,10 +2555,10 @@ Definition transf_multmon_to_Algebra : forgetMult ~> forget_Algebras_to_Sets R
               forget_Algebra_to_Semirings].
 
 Lemma transf_Algebra_to_multmonE A :
-  transf_Algebra_to_multmon A =1 transf_to_multmon A.
+  transf_Algebra_to_multmon A =m= transf_to_multmon A.
 Proof. by move=> a; rewrite /= !HCompId. Qed.
 Lemma transf_multmon_to_AlgebraE A :
-  transf_multmon_to_Algebra A =1 transf_from_multmon A.
+  transf_multmon_to_Algebra A =m= transf_from_multmon A.
 Proof. by move=> a; rewrite /= !HCompId. Qed.
 Lemma transf_Algebra_to_multmonK A :
   cancel (transf_Algebra_to_multmon A) (transf_multmon_to_Algebra A).
@@ -2326,8 +2582,7 @@ Section UniversalProperty.
 
 Variable (R : ComRings).
 
-Variables (S : Sets) (A : Algebras R)
-  (f : {hom[Sets] S -> forget_Algebras_to_Sets R A}).
+Variables (E : Sets) (A : Algebras R) (f : {hom[Sets] E -> A}).
 
 Let Adj := adjoint_FreeAlgebra_forget_to_Sets R.
 
@@ -2335,62 +2590,62 @@ Definition univmap_FreeAlgebra := AdjointFunctors.hom_inv Adj f.
 
 Lemma univmap_FreeAlgebraP i : univmap_FreeAlgebra (falg_gen i) = f i.
 Proof.
-rewrite -[RHS](AdjointFunctors.hom_invK Adj) /=; repeat congr (_ _).
-by rewrite !HCompId /= HIdComp.
+rewrite -[RHS](AdjointFunctors.hom_invK Adj _ _ f i) /=; repeat congr (_ _).
+by rewrite !HCompId /= !HIdComp /= HCompId.
 Qed.
 
-Lemma eta_FreeAlgebraE i : AdjointFunctors.eta Adj S i = falg_gen i.
+Lemma eta_FreeAlgebraE i : AdjointFunctors.eta Adj E i = falg_gen i.
 Proof.
 rewrite /= !HCompId /transf_from_multmon /transf_from_multmon_fun /=.
-by rewrite HIdComp /=.
+by rewrite HIdComp /= HCompId.
 Qed.
 
-Lemma univmap_FreeAlgebra_uniq (g : {hom[Algebras R] {freealg R[S]} -> A}) :
-  (forall i : S, g (falg_gen i) = f i) -> g =1 univmap_FreeAlgebra.
+Lemma univmap_FreeAlgebra_uniq (g : {hom[Algebras R] {freealg R[E]} -> A}) :
+  (forall e : E, g (falg_gen e) = f e) -> g =m= univmap_FreeAlgebra.
 Proof.
 move=> eq; apply: (AdjointFunctors.hom_iso_inj Adj).
-move=> i; rewrite AdjointFunctors.hom_invK -{}eq.
-by have /= -> := eta_FreeAlgebraE i.
+move=> e; rewrite AdjointFunctors.hom_invK -{}eq.
+by have /= -> := eta_FreeAlgebraE e.
 Qed.
 
 End UniversalProperty.
 
 
 Section FunctorialityInRing.
-Variable (R S : ComRings) (f : {rmorphism R -> S}) (A : Sets).
+Variable (R S : ComRings) (f : {rmorphism R -> S}) (E : Sets).
 
-Definition homRing_FreeAlgebra : {freealg R[A]} -> {freealg S[A]} :=
-  @homRing_MonoidLAlgebra R S f (FreeMonoid A).
+Definition homRing_FreeAlgebra : {freealg R[E]} -> {freealg S[E]} :=
+  @homRing_MonoidLAlgebra R S f (FreeMonoid E).
 HB.instance Definition _ := GRing.LRMorphism.on homRing_FreeAlgebra.
 
 Lemma homRing_FreeAlgebraP i :
   homRing_FreeAlgebra (falg_gen i) = falg_gen i.
 Proof. by rewrite /homRing_FreeAlgebra homRing_MonoidLAlgebraP. Qed.
 Lemma homRing_FreeAlgebra_uniq
-  (g : {lrmorphism {freealg R[A]} -> {freealg S[A]} | f \; *:%R }) :
-  (forall i, g (falg_gen i) = falg_gen i) ->
-  g =1 homRing_FreeAlgebra.
+  (g : {lrmorphism {freealg R[E]} -> {freealg S[E]} | f \; *:%R }) :
+  (forall e : E, g (falg_gen e) = falg_gen e) ->
+  g =m= homRing_FreeAlgebra.
 Proof.
-move=> eq; apply: homRing_MonoidLAlgebra_uniq => /= a.
-rewrite -!/[fm / _ |-> _] -(freemonE a) !prodmaE rmorph_prod.
-by apply: eq_bigr => i _; exact: eq.
+move=> eq; apply: homRing_MonoidLAlgebra_uniq => /= x.
+rewrite -!/[fm / _ |-> _] -(freemonE x) !prodmaE rmorph_prod.
+by apply: eq_bigr => e _; exact: eq.
 Qed.
 
 End FunctorialityInRing.
 
 Section HomRingFreeAlgebraFunctor.
-Variables (A : Monoids) (R S T : ComRings).
+Variables (M : Monoids) (R S T : ComRings).
 
 Fact homRing_FreeAlgebra_ext (f g : {rmorphism R -> S}) :
-  f =1 g -> homRing_FreeAlgebra f (A := A) =1 homRing_FreeAlgebra g (A := A).
+  f =m= g -> homRing_FreeAlgebra f (E := M) =m= homRing_FreeAlgebra g (E := M).
 Proof. exact: homRing_FreeLModule_ext. Qed.
 Fact homRing_FreeAlgebra_id :
-  homRing_FreeAlgebra (A := A) (R := R) idfun =1 idfun.
+  homRing_FreeAlgebra (E := M) (R := R) idfun =m= idfun.
 Proof. exact: homRing_FreeLModule_id. Qed.
 Fact homRing_FreeAlgebra_comp
   (f : {rmorphism R -> S}) (g : {rmorphism S -> T}):
-  homRing_FreeAlgebra g (A := A) \o homRing_FreeAlgebra f (A := A)
-  =1 homRing_FreeAlgebra (g \o f) (A := A).
+  homRing_FreeAlgebra g (E := M) \@ homRing_FreeAlgebra f (E := M)
+  =m= homRing_FreeAlgebra (g \o f) (E := M).
 Proof. exact: homRing_FreeLModule_comp. Qed.
 
 End HomRingFreeAlgebraFunctor.
@@ -2398,42 +2653,37 @@ End HomRingFreeAlgebraFunctor.
 
 Section ComMonoidAlgebra.
 
-Variable (R : ComRings) (A : ComMonoids).
-Implicit Types (r s : R) (a b c : A) (x y z : {monalg R[A]}).
+Variable (R : ComRings) (M : ComMonoids).
+Implicit Types (r s : R) (a b c : M) (x y z : {monalg R[M]}).
 
-Fact mulma_comm : commutative (@GRing.mul {monalg R[A]}).
+Fact mulma_comm : commutative (@GRing.mul {monalg R[M]}).
 Proof.
 move=> x y; rewrite -(fmE y) mulr_suml mulr_sumr; apply eq_bigr => b _.
 rewrite -(fmE x) mulr_suml mulr_sumr; apply eq_bigr => a _.
 by rewrite !mulmacE mulrC mulmC.
 Qed.
-HB.instance Definition _ := GRing.Lalgebra.on {monalg R[A]}.
 HB.instance Definition _ :=
-  GRing.PzSemiRing_hasCommutativeMul.Build {monalg R[A]} mulma_comm.
-HB.instance Definition _ :=
-  GRing.Lalgebra_isComAlgebra.Build R {monalg R[A]}.
+  GRing.PzSemiRing_hasCommutativeMul.Build {monalg R[M]} mulma_comm.
 
 End ComMonoidAlgebra.
 
 
 Section ComMonoidAlgebraHoms.
 
-Variables (R : ComRings) (A B : ComMonoids) (f : A -> B).
-Hypothesis f_homcm : @inhom ComMonoids A B f.
+Variables (R : ComRings) (M N : ComMonoids) (f : M -> N).
+Hypothesis f_homcm : @inhom ComMonoids M N f.
 
-Let fm : (A : Monoids) -> (B : Monoids) := f.
-Lemma fm_homm : @inhom Monoids A B fm.
+Let fm : (M : Monoids) -> (N : Monoids) := f.
+Lemma fm_homm : @inhom Monoids M N fm.
 Proof. exact: f_homcm. Qed.
 HB.instance Definition _  :=
-  isHom.Build Monoids (A : Monoids) (B : Monoids) fm fm_homm.
-Definition fm_tmp : {hom[Monoids] A -> B} := fm.
-Definition ComMonoidAlgebra_fun : ({monalg R[A]} : ComAlgebras R)
-             -> ({monalg R[B]} : ComAlgebras R) := MonoidAlgebra R # fm_tmp.
+  isHom.Build Monoids (M : Monoids) (N : Monoids) fm fm_homm.
+Definition fm_tmp : {hom[Monoids] M -> N} := fm.
+Definition cmonalg_mor : ({monalg R[M]} : ComAlgebras R)
+             -> ({monalg R[N]} : ComAlgebras R) := MonoidAlgebra R # fm_tmp.
 HB.instance Definition _  :=
-  @isHom.Build (ComAlgebras R) {monalg R[A]} {monalg R[B]}
-    ComMonoidAlgebra_fun (@hom_MonoidLAlgebra_is_lalg_morphism R A B fm).
-Definition ComMonoidAlgebra_mor_tmp :
-  {hom[ComAlgebras R] {monalg R[A]} -> {monalg R[B]}} := ComMonoidAlgebra_fun.
+  @isHom.Build (ComAlgebras R) {monalg R[M]} {monalg R[N]}
+    cmonalg_mor (@hom_MonoidLAlgebra_is_lalg_morphism R M N fm).
 
 End ComMonoidAlgebraHoms.
 
@@ -2442,14 +2692,10 @@ Section FunctorComMonoidAlgebra.
 
 Variable R : ComRings.
 
-Definition forget_Hom_ComMonoid_to_Monoid A B (f : {hom[ComMonoids] A -> B}) :=
+Definition forget_Hom_ComMonoid_to_Monoid M N (f : {hom[ComMonoids] M -> N}) :=
   fm_tmp (isHom_inhom f).
-Definition ComMonoidAlgebra_mor A B (f : {hom[ComMonoids] A -> B}) :=
-  ComMonoidAlgebra_mor_tmp R (isHom_inhom f).
-
-Lemma ComMonoidAlgebra_morE A B (f : {hom[ComMonoids] A -> B}) :
-  ComMonoidAlgebra_mor f =1 MonoidAlgebra R # (forget_Hom_ComMonoid_to_Monoid f).
-Proof. by []. Qed.
+Definition ComMonoidAlgebra_mor M N (f : {hom[ComMonoids] M -> N}) :=
+  cmonalg_mor (R := R) (isHom_inhom f).
 
 Fact ComMonoidAlgebra_ext : FunctorLaws.ext ComMonoidAlgebra_mor.
 Proof. by move=> M N f g eq; apply: MonoidAlgebra_ext. Qed.
@@ -2462,60 +2708,62 @@ exact: (MonoidLAlgebra_comp
     (forget_Hom_ComMonoid_to_Monoid f) (forget_Hom_ComMonoid_to_Monoid g)).
 Qed.
 
-Definition ComMonoidAlgebra (T : ComMonoids) : ComAlgebras R := {monalg R[T]}.
+Definition ComMonoidAlgebra_functor (M : ComMonoids) : ComAlgebras R
+  := {monalg R[M]}.
 HB.instance Definition _ :=
   @isFunctor.Build ComMonoids (ComAlgebras R)
-    ComMonoidAlgebra ComMonoidAlgebra_mor
+    ComMonoidAlgebra_functor ComMonoidAlgebra_mor
     ComMonoidAlgebra_ext ComMonoidAlgebra_id ComMonoidAlgebra_comp.
 
 End FunctorComMonoidAlgebra.
+Definition ComMonoidAlgebra (R : ComRings)
+  : {functor ComMonoids -> ComAlgebras R} := ComMonoidAlgebra_functor R.
 
 
 (** Adjunction ComMonoid Algebras |- forget ComAlgebras to ComMonoids *)
 Definition forget_ComAlgebras_to_ComMonoids R
-  : {functor ComAlgebras R -> ComMonoids}
   := forget_ComSemiRings_to_ComMonoids
     \O forget_ComRings_to_ComSemiRings \O forget_ComAlgebras_to_ComRings R.
 
 Module ComMonoidAlgebraAdjoint.
 Section Adjoint.
 Variable R : ComRings.
-Implicit Types (A : ComMonoids) (T : ComAlgebras R).
+Implicit Types (M : ComMonoids) (A : ComAlgebras R).
 
 Local Notation forgetf := (forget_ComAlgebras_to_ComMonoids R).
 Local Notation fMA := (ComMonoidAlgebra R).
 
 Section def_ETA.
-Variable A : ComMonoids.
+Variable M : ComMonoids.
 
-Definition eta_fun (a : A) : (forgetf \o fMA) A := @to_multMon _ [fm / a |-> 1].
+Definition eta_fun (m : M) : (forgetf \O fMA) M := @to_multMon _ [ma / m |-> 1].
 Fact eta_fun_monmorphism : monmorphism eta_fun.
 Proof.
 split => //; rewrite /eta_fun => a b.
 by rewrite monME mulmacE mulr1.
 Qed.
 HB.instance Definition _ :=
-  isHom.Build ComMonoids A ((forgetf \o fMA) A) eta_fun eta_fun_monmorphism.
+  isHom.Build ComMonoids M ((forgetf \O fMA) M) eta_fun eta_fun_monmorphism.
 
 End def_ETA.
 
-Definition eta : FId ~~> forgetf \o fMA := eta_fun.
-Fact eta_natural : naturality FId (forgetf \o fMA) eta.
+Definition eta : FId ~~> forgetf \O fMA := eta_fun.
+Fact eta_natural : naturality FId (forgetf \O fMA) eta.
 Proof.
-move=> /= A B h x /=; rewrite FIdf /eta_fun /=.
+move=> /= M N h x /=; rewrite FIdf /eta_fun /=.
 rewrite /ForgetSemiRings_to_Monoids.multComMon_mor /multMon_mor.
 by rewrite /= /hom_MonoidAlgebra univmap_FreeLModuleP.
 Qed.
 HB.instance Definition _ :=
-  @isNatural.Build ComMonoids ComMonoids FId (forgetf \o fMA) eta eta_natural.
+  @isNatural.Build ComMonoids ComMonoids FId (forgetf \O fMA) eta eta_natural.
 
 Section def_EPS.
-Variable T : ComAlgebras R.
+Variable A : ComAlgebras R.
 
-Definition eps_fun (m : (fMA \o forgetf) T) : T :=
-  (\sum_(i <- finsupp (m : {freemod R[_]})) (m i *: \val i)).
+Definition eps_fun (m : (fMA \o forgetf) A) : A :=
+  (\sum_(i <- finsupp (m : {monalg R[_]})) (m i *: \val i)).
 
-Lemma eps_fun1E t r : eps_fun [fm / t |-> r] = r *: \val t.
+Lemma eps_fun1E t r : eps_fun [ma / t |-> r] = r *: \val t.
 Proof.
 rewrite /eps_fun.
 case : (altP (r =P 0)) => [-> | /finsupp_fmZ ->].
@@ -2540,7 +2788,7 @@ rewrite -big_split /=; apply: eq_bigr => a _.
   by rewrite mulr0 addr0.
 Qed.
 HB.instance Definition _ :=
-  GRing.isLinear.Build R ((fMA \o forgetf) T) T _ eps_fun eps_fun_linear.
+  GRing.isLinear.Build R ((fMA \o forgetf) A) A _ eps_fun eps_fun_linear.
 
 Fact eps_fun_is_lalg_morphism : lalg_morphism eps_fun.
 Proof.
@@ -2554,7 +2802,7 @@ rewrite mulmacE !eps_fun1E /=.
 by rewrite -!scalerAr -!scalerAl scalerA mulrC.
 Qed.
 HB.instance Definition _ :=
-  isHom.Build (ComAlgebras R) ((fMA \o forgetf) T) T
+  isHom.Build (ComAlgebras R) ((fMA \o forgetf) A) A
     eps_fun eps_fun_is_lalg_morphism.
 
 End def_EPS.
@@ -2564,7 +2812,7 @@ Fact eps_natural : naturality (fMA \o forgetf) FId eps.
 Proof.
 move=> /= A B h x /=; rewrite FIdf -(fmE x); move: (finsupp x) => S.
 rewrite [eps_fun _]linear_sum /= -lrmorphism_of_ComAlgebrasE [LHS]linear_sum.
-rewrite -(lrmorphism_of_ComAlgebrasE (ComMonoidAlgebra_fun _)).
+rewrite -(lrmorphism_of_ComAlgebrasE (cmonalg_mor _)).
 rewrite [X in _ = eps_fun X]linear_sum [eps_fun _]linear_sum.
 apply eq_bigr => {S} a _ /=.
 rewrite eps_fun1E -[X in eps_fun (_ _ X)](fm1ZE _ (x _)).
@@ -2580,6 +2828,7 @@ HB.instance Definition _ :=
 Fact triL : TriangularLaws.left eta eps.
 Proof.
 move=> /= a.
+rewrite /FreeNModule_mor /eq_morphism /comp_morphism /=.
 rewrite -linear_of_LmodE; apply: linear_fmE => x /=.
 rewrite -[X in eps_fun X]/(univmap_FreeLModule _ _) univmap_FreeLModuleP /=.
 by rewrite /eta_fun /= eps_fun1E scale1r /=.
@@ -2603,19 +2852,22 @@ Section UniversalProperty.
 
 Variable (R : ComRings).
 
-Variables (A : ComMonoids) (M : ComAlgebras R)
-  (f : {hom[ComMonoids] A -> forget_ComAlgebras_to_ComMonoids R M}).
+Variables (M : ComMonoids) (A : ComAlgebras R)
+  (f : {hom[ComMonoids] M -> forget_ComAlgebras_to_ComMonoids R A}).
 
 Let Adj := adjoint_ComMonoidAlgebra_forget_to_ComMonoids R.
 
-Definition univmap_ComMonoidAlgebra := AdjointFunctors.hom_inv Adj f.
+Definition univmap_ComMonoidAlgebra : {hom[ComAlgebras R] {monalg R[M]} -> A}
+  := AdjointFunctors.hom_inv Adj f.
 
 Lemma univmap_ComMonoidAlgebraP a :
-  univmap_ComMonoidAlgebra [fm / a |-> 1] = \val (f a).
-Proof. by rewrite -[in RHS](AdjointFunctors.hom_invK Adj). Qed.
+  univmap_ComMonoidAlgebra [ma / a |-> 1] = \val (f a).
+Proof. by rewrite -[in RHS](AdjointFunctors.hom_invK Adj _ _ f a). Qed.
 
-Lemma univmap_ComMonoidAlgebra_uniq (g : {hom[ComAlgebras R] {monalg R[A]} -> M}) :
-  (forall a : A, g [fm / a |-> 1] = \val (f a)) -> g =1 univmap_ComMonoidAlgebra.
+Lemma univmap_ComMonoidAlgebra_uniq
+  (g : {hom[ComAlgebras R] {monalg R[M]} -> A}) :
+  (forall a : M, g [ma / a |-> 1] = \val (f a))
+  -> g =m= univmap_ComMonoidAlgebra.
 Proof.
 move=> eq; apply: (AdjointFunctors.hom_iso_inj Adj).
 move=> a; rewrite AdjointFunctors.hom_invK.
@@ -2623,6 +2875,9 @@ by apply val_inj; rewrite -eq.
 Qed.
 
 End UniversalProperty.
+Definition homRing_ComMonoidAlgebra (R S : ComRings) (f : {rmorphism R -> S})
+           (M : ComMonoids) := homRing_MonoidAlgebra f (M := M).
+
 
 
 (** Fix the non HB forgetful inheritance ComSemiRings -> ComMonoids *)
@@ -2676,13 +2931,13 @@ Definition FreeComAlgebra R := ComMonoidAlgebra R \O FreeComMonoid.
 Notation "{ 'freecalg' R [ T ] }" := (FreeComAlgebra R T)
   (at level 0, format "{ 'freecalg'  R [ T ] }").
 
-Definition fcalg_gen R S i : {freecalg R[S]} := [fm / cmon_gen i |-> 1].
+Definition fcalg_gen R S i : {freecalg R[S]} := [ma / cmon_gen i |-> 1].
 
 Section FreeComAlgebraTheory.
 Variable (R : ComRings) (A : Sets).
 Implicit Types (x y : {freecalg R[A]}).
 
-Lemma freecalg1E : 1%R = [fm / 1%M |-> 1] :> {freecalg R[A]}.
+Lemma freecalg1E : 1%R = [ma / 1%M |-> 1] :> {freecalg R[A]}.
 Proof. by []. Qed.
 Lemma freecalgE x :
   \sum_(m <- finsupp x) x m *: \prod_(i <- enum_freecmon m) fcalg_gen R i = x.
@@ -2707,7 +2962,7 @@ Definition forget_ComAlgebra_to_ComSemirings :=
 
 Definition transf_ComAlgebra_to_multcmon :
   forget_ComAlgebras_to_Sets R ~> forgetCMult
-  := 
+  :=
   [NEq forget_ComMonoids_to_Sets \O forget_ComSemiRings_to_ComMonoids \O
          forget_ComAlgebra_to_ComSemirings,
        forgetCMult]
@@ -2717,7 +2972,7 @@ Definition transf_ComAlgebra_to_multcmon :
 
 Definition transf_multcmon_to_ComAlgebra :
   forgetCMult ~> forget_ComAlgebras_to_Sets R
-  := 
+  :=
   [NEq forget_ComSemiRings_to_Sets \O forget_ComAlgebra_to_ComSemirings,
        forget_ComAlgebras_to_Sets R]
     \v (transf_from_multcmon \h NId forget_ComAlgebra_to_ComSemirings)
@@ -2726,10 +2981,10 @@ Definition transf_multcmon_to_ComAlgebra :
               forget_ComAlgebra_to_ComSemirings].
 
 Lemma transf_ComAlgebra_to_multcmonE A :
-  transf_ComAlgebra_to_multcmon A =1 transf_to_multcmon A.
+  transf_ComAlgebra_to_multcmon A =m= transf_to_multcmon A.
 Proof. by move=> a; rewrite /= !HCompId. Qed.
 Lemma transf_multcmon_to_ComAlgebraE A :
-  transf_multcmon_to_ComAlgebra A =1 transf_from_multcmon A.
+  transf_multcmon_to_ComAlgebra A =m= transf_from_multcmon A.
 Proof. by move=> a; rewrite /= !HCompId. Qed.
 Lemma transf_ComAlgebra_to_multcmonK A :
   cancel (transf_ComAlgebra_to_multcmon A) (transf_multcmon_to_ComAlgebra A).
@@ -2753,68 +3008,72 @@ Section UniversalProperty.
 
 Variable (R : ComRings).
 
-Variables (S : Sets) (A : ComAlgebras R)
-  (f : {hom[Sets] S -> forget_ComAlgebras_to_Sets R A}).
+Variables (E : Sets) (A : ComAlgebras R) (f : {hom[Sets] E -> A}).
 
 Let Adj := adjoint_FreeComAlgebra_forget_to_Sets R.
 
-Definition univmap_FreeComAlgebra := AdjointFunctors.hom_inv Adj f.
+Definition univmap_FreeComAlgebra :
+  {hom[ComAlgebras R] {freecalg R[E]} -> A} := AdjointFunctors.hom_inv Adj f.
 
-Lemma eta_FreeComAlgebraE i : AdjointFunctors.eta Adj S i = fcalg_gen R i.
+Lemma eta_FreeComAlgebraE i : AdjointFunctors.eta Adj E i = fcalg_gen R i.
 Proof.
 rewrite /= !HCompId /transf_from_multcmon /transf_from_multcmon_fun /=.
-by rewrite !HIdComp /=.
+by rewrite !HIdComp /= !HCompId.
 Qed.
 
 Lemma univmap_FreeComAlgebraP i : univmap_FreeComAlgebra (fcalg_gen R i) = f i.
 Proof.
-rewrite -[RHS](AdjointFunctors.hom_invK Adj) /=; do 4 congr (_ _).
+rewrite -[RHS](AdjointFunctors.hom_invK Adj _ _ f i) /=; do 4 congr (_ _).
 by rewrite -eta_FreeComAlgebraE.
 Qed.
 
-Lemma univmap_FreeComAlgebra_uniq (g : {hom[ComAlgebras R] {freecalg R[S]} -> A}) :
-  (forall i : S, g (fcalg_gen R i) = f i) -> g =1 univmap_FreeComAlgebra.
+Lemma univmap_FreeComAlgebra_uniq (g : {hom[ComAlgebras R] {freecalg R[E]} -> A}) :
+  (forall e : E, g (fcalg_gen R e) = f e) -> g =m= univmap_FreeComAlgebra.
 Proof.
 move=> eq; apply: (AdjointFunctors.hom_iso_inj Adj).
-move=> i; rewrite AdjointFunctors.hom_invK -{}eq.
-by have /= -> := eta_FreeComAlgebraE i.
+move=> e; rewrite AdjointFunctors.hom_invK -{}eq.
+by have /= -> := eta_FreeComAlgebraE e.
 Qed.
 
 End UniversalProperty.
 
-Section FunctorialityInRing.
-Variable (R S : ComRings) (f : {rmorphism R -> S}) (A : Sets).
 
-Definition homRing_FreeComAlgebra : {freecalg R[A]} -> {freecalg S[A]} :=
-  @homRing_MonoidLAlgebra R S f (FreeComMonoid A).
+Section FunctorialityInRing.
+Variable (R S : ComRings) (f : {rmorphism R -> S}) (E : Sets).
+
+Definition homRing_FreeComAlgebra : {freecalg R[E]} -> {freecalg S[E]} :=
+  @homRing_MonoidLAlgebra R S f (FreeComMonoid E).
 HB.instance Definition _ := GRing.LRMorphism.on homRing_FreeComAlgebra.
 Lemma homRing_FreeComAlgebraP i :
   homRing_FreeComAlgebra (fcalg_gen R i) = (fcalg_gen S i).
 Proof. by rewrite /homRing_FreeComAlgebra homRing_MonoidLAlgebraP. Qed.
 Lemma homRing_FreeComAlgebra_uniq
-  (g : {lrmorphism {freecalg R[A]} -> {freecalg S[A]} | f \; *:%R }) :
-  (forall i, g (fcalg_gen R i) = fcalg_gen S i) -> g =1 homRing_FreeComAlgebra.
+  (g : {lrmorphism {freecalg R[E]} -> {freecalg S[E]} | f \; *:%R }) :
+  (forall e : E, g (fcalg_gen R e) = fcalg_gen S e)
+  -> g =m= homRing_FreeComAlgebra.
 Proof.
-move=> eqg x; rewrite -(freecalgE x) !linear_sum; apply: eq_bigr => i _.
-rewrite !linearZ_LR !rmorph_prod /=; congr (_ *: _); apply: eq_bigr => a _.
+move=> eqg x; rewrite -(freecalgE x).
+rewrite [LHS]linear_sum [RHS]linear_sum; apply: eq_bigr => m _.
+rewrite !linearZ_LR !rmorph_prod /=; congr (_ *: _); apply: eq_bigr => e _.
 by rewrite eqg homRing_FreeComAlgebraP.
 Qed.
 
 End FunctorialityInRing.
 
 Section HomRingFreeComAlgebraFunctor.
-Variables (A : ComMonoids) (R S T : ComRings).
+Variables (E : Sets) (R S T : ComRings).
 
 Fact homRing_FreeComAlgebra_ext (f g : {rmorphism R -> S}) :
-  f =1 g -> homRing_FreeComAlgebra f (A := A) =1 homRing_FreeComAlgebra g (A := A).
+  f =m= g ->
+  homRing_FreeComAlgebra f (E := E) =m= homRing_FreeComAlgebra g (E := E).
 Proof. exact: homRing_FreeLModule_ext. Qed.
 Fact homRing_FreeComAlgebra_id :
-  homRing_FreeComAlgebra (A := A) (R := R) idfun =1 idfun.
+  homRing_FreeComAlgebra (E := E) (R := R) idfun =m= idfun.
 Proof. exact: homRing_FreeLModule_id. Qed.
 Fact homRing_FreeComAlgebra_comp
   (f : {rmorphism R -> S}) (g : {rmorphism S -> T}) :
-  homRing_FreeComAlgebra g (A := A) \o homRing_FreeComAlgebra f (A := A)
-  =1 homRing_FreeComAlgebra (g \o f) (A := A).
+  homRing_FreeComAlgebra g (E := E) \@ homRing_FreeComAlgebra f (E := E)
+  =m= homRing_FreeComAlgebra (g \o f) (E := E).
 Proof. exact: homRing_FreeLModule_comp. Qed.
 
 End HomRingFreeComAlgebraFunctor.
@@ -2824,14 +3083,14 @@ Section RingUniversalProperty.
 
 Variable (R S : ComRings).
 
-Variables (X : Sets) (A : ComAlgebras S)
+Variables (E : Sets) (A : ComAlgebras S)
   (fR : {hom[ComRings] R -> S})
-  (fX : {hom[Sets] X -> forget_ComAlgebras_to_Sets S A}).
+  (fE : {hom[Sets] E -> forget_ComAlgebras_to_Sets S A}).
 
 Let fRm := rmorph_of_ComRing fR.
-Definition univmap_RingFreeComAlgebra : {freecalg R[X]} -> A :=
-  lrmorphism_of_ComAlgebras (@univmap_FreeComAlgebra S X A fX)
-    \o @homRing_FreeComAlgebra R S fRm X.
+Definition univmap_RingFreeComAlgebra : {freecalg R[E]} -> A :=
+  lrmorphism_of_ComAlgebras (@univmap_FreeComAlgebra S E A fE)
+    \o @homRing_FreeComAlgebra R S fRm E.
 HB.instance Definition _ := GRing.RMorphism.on univmap_RingFreeComAlgebra.
 Fact univmap_RingFreeComAlgebra_is_scalable :
   scalable_for (fRm \; *:%R) univmap_RingFreeComAlgebra.
@@ -2841,11 +3100,11 @@ rewrite /univmap_RingFreeComAlgebra => r x.
 by rewrite !compapp !linearZ_LR.
 Qed.
 HB.instance Definition _ :=
-  GRing.isScalable.Build R {freecalg R[X]} A (fRm \; *:%R)
+  GRing.isScalable.Build R {freecalg R[E]} A (fRm \; *:%R)
     univmap_RingFreeComAlgebra univmap_RingFreeComAlgebra_is_scalable.
 
 Lemma univmap_RingFreeComAlgebraP i :
-  univmap_RingFreeComAlgebra (fcalg_gen R i) = fX i.
+  univmap_RingFreeComAlgebra (fcalg_gen R i) = fE i.
 Proof.
 (* TODO : Big problem with locking *)
 rewrite /univmap_RingFreeComAlgebra !compapp homRing_FreeComAlgebraP.
@@ -2853,12 +3112,14 @@ exact: univmap_FreeComAlgebraP.
 Qed.
 
 Lemma univmap_RingFreeComAlgebra_uniq
-  (g : {lrmorphism {freecalg R[X]} -> A | fRm \; *:%R }) :
-  (forall i : X, g (fcalg_gen R i) = fX i) -> g =1 univmap_RingFreeComAlgebra.
+  (g : {lrmorphism {freecalg R[E]} -> A | fRm \; *:%R }) :
+  (forall e : E, g (fcalg_gen R e) = fE e)
+  -> g =m= univmap_RingFreeComAlgebra.
 Proof.
-move=> eqg a; rewrite -(freecalgE a) !linear_sum; apply eq_bigr => m _.
+move=> eqg a; rewrite -(freecalgE a).
+rewrite [LHS]linear_sum [RHS]linear_sum; apply eq_bigr => m _.
 rewrite !linearZ /=; congr (_ *: _).
-rewrite !rmorph_prod; apply: eq_bigr => {m} i _ /=.
+rewrite !rmorph_prod; apply: eq_bigr => {m} e _ /=.
 by rewrite eqg univmap_RingFreeComAlgebraP.
 Qed.
 
