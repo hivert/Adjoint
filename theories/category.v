@@ -760,10 +760,10 @@ Section equiv_cat_interface.
 
 Variables (C D : category) (F : {functor C -> D}) (G : {functor D -> C}).
 Variable (eq : equivalence_category F G).
-Definition eqFGId_map : (F \O G) ~~> FId := eqFGId eq.
-Definition eqGFId_map : (G \O F) ~~> FId := eqGFId eq.
-Definition eqIdFG_map : FId ~~> (F \O G) := fun a => inv_hom (eqFGId eq a).
-Definition eqIdGF_map : FId ~~> (G \O F) := fun a => inv_hom (eqGFId eq a).
+Let eqFGId_map : (F \O G) ~~> FId := eqFGId eq.
+Let eqGFId_map : (G \O F) ~~> FId := eqGFId eq.
+Let eqIdFG_map : FId ~~> (F \O G) := fun a => inv_hom (eqFGId eq a).
+Let eqIdGF_map : FId ~~> (G \O F) := fun a => inv_hom (eqGFId eq a).
 HB.instance Definition _ :=
   isNatural.Build D D (F \O G) FId eqFGId_map (natural_eqFGId eq).
 HB.instance Definition _ :=
@@ -1057,7 +1057,7 @@ End AdjComp.
 Export AdjComp.Exports.
 
 
-(** Adjonction through a natural isomorhism *)
+(** Adjonction through a natural isomorphism *)
 Module Adjoint_NatIsom.
 Section adjNatIsom.
 
