@@ -143,6 +143,10 @@ Definition comp_morphism (C : category) (U V W : C) :
 Notation "f =m= g" := (eq_morphism f g).
 Notation "f \@ g" := (comp_morphism f g).
 
+Lemma mor_eqE (C : category) (B A : C) (f g : {hom A -> B}) :
+  f =m= g -> f =1 g.
+Proof. by []. Qed.
+
 (* Notation [\o f , .. , g , h] for hom compositions. *)
 Module comps_notation.
 Notation "[ '\@' f , .. , g , h ]" := (f \@ .. (g \@ h) ..) (at level 0,
@@ -161,6 +165,13 @@ Add Parametric Morphism  (C : category) (U V W : C) :
     (@eq_morphism C U V) ==> (@eq_morphism C V W) ==> (@eq_morphism C U W)
       as comp_mor.
 Proof. by move=> /= f1 f2 eqf g1 g2 eqg x; rewrite /= eqg eqf. Qed.
+Add Parametric Morphism  (C : category) (U V : C) (x : el (U)):
+  (fun (f : {hom U -> V}) => f x)
+    with signature
+    (@eq_morphism C V U) ==> (@eq (el (V)))
+      as app_mor.
+Proof. by []. Qed.
+
 
 Section category_lemmas.
 Variable C : category.
@@ -326,6 +337,15 @@ Definition id := forall a,
     actm [hom idfun] =m= ([hom idfun] : {hom F a -> F a}).
 Definition comp := forall a b c (g : {hom b -> c}) (h : {hom a -> b}),
     actm (g \@ h) =m= (actm g \@ actm h).
+
+Variable (actf : forall a b, {hom a -> b} -> el (F a) -> el (F b)).
+Definition funext := forall a b (f g : {hom a -> b}),
+    f =m= g -> actf f =1 actf g.
+Definition funid := forall a,
+    actf idfun =1 @idfun (el (F a)).
+Definition funcomp := forall a b c (g : {hom b -> c}) (h : {hom a -> b}),
+    actf (g \@ h) =1 (actf g \o actf h).
+
 End def.
 End FunctorLaws.
 
@@ -338,7 +358,6 @@ HB.mixin Record isFunctor (C D : category) (F : C -> D) := {
 HB.structure Definition Functor C D := {F of isFunctor C D F}.
 
 Arguments functor_ext_hom {C D s}.
-
 
 Definition functor_phant (C D : category) of phant (C -> D) := Functor.type C D.
 Arguments actm [C D] F [a b] f: rename.
@@ -365,22 +384,31 @@ Section functor_lemmas.
 Variables (C D : category) (F : {functor C -> D}).
 
 Lemma functor_id a : F # idfun =m= (idfun : {hom F a -> F a}).
-Proof.
-by move=> x; rewrite (functor_ext_hom _ _ _ (homfunK _)) functor_id_hom.
-Qed.
+Proof. exact: functor_id_hom. Qed.
+Lemma functor_idF a : F # idfun =1 @idfun (el (F a)).
+Proof. exact: functor_id. Qed.
 
 Lemma functor_o a b c (g : {hom b -> c}) (h : {hom a -> b}) :
   F # (g \@ h) =m= F # g \@ F # h.
-Proof. by move=> fa; rewrite functor_comp_hom. Qed.
+Proof. exact: functor_comp_hom. Qed.
+Lemma functor_oF a b c (g : {hom b -> c}) (h : {hom a -> b}) x :
+  (F # (g \@ h)) x = (F # g) ((F # h) x).
+Proof. exact: functor_o. Qed.
 
 Lemma functor_ext (G : {functor C -> D}) (eq : F =1 G) :
   (forall (A B : C) (f : {hom A -> B}),
       transport_hom (eq A) (eq B) (F # f) =m= G # f) -> F =#= G.
 Proof. exact: EqFunctor. Qed.
 
+Lemma functor_ext_homF (a b : C) (f g : {hom a -> b}) :
+  f =m= g -> F # f =1 F # g.
+Proof. exact: functor_ext_hom. Qed.
+
 End functor_lemmas.
 Arguments functor_o [C D] F.
-
+Arguments functor_oF [C D] F.
+Arguments functor_id [C D] F.
+Arguments functor_idF [C D] F.
 
 Section functor_equality.
 
@@ -412,6 +440,14 @@ Add Parametric Relation : {functor C -> D} (@eq_functor C D)
     symmetry proved by  eq_functor_sym
     transitivity proved by eq_functor_trans
     as eq_functor_equiv.
+
+(* Is this possible to have the following working ???
+Add Parametric Morphism (A B : C) (h : {hom A -> B}) :
+  (fun (F : {functor C -> D}) => F # h) with
+    signature (@eq_functor C D) ==> (@eq_morphism D _ _)
+      as functor_mor.
+Proof. exact: functor_ext_hom. Qed.
+*)
 
 End functor_equality.
 
@@ -463,7 +499,7 @@ Qed.
 Fact functorcomposition_id : FunctorLaws.id functorcomposition.
 Proof.
 rewrite /functorcomposition => A.
-rewrite (functor_ext_hom _ _ _ (functor_id (a := A))).
+rewrite (functor_ext_hom _ _ _ (functor_id _ A)).
 exact: functor_id.
 Qed.
 Fact functorcomposition_comp : FunctorLaws.comp functorcomposition.
@@ -545,18 +581,18 @@ Lemma natural_head (phi : F ~> G) a b c (h : {hom a -> b}) (f : {hom c -> F a}) 
   [\@ G # h, phi a, f] =m= [\@ phi b, F # h, f].
 Proof. by rewrite -!homcompA (natural phi). Qed.
 
-Definition eq_nattrans (phi psi : F ~> G) := forall a : C, (phi a =m= psi a).
+Definition eq_nattrans (phi psi : F ~~> G) := forall a : C, (phi a =m= psi a).
 Notation "p =%= q" := (eq_nattrans p q).
 
-Lemma eq_nattrans_refl (phi : F ~> G) : phi =%= phi.
+Lemma eq_nattrans_refl (phi : F ~~> G) : phi =%= phi.
 Proof. by []. Qed.
-Lemma eq_nattrans_sym (phi psi : F ~> G) : phi =%= psi -> psi =%= phi.
+Lemma eq_nattrans_sym (phi psi : F ~~> G) : phi =%= psi -> psi =%= phi.
 Proof. by move=> eq a /[!eq]. Qed.
-Lemma eq_nattrans_trans (phi psi ksi : F ~> G) :
+Lemma eq_nattrans_trans (phi psi ksi : F ~~> G) :
   phi =%= psi -> psi =%= ksi -> phi =%= ksi.
 Proof. by move=> eqp eqk a /[!eqp] /[!eqk]. Qed.
 
-Add Parametric Relation : (F ~> G) eq_nattrans
+Add Parametric Relation : (F ~~> G) eq_nattrans
     reflexivity proved by eq_nattrans_refl
     symmetry proved by  eq_nattrans_sym
     transitivity proved by eq_nattrans_trans
