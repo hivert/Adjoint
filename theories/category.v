@@ -165,6 +165,13 @@ Add Parametric Morphism  (C : category) (U V W : C) :
     (@eq_morphism C U V) ==> (@eq_morphism C V W) ==> (@eq_morphism C U W)
       as comp_mor.
 Proof. by move=> /= f1 f2 eqf g1 g2 eqg x; rewrite /= eqg eqf. Qed.
+Add Parametric Morphism  (C : category) (U V : C) (x : el (U)):
+  (fun (f : {hom U -> V}) => f x)
+    with signature
+    (@eq_morphism C V U) ==> (@eq (el (V)))
+      as app_mor.
+Proof. by []. Qed.
+
 
 Section category_lemmas.
 Variable C : category.
@@ -359,13 +366,6 @@ Notation "F # f" := (actm F f) : category_scope.
 Notation "{ 'functor' fCD }" := (functor_phant (Phant fCD))
   (format "{ 'functor'  fCD }") : category_scope.
 
-Add Parametric Morphism (C D : category) (F : {functor C -> D}) (A B : C):
-  (@actm C D F A B) with
-    signature (@eq_morphism C B A) ==> (@eq_morphism D (F B) (F A))
-      as functor_mor.
-Proof. exact: functor_ext_hom. Qed.
-
-
 Record eq_functor (C D : category)
   (F : {functor C -> D}) (G : {functor C -> D}) : Prop := EqFunctor {
     pm : F =1 G;
@@ -378,15 +378,13 @@ Section functor_lemmas.
 Variables (C D : category) (F : {functor C -> D}).
 
 Lemma functor_id a : F # idfun =m= (idfun : {hom F a -> F a}).
-Proof.
-by move=> x; rewrite (functor_ext_hom _ _ _ (homfunK _)) functor_id_hom.
-Qed.
+Proof. exact: functor_id_hom. Qed.
 Lemma functor_idF a : F # idfun =1 @idfun (el (F a)).
 Proof. exact: functor_id. Qed.
 
 Lemma functor_o a b c (g : {hom b -> c}) (h : {hom a -> b}) :
   F # (g \@ h) =m= F # g \@ F # h.
-Proof. by move=> fa; rewrite functor_comp_hom. Qed.
+Proof. exact: functor_comp_hom. Qed.
 Lemma functor_oF a b c (g : {hom b -> c}) (h : {hom a -> b}) x :
   (F # (g \@ h)) x = (F # g) ((F # h) x).
 Proof. exact: functor_o. Qed.
@@ -436,6 +434,20 @@ Add Parametric Relation : {functor C -> D} (@eq_functor C D)
     symmetry proved by  eq_functor_sym
     transitivity proved by eq_functor_trans
     as eq_functor_equiv.
+
+Add Parametric Morphism (F : {functor C -> D}) (A B : C) :
+  (@actm C D F A B) with
+    signature (@eq_morphism C B A) ==> (@eq_morphism D (F B) (F A))
+      as functor_mor.
+Proof. exact: functor_ext_hom. Qed.
+
+(* Is this possible to have the following working ???
+Add Parametric Morphism (A B : C) (h : {hom A -> B}) :
+  (fun (F : {functor C -> D}) => F # h) with
+    signature (@eq_functor C D) ==> (@eq_morphism D _ _)
+      as functor_mor.
+Proof. exact: functor_ext_hom. Qed.
+*)
 
 End functor_equality.
 
@@ -501,7 +513,6 @@ HB.instance Definition _ :=
     functorcomposition_ext functorcomposition_id functorcomposition_comp.
 End functorcomposition.
 Notation "F \O G" := ([the {functor _ -> _} of F \o G]) : category_scope.
-
 
 Section functorcomposition_lemmas.
 Variables (C0 C1 C2 C3 : category).
