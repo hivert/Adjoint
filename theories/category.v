@@ -96,7 +96,7 @@ Remove Hints frefl : core.
 
 (* Our categories are always concrete; morphisms are just functions. *)
 HB.mixin Record isCategory (obj : Type) := {
-  el : obj -> Type ;
+  el : obj -> eqType ;
   inhom : forall a b, (el a -> el b) -> Prop ;
   idfun_inhom : forall a, @inhom a a idfun ;
   funcomp_inhom : forall a b c (f : el a -> el b) (g : el b -> el c),
@@ -239,6 +239,32 @@ Lemma transport_hom_trans (a a' a'' b b' b'' : C)
   (transport_hom pa' pb' \o transport_hom pa pb) f =m=
     transport_hom (eq_trans pa pa') (eq_trans pb pb') f.
 Proof. by subst a a' b b'. Qed.
+
+Lemma transport_hom0 (a : C) (eqa : a = a) :
+  transport_codom eqa [hom idfun] =m= idfun.
+Proof.
+move=> x; apply/eqP => /=.
+by case:_/eqa.
+
+rewrite /transport_codom => x.
+
+
+case: eqP => //.
+suff -> : eqa = erefl by [].
+    
+  by case:_/eqa.
+
+
+Lemma transport_hom_refl (a b a' b' : C) (pa pa' : a = a') (pb pb' : b = b')
+  (f : {hom a -> b}) :
+  transport_hom pa pb f =m= transport_hom pa' pb' f.
+Proof. subst a b; rewrite !transport_homF.
+have -> : hom_of_eq erefl =m= hom_of_eq pb'.
+  rewrite /hom_of_eq /transport_codom /= => x /=.
+
+  case:_/pb'.
+
+by subst a b. Qed.
 
 End transport_lemmas.
 
@@ -533,6 +559,57 @@ Lemma FCompA
 Proof. exact: (functor_ext (eq := fun=> _)). Qed.
 
 End functorcomposition_lemmas.
+
+
+Add Parametric Morphism  (C D E: category) :
+  (fun (F : {functor D -> E}) (G : {functor C -> D}) => F \O G)
+    with signature
+    (@eq_functor D E) ==> (@eq_functor C D) ==> (@eq_functor C E)
+      as comp_functor.
+Proof.
+move=> F1 F2 eqF G1 G2 eqG.
+have@ eqFG : F1 \O G1 =1 F2 \O G2 by move=> c /=; rewrite (pm eqF) (pm eqG).
+apply: (functor_ext (eq := eqFG)) => u v f; rewrite !FCompE /=.
+rewrite -(functor_mor (F := F2) (eq_transport eqG f)).
+
+
+rewrite {}/eqFG !FCompE /=.
+have := eq_transport eqG f.
+
+transport_homF homcompA.
+have := (functor_ext
+
+case:_/(pm eqG v).
+rewrite transport_homF homcompA.
+rewrite !FCompE.
+move: eqFG => /=.
+case:_/(eqFG u).
+
+rewrite !FCompE.
+rewrite transport_homF.
+case:_/(eqFG u).; case:_/(pm A).
+
+apply: transport_hom_inj => /=.
+
+apply: (functor_ext (eq := fun A => esym (pm A))) => A B f.
+apply (transport_hom_inj (pa := pm A) (pb := pm B)).
+rewrite {}eq; move: (G # f) => {f}.
+by case:_/(pm B); case:_/(pm A).
+
+
+case => [F1 Fm1][F2 Fm2] [/= eqF eqmF].
+case => [G1 Gm1][G2 Gm2] [/= eqG eqmG].
+have eqFG c : F1 (G1 c) = F2 (G2 c) by rewrite eqF eqG.
+apply: functor_ext => u v f.
+apply: transport_hom_inj => /=.
+
+
+(eq := (eqFG : F1 \o G1 =1 F2 \o G2))) => u v f /=.
+
+
+
+
+by move=> /= f1 f2 eqf g1 g2 eqg x; rewrite /= eqg eqf. Qed.
 
 
 Section functor_inv_hom.
