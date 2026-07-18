@@ -1,5 +1,5 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_fingroup.
+From mathcomp Require Import all_boot all_fingroup.
 
 Require Import category species sum.
 
@@ -7,6 +7,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+Set SsrOldRewriteGoalsOrder.  (* change to Unset and remove the line when requiring MathComp >= 2.6 *)
 
 Local Open Scope category_scope.
 Local Open Scope species_scope.
@@ -58,26 +59,23 @@ Lemma eq_prodSpE U (x y : prodSpT U) :
   ((val x).1 == (val y).1) && ((val x).2 == (val y).2) = (x == y).
 Proof. by apply/andP/eqP => [[/eqP + /eqP]|->//]; apply: eq_prodSpP. Qed.
 
-Fact prodSp_ext : FunctorLaws.ext prodSp_mor.
+Fact prodSp_ext : FunctorLaws.funext prodSp_mor.
 Proof.
 rewrite /prodSp_mor => U V f g eqfg /= -[[xa xb] /= Hp2].
-by apply/eq_prodSpP; rewrite /= !(functor_ext_hom (SpSet _) _ _ eqfg).
+by apply/eq_prodSpP; apply: (functor_ext_hom (SpSet _)).
 Qed.
-Fact prodSp_id : FunctorLaws.id prodSp_mor.
+Fact prodSp_id : FunctorLaws.funid prodSp_mor.
 Proof.
 rewrite /prodSp_mor => U /= -[[xa xb] /= Hp2].
-by apply/eq_prodSpP; rewrite /= !functor_id.
+by apply/eq_prodSpP; apply (functor_id (SpSet _)).
 Qed.
-Fact prodSp_comp : FunctorLaws.comp prodSp_mor.
+Fact prodSp_comp : FunctorLaws.funcomp prodSp_mor.
 Proof.
 rewrite /prodSp_mor => U V W f g /= -[[xa xb] /= Hp2].
-by apply/eq_prodSpP; rewrite /= !functor_o.
+by apply/eq_prodSpP; apply: (functor_o (SpSet _)).
 Qed.
-HB.instance Definition _ U V (f : {hom U -> V}) :=
-  BijHom.Build (prodSpT U) (prodSpT V) (prodSp_mor f)
-    (functor_bij prodSp_ext prodSp_id prodSp_comp f).
 HB.instance Definition _ :=
-  isFunctor.Build Bij Bij prodSpT prodSp_ext prodSp_id prodSp_comp.
+  isSpecies.Build prodSpT prodSp_ext prodSp_id prodSp_comp.
 
 
 Definition prodSp : Species := prodSpT.
@@ -235,16 +233,14 @@ move: (card_tag2_prodSp _) => /= PF2.
 rewrite {x xpf xA xB part2S}/fA {}/fB !hom_compE -!functor_o /=.
 set fA := (X in A # X); set fB := (X in B # X).
 have /(functor_ext_hom A) -> : fA =1 idfun.
-  move=> x; rewrite /fA /= finv_comp /= finvKV finv_comp /= finvKV.
-  have /finvE <- : cast_ord (eqP PF1) =1 cast_ord cSA.
-    by move=> y; apply val_inj.
-  by rewrite finvKV.
+  move=> x; rewrite /fA /= finv_compF /= finvKV finv_compF /= finvKV.
+  suff /finvEF <- : cast_ord (eqP PF1) =1 cast_ord cSA by rewrite finvKV.
+  by move=> y; apply val_inj.
 rewrite functor_id.
 have /(functor_ext_hom B) -> : fB =1 idfun.
-  move=> x; rewrite /fB /= finv_comp /= finvKV finv_comp /= finvKV.
-  have /finvE <- : cast_ord (eqP PF2) =1 cast_ord cSB.
-    by move=> y; apply val_inj.
-  by rewrite finvKV.
+  move=> x; rewrite /fB /= finv_compF /= finvKV finv_compF /= finvKV.
+  suff /finvEF <- : cast_ord (eqP PF2) =1 cast_ord cSB by rewrite finvKV.
+  by move=> y; apply val_inj.
 by rewrite functor_id.
 Qed.
 
@@ -321,7 +317,7 @@ Definition prod0Sp : 0 * A ~> 0 := prodSp0 \v prodSpC.
 Lemma prod0Sp_invE : isoSpinv prod0Sp =%= prodSpC \v isoSpinv prodSp0.
 Proof.
 apply: (eq_nattrans_trans (isoSpinv_vcomp _ _)) => U x /=.
-by rewrite prodSpC_invE.
+exact: prodSpC_invE.
 Qed.
 
 End ProdSpeciesZero.
@@ -337,12 +333,14 @@ Variable (A : Species).
 Section Mor.
 Variable (U : Bij).
 
+
+Lemma aux : 1 {x : U | x \in set0}.
+Proof. by rewrite /deltaSp /= /ifSp card_TSet cards0 eqxx; exact tt. Defined.
+
 Definition prodSp1_inv_def : el (A U) -> el ((A * 1) U).
 move=> x.
 pose a : A {x : U | x \in setT} := (A # toSetT U) x.
-have b : 1 {x : U | x \in set0}.
-  by rewrite /deltaSp /= /ifSp card_TSet cards0 eqxx; exact tt.
-apply: (exist _ (existT _ [set: U] a, existT _ set0 b) _).
+apply: (exist _ (existT _ [set: U] a, existT _ set0 aux) _).
 by rewrite /= part2TE setC0.
 Defined.
 Definition prodSp1_inv := locked prodSp1_inv_def.
@@ -350,7 +348,7 @@ Definition prodSp1_inv := locked prodSp1_inv_def.
 Lemma prodSp1_inv_inj : injective prodSp1_inv.
 Proof.
 rewrite /prodSp1_inv; unlock.
-move=> i j /= /(congr1 val) /= [] /eqP.
+move=> i j /= /(congr1 \val) /= [] /eqP.
 rewrite !eq_Tagged => /eqP /(congr1 (A # finv (toSetT U))) /=.
 by rewrite !SpfinvK.
 Qed.
@@ -386,9 +384,8 @@ move=> U V h x /=; apply: eq_prodSpP.
   rewrite /= /prodSp1_inv; unlock; rewrite /prodSp1_inv_def /=.
   rewrite /= !hom_compE -!functor_o /=.
   have /= -> := functor_ext_hom A _ _ (restr_hom_setTE h).
-  by rewrite functor_o /= -/(Tagged _ _) Tagged_SpTSet_castE.
+  by rewrite [in LHS]functor_o /= -/(Tagged _ _) Tagged_SpTSet_castE.
 rewrite /prodSp1_inv -!lock /= -!/(Tagged _ _).
-move: (eq_rect_r _ _) => HL; move: (eq_rect_r _ _) => HR.
 rewrite eqSpSet /=; split => [|eqtag]; first exact: imset0.
 by rewrite eq_Tagged /=; apply/eqP; apply: deltaSpE.
 Qed.
@@ -406,7 +403,7 @@ Definition prod1Sp : 1 * A ~> A := prodSp1 \v prodSpC.
 Lemma prod1Sp_invE : isoSpinv prod1Sp =%= prodSpC \v isoSpinv prodSp1.
 Proof.
 apply: (eq_nattrans_trans (isoSpinv_vcomp _ _)) => U x /=.
-by rewrite prodSpC_invE.
+exact: prodSpC_invE.
 Qed.
 
 End ProdSpeciesOne.
@@ -469,10 +466,12 @@ Lemma prodSpDr_invE A B C :
   isoSpinv (prodSpDr A B C) =%=
     prodSpC \v prodSpDlV A B C \v sumSpTr prodSpC prodSpC.
 Proof.
-move=> U x; rewrite isoSpinv_vcomp /= prodSpC_invE /= isoSpinv_vcomp /=.
-rewrite prodSpDl_invE /= !sumSpTr_invE /=.
+(* TODO: Lot's of unwanted unfolding here !!! *)
+move=> U x; rewrite isoSpinv_vcomp [LHS](@prodSpC_invE _ _ U _).
+rewrite (isoSpinv_vcomp _ _ _) /= (prodSpDl_invE _).
+rewrite /= !(sumSpTr_invE _ _ _) /=.
 (* Missing congruence lemma for sumSpTr here *)
-by case: x => [a|b] /=; rewrite prodSpC_invE.
+by case: x => [a|b] /=; rewrite (prodSpC_invE _).
 Qed.
 
 
@@ -595,7 +594,8 @@ case: x tX => [/= E y] ty.
 apply eqSpSet => /=; split => [|eqtag]; first exact: downTK.
 rewrite eq_Tagged /=; apply/eqP.
 do 2 rewrite hom_compE -functor_o /=.
-rewrite -[RHS](@functor_id _ _ A) /=; apply: (functor_ext_hom A) => {}y.
+rewrite -[RHS](functor_idF A) /=.
+apply: (functor_ext_hom A) => {}y.
 by apply val_inj; rewrite val_cast_TSet.
 Qed.
 
@@ -640,25 +640,22 @@ exists ((SpSet A # f) a, (SpSet B # f) b, (SpSet C # f) c) => /=.
 by rewrite /SpSet_mor /= !tag_SpSet part3_imset.
 Defined.
 
-Fact prodSp3_ext : FunctorLaws.ext prodSp3_mor.
+Fact prodSp3_ext : FunctorLaws.funext prodSp3_mor.
 Proof.
 rewrite /prodSp3_mor => U V f g H /= [[[a b] c] /= p3]; apply: val_inj => /=.
-by rewrite !(functor_ext_hom _ _ _ H).
+by rewrite !SpSetE !(functor_ext_homF H).
 Qed.
-Fact prodSp3_id : FunctorLaws.id prodSp3_mor.
+Fact prodSp3_id : FunctorLaws.funid prodSp3_mor.
 Proof.
 rewrite /prodSp3_mor => U /= [[[a b] c] /= p3]; apply: val_inj => /=.
-by rewrite !functor_id.
+by rewrite !SpSetE !functor_id.
 Qed.
-Fact prodSp3_comp : FunctorLaws.comp prodSp3_mor.
+Fact prodSp3_comp : FunctorLaws.funcomp prodSp3_mor.
 rewrite /prodSp3_mor => U V W f g /= [[[a b] c] /= p3]; apply: val_inj => /=.
-by rewrite !functor_o.
+by rewrite !SpSetE !functor_o.
 Qed.
-HB.instance Definition _ U V (f : {hom U -> V}) :=
-  BijHom.Build (prodSp3T U) (prodSp3T V) (prodSp3_mor f)
-    (functor_bij prodSp3_ext prodSp3_id prodSp3_comp f).
 HB.instance Definition _ :=
-  isFunctor.Build Bij Bij prodSp3T prodSp3_ext prodSp3_id prodSp3_comp.
+  isSpecies.Build prodSp3T prodSp3_ext prodSp3_id prodSp3_comp.
 
 Definition prodSp3 : Species := prodSp3T.
 
@@ -674,7 +671,7 @@ by rewrite -{1}(upT_setT V) /upT (part2_imset _ _ _ val_inj).
 Defined.
 Definition prodSpA3_inv : el (prodSp3 U) -> el ((A * (B * C)) U).
 move=> [/=[[a b]c] /=] p3.
-have bc : (B * C)%Sp (TSet (tag b :|: tag c)).
+have@ bc : (B * C)%Sp (TSet (tag b :|: tag c)).
   pose xb := downSpSet (subsetUl (tag b) (tag c)).
   pose xc := downSpSet (subsetUr (tag b) (tag c)).
   exists (xb, xc) => /=.
@@ -683,7 +680,7 @@ have bc : (B * C)%Sp (TSet (tag b :|: tag c)).
   move: p3 => /and4P[/eqP SU dab dac dbc].
   by rewrite !imsetTE /= !imset_val_TSet /part2 eqxx /=.
 exists (a, existT _ (tag b :|: tag c) bc) => /=.
-move: p3 => /and4P[/eqP SU dab dac dbc].
+move: p3 {bc} => /and4P[/eqP SU dab dac dbc].
 rewrite /part2 setUA SU eqxx /=.
 move: dab dac; rewrite !disjoints_subset => /subsetP ab /subsetP ac.
 by apply/subsetP => x xa; rewrite setCU inE (ab _ xa) (ac _ xa).
@@ -716,7 +713,7 @@ split; apply/eqP; apply eqSpSet => /=; split.
 - case: xSB {H2} eqtag BC_V => /= SB b eqtag _ eqtag1.
   rewrite eq_Tagged /=; apply/eqP.
   repeat rewrite hom_compE -!functor_o /=.
-  rewrite -[RHS](@functor_id _ _ B); apply: (functor_ext_hom B) => {}b /=.
+  rewrite /= -[RHS](functor_idF B); apply: (functor_ext_hom B) => {}b /=.
   by repeat (apply val_inj; rewrite val_cast_TSet /=).
 - rewrite tag_SpSet tag_downSpSet /downT -imset_comp.
   case: xSC {H2} eqtag BC_V => /= SC _ eqtag _.
@@ -731,7 +728,7 @@ split; apply/eqP; apply eqSpSet => /=; split.
 - case: xSC {H2} eqtag BC_V => /= SC c eqtag _ eqtag1.
   rewrite eq_Tagged /=; apply/eqP.
   repeat rewrite hom_compE -!functor_o /=.
-  rewrite -[RHS](@functor_id _ _ C); apply: (functor_ext_hom C) => {}c /=.
+  rewrite /= -[RHS](functor_idF C); apply: (functor_ext_hom C) => {}c /=.
   by repeat (apply val_inj; rewrite val_cast_TSet /=).
 Qed.
 Fact prodSpA3KV : cancel prodSpA3_inv prodSpA3_fun.
@@ -753,7 +750,7 @@ Fact prodSpA3_natural : naturality (A * (B * C)) prodSp3 prodSpA3.
 Proof.
 move=> U V h [[/= xA [/= E ]]] [[xSB xSC]] /= BC_E UA_E /=.
 apply: val_inj => /= {UA_E}; apply/eqP.
-by rewrite !xpair_eqE !SpSet_up !eqxx.
+by rewrite !xpair_eqE !SpSetE !SpSet_up !eqxx.
 Qed.
 HB.instance Definition _ :=
   @isNatural.Build Bij Bij (A * (B * C)) prodSp3 prodSpA3 prodSpA3_natural.

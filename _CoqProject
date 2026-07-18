@@ -15,3 +15,4 @@ theories/species/species.v
 theories/species/sum.v
 theories/species/prod.v
 theories/species/diff.v
+theories/species/ring.v

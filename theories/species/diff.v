@@ -1,5 +1,5 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_fingroup.
+From mathcomp Require Import all_boot all_fingroup.
 
 Require Import category species sum prod.
 
@@ -7,6 +7,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+Set SsrOldRewriteGoalsOrder.  (* change to Unset and remove the line when requiring MathComp >= 2.6 *)
 
 Local Open Scope category_scope.
 Local Open Scope species_scope.
@@ -27,9 +28,9 @@ End OMapHom.
 Section DiffSpecies.
 Variable A : Species.
 
-Definition diffSpT (U : Bij) : Bij := A (option U).
-Definition diffSp_mor U V (f : {hom U -> V}) : el (diffSpT U) -> el (diffSpT V) :=
-  A # (omap f).
+Definition diffSp_obj (U : Bij) : Bij := A (option U).
+Definition diffSp_mor U V (f : {hom U -> V})
+  : el (diffSp_obj U) -> el (diffSp_obj V) := A # (omap f).
 
 Lemma diffSp_ext : FunctorLaws.ext diffSp_mor.
 Proof.
@@ -48,14 +49,15 @@ rewrite /diffSp_mor => U V W f g /= x.
 by rewrite -functor_o; apply functor_ext_hom => [][|].
 Qed.
 HB.instance Definition _ :=
-  isFunctor.Build Bij Bij diffSpT diffSp_ext diffSp_id diffSp_comp.
+  isFunctor.Build Bij Bij diffSp_obj diffSp_ext diffSp_id diffSp_comp.
 
-Definition diffSp : Species := diffSpT.
+Definition diffSp : Species := diffSp_obj.
 
 Lemma card_diffSp n : cardSp diffSp n = cardSp A n.+1.
-Proof. by rewrite {1}/cardSp /= /diffSpT cardSpE card_option card_ord. Qed.
+Proof. by rewrite {1}/cardSp /= /diffSp_obj cardSpE card_option card_ord. Qed.
 
 End DiffSpecies.
+Notation "∂" := diffSp : species_scope.
 
 
 Section DiffSum.
@@ -63,15 +65,15 @@ Section DiffSum.
 Variables A B : Species.
 
 (** (A + B)' U et (A' + B') U are convertible !!! *)
-Lemma diffSumE U : (diffSp (A + B)) U = (diffSp A + diffSp B)%Sp U.
+Lemma diffSumE U : (∂ (A + B)) U = (∂ A + ∂ B)%Sp U.
 Proof. by []. Qed.
 
-Definition diffSum : diffSp (A + B) ~~> (diffSp A + diffSp B)%Sp := fun => idfun.
+Definition diffSum : ∂ (A + B) ~~> (∂ A + ∂ B)%Sp := fun => idfun.
 Fact diffSum_natural :
-  naturality (diffSp (A + B)) (diffSp A + diffSp B)%Sp diffSum.
+  naturality (∂ (A + B)) (∂ A + ∂ B)%Sp diffSum.
 Proof. by []. Qed.
 HB.instance Definition _ :=
-  @isNatural.Build Bij Bij (diffSp (A + B)) (diffSp A + diffSp B)%Sp
+  @isNatural.Build Bij Bij (∂ (A + B)) (∂ A + ∂ B)%Sp
     diffSum diffSum_natural.
 
 End DiffSum.
@@ -135,7 +137,7 @@ Context {A B : Species} {U : Bij}.
 
 Section Defs.
 
-Variable p : (diffSp A * B)%Sp U.
+Variable p : (∂ A * B)%Sp U.
 Let dpmap : SpSet A (option U) * SpSet B (option U) :=
   let: (existT Sx x, existT Sy y) := val p in
   ( existT _ (UIn  Sx) ((A # @toUIn  U Sx) x),
@@ -148,7 +150,7 @@ apply/eqP/setP => [[u|]]; rewrite /UIn /UOut !inE.
   by rewrite !(mem_imset _ _ (@Some_inj U)) inE; case: (_ \in _).
 by rewrite eqxx /= None_in_SomeF.
 Qed.
-Definition diffProdl : (diffSp (A * B)) U := exist _ dpmap dpmap_subproof.
+Definition diffProdl : (∂ (A * B)) U := exist _ dpmap dpmap_subproof.
 
 Lemma diffProdlP : None \in tag (val diffProdl).1.
 Proof.
@@ -195,7 +197,7 @@ Qed.
 End DiffProdLeft.
 
 Lemma diffProdl_natural (A B : Species) (U V : Bij) (f : {hom U -> V}) :
-  diffSp (A * B) # f \o diffProdl =1 diffProdl \o (diffSp A * B) # f.
+  ∂ (A * B) # f \o diffProdl =1 diffProdl \o (∂ A * B) # f.
 Proof.
 move=> [/= [[Sx x][Sy y]] /= p2].
 apply: val_inj => /=; apply/eqP; rewrite xpair_eqE; apply/andP;
@@ -217,7 +219,7 @@ Section DiffProdRight.
 
 Context {A B : Species} {U : Bij}.
 
-Definition diffProdr : (A * diffSp B)%Sp U -> diffSp (A * B) U :=
+Definition diffProdr : (A * ∂ B)%Sp U -> ∂ (A * B) U :=
   prodSpC (option U) \o diffProdl \o prodSpC U.
 Lemma diffProdr_inj : injective diffProdr.
 Proof. exact: inj_comp (inj_comp (Bij_injP _) diffProdl_inj) (Bij_injP _). Qed.
@@ -229,7 +231,7 @@ Proof. exact: diffProdlP (prodSpC _ p). Qed.
 End DiffProdRight.
 
 Lemma diffProdr_natural (A B : Species) (U V : Bij) (f : {hom U -> V}) :
-  diffSp (A * B) # f \o diffProdr =1 diffProdr \o (A * diffSp B) # f.
+  ∂ (A * B) # f \o diffProdr =1 diffProdr \o (A * ∂ B) # f.
 Proof.
 rewrite /diffProdr => p.
 have /= <- := natural prodSpC _ _ f p.
@@ -247,7 +249,7 @@ Section Defs.
 Variable U : Bij.
 
 Definition diffProd_fun
-  (x : el ((diffSp A * B + A * diffSp B) U)) : el (diffSp (A * B) U) :=
+  (x : el ((∂ A * B + A * ∂ B) U)) : el (∂ (A * B) U) :=
   match x with
   | inl p => diffProdl p
   | inr p => diffProdr p
@@ -274,21 +276,23 @@ rewrite !big_nat; apply eq_bigr => /= i ltin.
 by rewrite card_diffSp subnSK.
 Qed.
 HB.instance Definition _ :=
-  BijHom.Build ((diffSp A * B + A * diffSp B) U) (diffSp (A * B) U)
+  BijHom.Build ((∂ A * B + A * ∂ B) U) (∂ (A * B) U)
     diffProd_fun diffProd_bij.
 
 End Defs.
 
 Definition diffProd :
-  (diffSp A * B + A * diffSp B) ~~> diffSp (A * B) := diffProd_fun.
+  (∂ A * B + A * ∂ B) ~~> ∂ (A * B) := diffProd_fun.
 
 Fact diffProd_natural :
-  naturality (diffSp A * B + A * diffSp B) (diffSp (A * B)) diffProd.
+  naturality (∂ A * B + A * ∂ B) (∂ (A * B)) diffProd.
 Proof.
 by move=> U V f []; [exact: diffProdl_natural | exact: diffProdr_natural].
 Qed.
 HB.instance Definition _ :=
-  @isNatural.Build Bij Bij (diffSp A * B + A * diffSp B) (diffSp (A * B))
+  @isNatural.Build Bij Bij (∂ A * B + A * ∂ B) (∂ (A * B))
     diffProd diffProd_natural.
+
+Definition diffProdV := isoSpinv diffProd.
 
 End DiffProd.

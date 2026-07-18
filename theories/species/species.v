@@ -1,5 +1,5 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_fingroup.
+From mathcomp Require Import all_boot all_fingroup.
 
 Require Import category.
 
@@ -7,6 +7,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+Set SsrOldRewriteGoalsOrder.  (* change to Unset and remove the line when requiring MathComp >= 2.6 *)
 
 Local Open Scope category_scope.
 
@@ -14,6 +15,12 @@ Declare Scope species_scope.
 Delimit Scope category_scope with Sp.
 Local Open Scope species_scope.
 
+Lemma compapp A B C (f : A -> B) (g : B -> C) (a : A) :
+  (g \o f) a = g (f a). Proof. by []. Qed.
+Lemma hom_compE (C : category) (a b c : C)
+  (g : {hom b -> c}) (f : {hom a -> b}) x :
+  g (f x) = (g \@ f) x.
+Proof. by [].  Qed.
 
 Reserved Notation "\X" (at level 0).
 
@@ -254,24 +261,33 @@ HB.instance Definition _ :=
 
 End Homs.
 
-Lemma finvI (U V : Bij) (f : {hom U -> V}) : finv (finv f) =1 f.
+Lemma finvI (U V : Bij) (f : {hom U -> V}) : finv (finv f) =m= f.
 Proof.
 move => x /=; apply: (Bij_injP (finv f)).
 by rewrite finvKV [RHS]finvK.
 Qed.
-Lemma finv_id (U : Bij) : finv (@idfun U) =1 idfun.
-Proof.
-by move=> x /=; apply (Bij_injP idfun); rewrite finvK. Qed.
+Lemma finvIF (U V : Bij) (f : {hom U -> V}) : finv (finv f) =1 f.
+Proof. exact: finvI. Qed.
+Lemma finv_id (U : Bij) : finv (@idfun U) =m= idfun.
+Proof. by move=> x /=; apply (Bij_injP idfun); rewrite finvK. Qed.
+Lemma finv_idF (U : Bij) : finv (@idfun U) =1 idfun.
+Proof. exact: finv_id. Qed.
 Lemma finvE (U V : Bij) (f g : {hom U -> V}) :
-  f =1 g -> finv f =1 finv g.
+  f =m= g -> finv f =m= finv g.
 Proof. by move=> eq x; apply (Bij_injP f); rewrite finvKV eq finvKV. Qed.
+Lemma finvEF (U V : Bij) (f g : {hom U -> V}) :
+  f =m= g -> finv f =1 finv g.
+Proof. exact: finvE. Qed.
 Lemma finv_comp (U V W : Bij) (f : {hom U -> V}) (g : {hom V -> W}) :
-  finv (g \o f) =1 (finv f) \o (finv g).
+  finv (g \@ f) =m= finv f \@ finv g.
 Proof.
 move=> x /=.
 apply (Bij_injP f); apply (Bij_injP g).
-by rewrite -[LHS]compapp !finvKV.
+by rewrite -[LHS]/((g \o f) _) !finvKV.
 Qed.
+Lemma finv_compF (U V W : Bij) (f : {hom U -> V}) (g : {hom V -> W}) x :
+  finv (g \@ f) x = finv f (finv g x).
+Proof. exact: finv_comp. Qed.
 
 HB.factory Record BijHom (U V : Bij)
   (f : el U -> el V) := { finsetsbij_hom : bijective f }.
@@ -290,46 +306,23 @@ HB.instance Definition _ i j (eq : i = j) :=
   @BijHom.Build 'I_i 'I_j (cast_ord eq : el ('I_i : Bij) -> el ('I_j : Bij))
     (cast_ord_bij eq).
 
-(** Factory failed attempt
-HB.factory Record mkFunctor (T : Bij -> Bij)
-  (F : forall (U V : Bij) (f : {hom U -> V}), el (T U) -> el (T V)) := {
-    fext : FunctorLaws.ext F;
-    fid : FunctorLaws.id F;
-    fcomp : FunctorLaws.comp F
-}.
-HB.builders Context T F of mkFunctor T F.
-Fact functor_bij (U V : Bij) (f : {hom U -> V}) : bijective (F U V f).
-Proof.
-by exists (F V U (finv f)) => x;
-  rewrite -(compapp (F _ _ _) (F _ _ _) x) -fcomp -[RHS]fid;
-  apply fext => {}x; rewrite /= ?finvK ?finvKV.
-Qed.
-HB.instance Definition _ U V (f : {hom U -> V}) :=
-  BijHom.Build (T U) (T V)
-    (F U V f : el (T U) -> (T V)) (functor_bij f).
-HB.instance Definition _ :=
-  isFunctor.Build Bij Bij T fext fid fcomp.
-
-HB.end.
-*)
-
-
-Section FunctorBij.
-
-Variable T : Bij -> Bij.
-Variable F : forall (U V : Bij) (f : {hom U -> V}), el (T U) -> el (T V).
-Hypothesis fext : FunctorLaws.ext F.
-Hypothesis fid : FunctorLaws.id F.
-Hypothesis fcomp : FunctorLaws.comp F.
-
-Lemma functor_bij (U V : Bij) (f : {hom U -> V}) : bijective (F f).
+#[key="T"] HB.factory Record isSpecies (T : Bij -> Bij) := {
+    F : forall (U V : Bij) (f : {hom U -> V}), el (T U) -> el (T V);
+    fext : FunctorLaws.funext F;
+    fid : FunctorLaws.funid F;
+    fcomp : FunctorLaws.funcomp F;
+  }.
+HB.builders Context T of isSpecies T.
+Fact functor_bij (U V : Bij) (f : {hom U -> V}) : bijective (F f).
 Proof.
 by exists (F (finv f)) => x;
   rewrite -(compapp (F _) (F _) x) -fcomp -[RHS]fid;
   apply fext => {}x; rewrite /= ?finvK ?finvKV.
 Qed.
-
-End FunctorBij.
+HB.instance Definition _ U V (f : {hom U -> V}) :=
+  BijHom.Build (T U) (T V) (F f : el (T U) -> el (T V)) (functor_bij f).
+HB.instance Definition _ := isFunctor.Build Bij Bij T fext fid fcomp.
+HB.end.
 
 
 Section TypeInSet.
@@ -506,14 +499,18 @@ End Transport.
 
 Lemma perm_morph_ext U V (f g : {hom U -> V}) :
   f =1 g -> perm_morph f =1 perm_morph g.
-Proof. by move=> eq /= s; apply/permP => v; rewrite !permE /= eq (finvE eq). Qed.
+Proof.
+by move=> eq /= s; apply/permP => v; rewrite !permE /= eq (finvEF eq).
+Qed.
 Lemma perm_morph_id U : perm_morph (@idfun U) =1 idfun :> (_ -> _).
-Proof. by move => /= s; apply/permP => v; rewrite !permE /= finv_id. Qed.
+Proof.
+by move => /= s; apply/permP => v; rewrite !permE /= finv_idF.
+Qed.
 Lemma perm_morph_comp W V U (f : {hom W -> V}) (g : {hom V -> U}) :
   perm_morph (g \o f) =1 perm_morph g \o perm_morph f.
 Proof.
 move=> /= s; apply/permP => v.
-by rewrite !permE /= finv_comp -perm_morphE /= finvKV.
+by rewrite !permE /= finv_compF -perm_morphE /= finvKV.
 Qed.
 
 Notation isoclass x := (orbit (actSp _) setT x).
@@ -535,7 +532,7 @@ exists (actSp _ x (perm_morph (finv f) s)).
   by apply/orbitP => /=; exists (perm_morph (finv f) s); first by rewrite inE.
 rewrite /= /actSp_fun !hom_compE -!functor_o.
 apply: (functor_ext_hom A) => {}x /=.
-by rewrite /perm_morph_fun permE /= finvKV finvI.
+by rewrite /perm_morph_fun permE /= finvKV finvIF.
 Qed.
 
 Lemma isoclass_morph U V (f g : {hom U -> V}) x :
@@ -708,7 +705,7 @@ rewrite /isoSpinv => U V h x /=.
 apply: (can_inj (finvKV (A # h))); rewrite finvK.
 rewrite hom_compE -finv_comp.
 apply: (Bij_injP (F V \o A # h)).
-by rewrite -[LHS](natural F U V h) [LHS]/= !finvKV.
+by rewrite -[LHS](natural F U V h _) [LHS]/= !finvKV.
 Qed.
 HB.instance Definition _ :=
   @isNatural.Build Bij Bij B A isoSpinv isoSpinv_natural.
@@ -719,13 +716,13 @@ Lemma isoSpKV : F \v isoSpinv =%= NId B.
 Proof. by move=> U x /=; rewrite finvKV. Qed.
 
 Lemma isoSpinvrE (G : B ~~> A) :
-  (forall U, (G U) \o (F U) =1 idfun) -> G =%= isoSpinv.
+  (forall U, (G U) \@ (F U) =m= idfun) -> G =%= isoSpinv.
 Proof.
 move=> H U b; rewrite /isoSpinv.
 by rewrite -{1}(finvKV (F U) b) hom_compE H.
 Qed.
-Lemma isoSpinvlE (G : B ~~> A) :
-  (forall U, (F U) \o (G U) =1 idfun) -> G =%= isoSpinv.
+Lemma isoSpinvlE (G : B ~> A) :
+  (forall U, (F U) \@ (G U) =m= idfun) -> G =%= isoSpinv.
 Proof.
 move=> H U b; rewrite /isoSpinv.
 apply: (Bij_injP (F U)).
@@ -746,10 +743,10 @@ Qed.
 End IsoSpecies.
 
 Lemma isoSpinvK (A B : Species) (F : A ~> B) : isoSpinv (isoSpinv F) =%= F.
-Proof. by move=> U x; rewrite /isoSpinv /= /isoSpinv /= finvI.  Qed.
+Proof. by move=> U x; rewrite /isoSpinv /= finvIF. Qed.
 Lemma isoSpinv_vcomp (A B C : Species) (F : A ~> B) (G : B ~> C) :
   isoSpinv (G \v F) =%= (isoSpinv F) \v (isoSpinv G).
-Proof. by move=> U x /=; rewrite finv_comp. Qed.
+Proof. by move=> U x /=; rewrite finv_compF. Qed.
 
 
 Section IdSpecies.
@@ -856,11 +853,11 @@ Proof.
 split => [eqxy|].
   subst y; split => //.
   case: x => [E x] eqE /=; rewrite eq_Tagged /=; apply/eqP.
-  rewrite -[RHS](@functor_id _ _ A) /=; apply: (functor_ext_hom A) => {}x.
+  rewrite -[RHS](functor_idF A) /=; apply: (functor_ext_hom A) => {}x.
   by apply val_inj; rewrite val_cast_TSet.
 case: x y => /= [E x][F y] /= [eqEF eq]; subst F; apply/eqP.
 rewrite -!/(Tagged _ _) -(eqP (eq _)) eq_Tagged /=; apply/eqP.
-rewrite -[LHS](@functor_id _ _ A) /=; apply: (functor_ext_hom A) => {eq}x.
+rewrite -[LHS](functor_idF A) /=; apply: (functor_ext_hom A) => {eq}x.
 by apply val_inj; rewrite val_cast_TSet.
 Qed.
 
@@ -881,7 +878,7 @@ Qed.
 Definition SpSet_mor U V (f : {hom U -> V}) (x : el (SpSet U)) : SpSet V :=
   let (S, v) := x in existT _ [set f u | u in S] ((A # restr_hom S f) v).
 
-Fact SpSet_ext : FunctorLaws.ext SpSet_mor.
+Fact SpSet_ext : FunctorLaws.funext SpSet_mor.
 Proof.
 rewrite /SpSet_mor => U V f g H -[/= S x] /=.
 rewrite -!/(Tagged _ _) (functor_ext_hom A _ _ (restr_ext H)).
@@ -892,7 +889,7 @@ suff /(functor_ext_hom A) -> : F =1 (restr_hom S g) by rewrite tagged_asE.
 rewrite {}/F /= => {}x.
 by apply: val_inj; rewrite !val_cast_TSet.
 Qed.
-Fact SpSet_id : FunctorLaws.id SpSet_mor.
+Fact SpSet_id : FunctorLaws.funid SpSet_mor.
 Proof.
 rewrite /SpSet_mor => U -[/= S x] /=; apply/eqP.
 rewrite -!/(Tagged _ _) -(Tagged_SpTSet_castE (imset_id _)) eq_Tagged.
@@ -902,7 +899,7 @@ suff /(functor_ext_hom A) -> : Fid =1 idfun by rewrite functor_id.
 rewrite /Fid /= /cast_TSet /= => {}x /=.
 by rewrite -!/(cast_TSet _ _) cast_TSetKV.
 Qed.
-Fact SpSet_comp : FunctorLaws.comp SpSet_mor.
+Fact SpSet_comp : FunctorLaws.funcomp SpSet_mor.
 Proof.
 rewrite /SpSet_mor => U V W g f -[/= S x] /=; apply/eqP.
 rewrite hom_compE -functor_o.
@@ -912,15 +909,15 @@ rewrite -tag_eqE /tag_eq /= eqxx /= tagged_asE.
 rewrite hom_compE -functor_o; apply/eqP.
 exact: (functor_ext_hom A).
 Qed.
-HB.instance Definition _ U V (f : {hom U -> V}) :=
-  BijHom.Build (SpSet U) (SpSet V)
-    (SpSet_mor f : el (SpSet U) -> (SpSet V))
-    (functor_bij SpSet_ext SpSet_id SpSet_comp f).
 HB.instance Definition _ :=
-  isFunctor.Build Bij Bij SpSet SpSet_ext SpSet_id SpSet_comp.
+  isSpecies.Build SpSet SpSet_ext SpSet_id SpSet_comp.
 
 Lemma tag_SpSet U V (f : {hom U -> V}) x : tag ((SpSet # f) x) = f @: (tag x).
 Proof. by case: x => [/= S x]. Qed.
+
+Lemma SpSetE U V (f : {hom U -> V}) a :
+  SpSet_mor f a = (SpSet # f) a.
+Proof. by []. Qed.
 
 Variable c : nat.
 
@@ -937,24 +934,20 @@ Qed.
 Definition SpSetC_mor U V (f : {hom U -> V}) (x : el (SpSetC U)) : SpSetC V :=
   exist _ ((SpSet # f) (\val x)) (SpSetC_mor_subproof f x).
 
-Fact SpSetC_ext : FunctorLaws.ext SpSetC_mor.
+Fact SpSetC_ext : FunctorLaws.funext SpSetC_mor.
 Proof.
-move=> U V f g H x; apply val_inj => /=.
-exact: (functor_ext_hom SpSet _ _ H).
+by move=> U V f g H x; apply val_inj => /=; apply: (functor_ext_hom SpSet).
 Qed.
-Fact SpSetC_id : FunctorLaws.id SpSetC_mor.
-Proof. by move=> U x; apply val_inj; rewrite /= functor_id. Qed.
-Fact SpSetC_comp : FunctorLaws.comp SpSetC_mor.
+Fact SpSetC_id : FunctorLaws.funid SpSetC_mor.
 Proof.
-move=> U V W g f x; apply val_inj => /=.
-exact: (functor_o (F := SpSet) g f).
+by move=> U x; apply val_inj => /=; apply: (functor_idF SpSet).
 Qed.
-HB.instance Definition _ U V (f : {hom U -> V}) :=
-  BijHom.Build (SpSetC U) (SpSetC V)
-    (SpSetC_mor f : el (SpSetC U) -> (SpSetC V))
-    (functor_bij SpSetC_ext SpSetC_id SpSetC_comp f).
+Fact SpSetC_comp : FunctorLaws.funcomp SpSetC_mor.
+Proof.
+by move=> U V W g f x; apply val_inj => /=; apply: (functor_oF SpSet).
+Qed.
 HB.instance Definition _ :=
-  isFunctor.Build Bij Bij SpSetC SpSetC_ext SpSetC_id SpSetC_comp.
+  isSpecies.Build SpSetC SpSetC_ext SpSetC_id SpSetC_comp.
 
 Definition SpSetC2ord U : SpSetC U -> A 'I_c := locked
   (fun x => match x with
@@ -1184,64 +1177,35 @@ Proof. by rewrite /cond (Bij_eq_card f). Qed.
 Local Notation ifAB c V := (if c then A V else B V).
 Definition ifSp U := ifAB (cond U) U.
 
-Section Hom.
-Variables (U V : Bij) (f : {hom U -> V}).
-
-Definition ifSp_mor : el (ifSp U) -> el (ifSp V) :=
+Definition ifSp_mor (U V : Bij) (f : {hom U -> V}) :
+  el (ifSp U) -> el (ifSp V) :=
   match condP f in (_ = a) return ifAB a U -> ifAB (cond V) V
   with erefl => if cond V as b return ifAB b U -> ifAB b V
                 then A # f else B # f
   end.
-Definition ifSp_inv : el (ifSp V) -> el (ifSp U) :=
-  match esym (condP f) in (_ = a) return ifAB a V -> ifAB (cond U) U
-  with erefl => if cond U as b return ifAB b V -> ifAB b U
-                then A # (finv f) else B # (finv f)
-  end.
 
-Lemma ifSp_morK : cancel ifSp_mor ifSp_inv.
-Proof.
-rewrite /ifSp_mor /ifSp_inv /ifSp; case:_/(condP f) => /=.
-by case: (cond V) => x; rewrite SpfinvK.
-Qed.
-Lemma ifSp_invK : cancel ifSp_inv ifSp_mor.
-Proof.
-rewrite /ifSp_mor /ifSp_inv /ifSp; case:_/(condP f) => /=.
-by case: (cond V) => x; rewrite SpfinvKV.
-Qed.
-Lemma ifSp_mor_bij : bijective ifSp_mor.
-Proof. exists ifSp_inv; [exact: ifSp_morK | exact: ifSp_invK]. Qed.
-Lemma ifSp_inv_bij : bijective ifSp_inv.
-Proof. exists ifSp_mor; [exact: ifSp_invK | exact: ifSp_morK]. Qed.
-HB.instance Definition _ :=
-  @BijHom.Build (ifAB (cond U) U) (ifAB (cond V) V) ifSp_mor ifSp_mor_bij.
-HB.instance Definition _ :=
-  @BijHom.Build (ifAB (cond V) V) (ifAB (cond U) U) ifSp_inv ifSp_inv_bij.
-
-End Hom.
-
-Fact ifSp_ext : FunctorLaws.ext ifSp_mor.
+Fact ifSp_ext : FunctorLaws.funext ifSp_mor.
 Proof.
 move=> U V f g eqfg; rewrite /= /ifSp_mor /ifSp.
 rewrite (eq_irrelevance (condP g) (condP f)).
 by move: (cond U) (cond V) (condP f) => [] [] //= C x;
   rewrite (eq_irrelevance C (erefl _)); exact: functor_ext_hom.
 Qed.
-Fact ifSp_id : FunctorLaws.id ifSp_mor.
+Fact ifSp_id : FunctorLaws.funid ifSp_mor.
 Proof.
 move=> U; rewrite /= /ifSp_mor  /ifSp.
 by case: (cond U) (condP _) => /= C x /=;
   rewrite (eq_irrelevance C (erefl _)) functor_id.
 Qed.
-Fact ifSp_comp : FunctorLaws.comp ifSp_mor.
+Fact ifSp_comp : FunctorLaws.funcomp ifSp_mor.
 move=> U V W f g; rewrite /= /ifSp_mor /ifSp.
 have -> : condP (f \o g) = etrans (condP f) (condP g) by apply: eq_irrelevance.
 move: (condP f) (condP g) (etrans _ _).
 by move: (cond U) (cond V) (cond W) => [] [] [] //= C1 C2 CT x;
   rewrite (eq_irrelevance C1 (erefl _)) (eq_irrelevance C2 (erefl _))
-    (eq_irrelevance CT (erefl _)) [LHS]functor_o.
+    (eq_irrelevance CT (erefl _)) functor_oF.
 Qed.
-HB.instance Definition _ :=
-  isFunctor.Build Bij Bij ifSp ifSp_ext ifSp_id ifSp_comp.
+HB.instance Definition _ := isSpecies.Build ifSp ifSp_ext ifSp_id ifSp_comp.
 
 Lemma card_ifSp n :
   cardSp ifSp n = if (cond 'I_n) then cardSp A n else cardSp B n.
