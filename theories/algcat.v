@@ -190,8 +190,8 @@ Finaly the following useful notion are defined:
                   coefficient c
 *)
 From HB Require Import structures.
-From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq.
-From mathcomp Require Import choice fintype finfun bigop.
+From mathcomp Require Import ssreflect ssrfun ssrbool eqtype choice.
+From mathcomp Require Import ssrnat seq bigop.
 From mathcomp Require Import ssralg ssrint finmap multiset.
 
 Require Import category msetcompl algcompl.

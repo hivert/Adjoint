@@ -3,9 +3,7 @@
 (* license: LGPL-3.0-or-later                                                 *)
 From Corelib Require Import Setoid.
 From HB Require Import structures.
-From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq.
-From mathcomp Require Import choice fintype finfun bigop.
-From mathcomp Require Import ssralg.
+From mathcomp Require Import ssreflect ssrfun.
 (******************************************************************************)
 (*                                                                            *)
 (* This file is mostly copied and adapted from monae.                         *)
