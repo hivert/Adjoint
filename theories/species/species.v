@@ -173,20 +173,6 @@ Definition glue_perm : {perm U} := perm glue_perm_inj.
 End PermutationGlue.
 
 
-Section Cast.
-
-Definition type_cast (A B : Type) (eqAB : A = B) x := ecast T T eqAB x.
-
-Lemma type_castK A B (eqAB : A = B) :
-  cancel (type_cast eqAB) (type_cast (esym eqAB)).
-Proof. by move=> x; case:_/(eqAB). Qed.
-Lemma type_castKV A B (eqAB : A = B) :
-  cancel (type_cast (esym eqAB)) (type_cast eqAB).
-Proof. by rewrite -{2}(esymK eqAB); apply: type_castK. Qed.
-
-End Cast.
-
-
 Section MapValSub.
 
 Variables (T : finType) (P : pred T) (S : subFinType P).
